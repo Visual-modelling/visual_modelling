@@ -1,1 +1,2 @@
-# cnn_visual_modelling
+# CNN VM
+CNN VM

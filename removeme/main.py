@@ -1,9 +1,11 @@
 __author__ = "Jumperkables"
 
-import os, sys, argparse
+import os, sys
+sys.path.insert(1, os.path.expanduser("~/kable_management/blp_paper/tvqa/mystuff"))
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
+import argparse
 
 from dataset import VMDataset_v1
 import utils
@@ -27,15 +29,7 @@ if __name__ == "__main__":
     parser.add_argument("--train_ratio", type=float, default=0.8)
     parser.add_argument("--bsz", type=int, default=32)
     parser.add_argument("--val_bsz", type=int, default=100)
-    parser.add_argument("--dataset_path", type=str, default=os.path.expanduser("~/kable_management/data/visual_modelling/dataset_v1.0/6_dset.pickle"))
-    parser.add_argument("--shuffle", action="store_true", help="shuffle dataset")
-    """
-    Please note, in_no + out_no must equal the size your dataloader is returning. Default is batches of 6 frames, 5 forward and 1 for ground truth
-    """
-    parser.add_argument("--in_no", type=int, default=5, help="number of frames to use for forward pass")
-    parser.add_argument("--out_no", type=int, default=1, help="number of frames to use for ground_truth")
     args = parser.parse_args()
     print(args)
     dset = VMDataset_v1(args)
-    #dset.save_dataset(5, 1, "/home/jumperkables/kable_management/data/visual_modelling/dataset_v1.0")
-    train(args, dset, "dingo")
+    train(args, dset, None)
