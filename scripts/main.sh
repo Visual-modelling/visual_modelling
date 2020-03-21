@@ -1,6 +1,6 @@
 #!/bin/bash
 source /home/jumperkables/kable_management/python_venvs/vm/bin/activate
-python /home/jumperkables/cnn_visual_modelling/main.py \
+python ../main.py \
     --bsz 32 \
     --val_bsz 100 \
     --in_no 5 \
