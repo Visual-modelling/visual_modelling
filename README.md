@@ -1,7 +1,7 @@
 # CNN Based Visual Modelling
 1) Get Hudson's dataset: https://github.com/Visual-modelling/2D-bouncing/releases/tag/v1.0
-2) Install requirements.txt
-<mark>pip install -r requirements.txt<mark>
+2) Install requirements.txt:
+`pip install -r requirements.txt`
 3) Hudson's dataset is a bunch of videos each with 100 frames and positions at each frame. We won't just use 99 frames and then predict the final one. We will infact split the whole dataset up into sets of n consecutive frames (first n-1 for the forward pass, and the final 1 as the ground truth, no repeats, the spare frames at the end of each video folder are dropped).
 4) We start with n=6, 5 frames for forward, final 1 as ground truth. You'll need to extract a '6_dset.pickle' file in a bit.
 5) Run scripts/extract_ndset.sh
