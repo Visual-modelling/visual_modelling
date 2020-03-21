@@ -10,14 +10,14 @@ import utils
 
 def train(args, dset, model):
     dset.set_mode("train")
-    train_loader = DataLoader(dset, batch_size=args.bsz, shuffle=True)#, collate_fn=pad_collate)
+    train_loader = DataLoader(dset, batch_size=args.bsz, shuffle=True)
     for batch_idx, batch in enumerate(train_loader):
         frames, positions, gt_frames, gt_positions = batch
         import ipdb; ipdb.set_trace()
 
 def validate(args, dset, model):
     dset.set_mode("val")
-    valid_loader = DataLoader(dset, batch_size=args.val_bsz, shuffle=True)#, collate_fn=pad_collate)
+    valid_loader = DataLoader(dset, batch_size=args.val_bsz, shuffle=True)
     for batch_idx, batch in enumerate(valid_loader):
         frames, positions, gt_frames, gt_positions = batch
         
