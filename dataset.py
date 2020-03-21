@@ -16,14 +16,15 @@ class VMDataset_v1(Dataset):
     def __init__(self, args):
         self.mode = "train"
         self.args = args
-        total_dset = utils.load_pickle(args.dataset_path)
-        if args.shuffle:
-            random.shuffle(total_dset)
-        self.train_dict = { idx:data for idx, data in enumerate(total_dset[:round(len(total_dset)*args.train_ratio)]) }
-        self.valid_dict = { idx:data for idx, data in enumerate(total_dset[round(len(total_dset)*args.train_ratio):]) }
-        self.current_data_dict = self.train_dict
-        assert(args.in_no+args.out_no == len(self.current_data_dict[0]['frame_paths']),
-            "In frames + Ground truth frames do not equal the frame sample size of the dataset")
+        if not args.extract_n_dset_file:
+            total_dset = utils.load_pickle(args.dataset_path)
+            if args.shuffle:
+                random.shuffle(total_dset)
+            self.train_dict = { idx:data for idx, data in enumerate(total_dset[:round(len(total_dset)*args.train_ratio)]) }
+            self.valid_dict = { idx:data for idx, data in enumerate(total_dset[round(len(total_dset)*args.train_ratio):]) }
+            self.current_data_dict = self.train_dict
+            assert(args.in_no+args.out_no == len(self.current_data_dict[0]['frame_paths']),
+                "In frames + Ground truth frames do not equal the frame sample size of the dataset")
 
     def __len__(self):
         return(len(self.current_data_dict))
@@ -58,7 +59,7 @@ class VMDataset_v1(Dataset):
         """
         If you want to read the raw files
         """
-        self.frame_path = os.path.expanduser("~/kable_management/data/visual_modelling/dataset_v1.0/raw")
+        self.frame_path = args.raw_frame_rootdir
         vids = os.listdir(self.frame_path)
         vids.remove('config.yml')
         self.current_data_dict = [ os.path.join(self.frame_path, vid) for vid in vids ]

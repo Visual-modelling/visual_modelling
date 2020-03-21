@@ -27,7 +27,10 @@ if __name__ == "__main__":
     parser.add_argument("--train_ratio", type=float, default=0.8)
     parser.add_argument("--bsz", type=int, default=32)
     parser.add_argument("--val_bsz", type=int, default=100)
-    parser.add_argument("--dataset_path", type=str, default=os.path.expanduser("~/kable_management/data/visual_modelling/dataset_v1.0/6_dset.pickle"))
+    parser.add_argument("--raw_frame_rootdir", type=str, default=os.path.expanduser("~/"), help="The root directory containing 00000, 00001...")
+    parser.add_argument("--extract_n_dset_file", action="store_true", help="activate this if you would like to extract your n_dset")
+    parser.add_argument("--extracted_n_dset_savepathdir", type=str, default=os.path.expanduser("~/"), help="root directory of where you would like to save your n_dset.pickle")
+    parser.add_argument("--dataset_path", type=str, default=os.path.expanduser("~/"))
     parser.add_argument("--shuffle", action="store_true", help="shuffle dataset")
     """
     Please note, in_no + out_no must equal the size your dataloader is returning. Default is batches of 6 frames, 5 forward and 1 for ground truth
@@ -37,5 +40,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     print(args)
     dset = VMDataset_v1(args)
-    #dset.save_dataset(5, 1, "/home/jumperkables/kable_management/data/visual_modelling/dataset_v1.0")
+    if args.extract_n_dset_file:
+        dset.save_dataset(args.in_no, args.out_no, args.extracted_n_dset_savepathdir)
+        print("Extraction successful. Saved to:\n", args.extracted_n_dset_savepathdir+"/"+str(args.in_no+args.out_no)+"_dset.pickle")
+        sys.exit()
     train(args, dset, "dingo")
