@@ -2,25 +2,39 @@ __author__ = "Jumperkables"
 
 import os, sys, argparse
 import torch
-import torch.nn as nn
 from torch.utils.data import DataLoader
 
 from dataset import VMDataset_v1
+from models.FC3D import FC3D_1_0
 import utils
+import radam 
+import loss
 
-def train(args, dset, model):
+def train(args, dset, model, optimizer, criterion):
     dset.set_mode("train")
+    model.train()
     train_loader = DataLoader(dset, batch_size=args.bsz, shuffle=True)
     for batch_idx, batch in enumerate(train_loader):
-        frames, positions, gt_frames, gt_positions = batch
         import ipdb; ipdb.set_trace()
+        frames, positions, gt_frames, gt_positions = batch
+        frames = frames.squeeze(2).float()
+        gt_frames = gt_frames.squeeze(2).float()
+        out = model(frames).squeeze(2)
+        loss = criterion(out, gt_frames)
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
 
 def validate(args, dset, model):
     dset.set_mode("val")
+    model.valid()
     valid_loader = DataLoader(dset, batch_size=args.val_bsz, shuffle=True)
     for batch_idx, batch in enumerate(valid_loader):
         frames, positions, gt_frames, gt_positions = batch
-        
+        frames = frames.squeeze(2).float()
+        gt_frames = gt_frames.squeeze(2).float()
+        img = model(frames)
+
 if __name__ == "__main__":
     torch.manual_seed(2667)
     parser = argparse.ArgumentParser()
@@ -40,8 +54,12 @@ if __name__ == "__main__":
     args = parser.parse_args()
     print(args)
     dset = VMDataset_v1(args)
+    model = FC3D_1_0(args)
+    optimizer = radam.RAdam([p for p in model.parameters() if p.requires_grad],
+                                    lr=3e-4, weight_decay=1e-5)
+    criterion = loss.l2loss
     if args.extract_n_dset_file:
         dset.save_dataset(args.in_no, args.out_no, args.extracted_n_dset_savepathdir)
         print("Extraction successful. Saved to:\n", args.extracted_n_dset_savepathdir+"/"+str(args.in_no+args.out_no)+"_dset.pickle")
         sys.exit()
-    train(args, dset, "dingo")
+    train(args, dset, model, optimizer)

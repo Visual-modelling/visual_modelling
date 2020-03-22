@@ -7,6 +7,7 @@
 2) Sort out train method
 3) Sort out validate method with logging
 4) Model checkpointing
+5) Output visualiser
 ## Installation
 1) Get Hudson's dataset: https://github.com/Visual-modelling/2D-bouncing/releases/tag/v1.0
 2) Install requirements.txt:
