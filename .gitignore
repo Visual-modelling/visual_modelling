@@ -5,3 +5,7 @@ __pycache__
 models/__pycache__
 models/*.pyc
 models/*.pyo
+
+tools/__pycache__
+tools/*.pyc
+tools/*.pyo

@@ -44,6 +44,6 @@ class FC3D_1_0(nn.Module):
 
         out = F.relu(self.dbn1(self.deconv1(out+skip1)))
 
-        img = F.relu(self.dbn0(self.deconv0(out+skip0)))
+        img = F.sigmoid(self.dbn0(self.deconv0(out+skip0)))
 
         return(img)

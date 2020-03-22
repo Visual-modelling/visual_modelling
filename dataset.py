@@ -10,7 +10,7 @@ from torch.utils.data.dataset import Dataset
 from torchvision.transforms import ToTensor
 from PIL import Image
 
-import utils
+import tools.utils as utils
 
 class VMDataset_v1(Dataset):
     def __init__(self, args):

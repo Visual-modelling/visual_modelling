@@ -2,12 +2,13 @@
 ## Features
 1) Extraction code for Hudson's dataset v1,
 2) Variable in-frame/ground truth frames
+3) 2D Fully Convolutional Network Implemented with 5-1 in-out frames with skip connections
+4) Fully implemented framework including checkpointing, early stopping, variable loss and visdom logging.
+5) Visualisation tool for assessing the outputs of saved models (load_state_dict) side by side with ground truth
 ## Todo
 1) Write first 3D Convolution model
-2) Sort out train method
-3) Sort out validate method with logging
-4) Model checkpointing
-5) Output visualiser
+2) Train up 2D version and visualise output of that
+3) Update the README with any missing details from extract things needed to run, i.e. flags for running scripts/visdom. **PLEASE TELL ME WHAT I MISS!!**
 ## Installation
 1) Get Hudson's dataset: https://github.com/Visual-modelling/2D-bouncing/releases/tag/v1.0
 2) Install requirements.txt:
@@ -24,3 +25,8 @@
 **--train_ratio** 0.8 => 80% of dataset for training  <br />
 **--dataset_path** = path of extracted n_dset.pickle file  <br />
 **Model has not been implemented yet. Put your own model in, write the train/validate functions in main.py and off you go!**
+## Visualisation Code
+1) Plug in any model you have checkpointed to the visualiser.py file
+2) Run `bash scripts/visualiser.sh` specifying:  <br />
+**--dataset_path** = path of extracted n_dset.pickle file  <br />
+**--checkpoint_path** = path of the checkpointed model file  <br />
