@@ -5,10 +5,13 @@
 3) 2D Fully Convolutional Network Implemented with 5-1 in-out frames with skip connections
 4) Fully implemented framework including checkpointing, early stopping, variable loss and visdom logging.
 5) Visualisation tool for assessing the outputs of saved models (load_state_dict) side by side with ground truth
+6) SSIM and PSNR implemented in visualiser
 ## Todo
 1) Write first 3D Convolution model
 2) Train up 2D version and visualise output of that
 3) Update the README with any missing details from extract things needed to run, i.e. flags for running scripts/visdom. **PLEASE TELL ME WHAT I MISS!!**
+4) Debug MS_SSIM for visualiser
+5) Extend PSNR/SSIM/MS_SSIM to multiple output frames
 ## Installation
 1) Get Hudson's dataset: https://github.com/Visual-modelling/2D-bouncing/releases/tag/v1.0
 2) Install requirements.txt:

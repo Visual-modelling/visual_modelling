@@ -10,6 +10,7 @@ from torchvision.transforms.functional import to_pil_image
 from dataset import VMDataset_v1
 from models.FC3D import FC3D_1_0
 from tools.visdom_plotter import VisdomLinePlotter
+from tools.loss import ssim, ms_ssim, PSNR
 
 def visualise_imgs(args, dset, model,  n):
     """
@@ -28,7 +29,6 @@ def visualise_imgs(args, dset, model,  n):
 
             # Convert old frames back to images and show them on the grid
             f, axarr = plt.subplots(args.in_no+args.out_no,2)
-            plt.suptitle("Left = Ground Truth | Right = Predicted Final %d Frame(s)" % (args.out_no))
             for x in range(args.in_no):
                 axarr[x,0].imshow(to_pil_image(frames_use[x]))
                 axarr[x,1].imshow(to_pil_image(frames_use[x]))
@@ -36,7 +36,7 @@ def visualise_imgs(args, dset, model,  n):
                 axarr[args.in_no+y,0].imshow(to_pil_image(gt_frames_use[y]))
 
             frames = frames.squeeze(2).float()#.to(args.device)
-            gt_frames = gt_frames.squeeze(2).float()#.to(args.device)
+            gt_frames = gt_frames.squeeze(2)#.to(args.device)
             out = model(frames).squeeze(2)
             out = out[0]
             out = torch.round(out).int()
@@ -44,6 +44,14 @@ def visualise_imgs(args, dset, model,  n):
             # Conert produce frame back into image and add to plots
             for y in range(args.out_no):
                 axarr[args.in_no+y,1].imshow(to_pil_image(out[y]))
+
+            # Calculate image comparison metrics
+            plt.suptitle("Left = Ground Truth | Right = Predicted Final %d Frame(s)\n PSNR: %.3f, SSIM: %.3f, MS-SSIM: %.3f " 
+                            % (args.out_no, 
+                                PSNR(out.float(),gt_frames.squeeze(0).float(),1), 
+                                ssim(out.unsqueeze(0).float(),gt_frames.float(),1), 
+                                0))
+                                # bugged right now ms_ssim(gt_frames.float(), out.unsqueeze(0).float(), 1)))
             plt.show()
 
 
