@@ -30,10 +30,11 @@ def train(args, dset, model, optimizer, criterion, epoch, previous_best_mse):
         train_loss.append(loss.item())
 
         # Validate
-        if((batch_idx % args.log_freq) == -1):
+        if(batch_idx % args.log_freq) == 0 and batch_idx != 0:
             niter = epoch * len(train_loader) + batch_idx
             train_loss = sum(train_loss) / float(len(train_loss))#from train_corrects            
-            args.plotter.plot("MSE loss", "train", arg.jobname, niter, train_loss)
+            args.plotter.plot("MSE loss", "train", args.jobname, niter, train_loss)
+            train_loss = []
 
             # Validation
             valid_mse = validate(args, dset, model)
@@ -52,6 +53,7 @@ def train(args, dset, model, optimizer, criterion, epoch, previous_best_mse):
 
 
 def validate(args, dset, model):
+    print("Validating")
     dset.set_mode("val")
     model.eval()
     valid_loader = DataLoader(dset, batch_size=args.val_bsz, shuffle=True)

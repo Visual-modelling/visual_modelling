@@ -77,7 +77,7 @@ if __name__ == "__main__":
     print(args)
     dset = VMDataset_v1(args)
     model = FC3D_1_0(args)
-    #model.load_state_dict(torch.load(args.checkpoint_path))
+    model.load_state_dict(torch.load(args.checkpoint_path))
     #model.to(args.device)
     if args.visdom:
         args.plotter = VisdomLinePlotter(env_name=args.jobname)

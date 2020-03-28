@@ -11,4 +11,7 @@ python ../main.py \
     --visdom \
     --jobname vm_test \
     --checkpoint_path /home/jumperkables/kable_management/data/visual_modelling/dataset_v1.0/vm_test.pth \
-    --device 0
+    --device 0 \
+    --epoch 50 \
+    --early_stopping 4 \
+    --log_freq 1000
