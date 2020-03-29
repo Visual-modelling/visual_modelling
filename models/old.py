@@ -1,9 +1,3 @@
-__author__ = "Jumperkables"
-
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-
 class FC3D_1_0(nn.Module):
     def __init__(self, args):
         super(FC3D_1_0, self).__init__()
@@ -47,3 +41,6 @@ class FC3D_1_0(nn.Module):
         img = F.sigmoid(self.dbn0(self.deconv0(out+skip0)))
 
         return(img)
+    
+
+

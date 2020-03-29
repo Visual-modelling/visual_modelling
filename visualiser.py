@@ -1,4 +1,4 @@
-__author__ = "Jumperkables"
+_author__ = "Jumperkables"
 
 import os, sys, argparse
 import matplotlib.pyplot as plt
@@ -8,7 +8,6 @@ from torch.utils.data import DataLoader
 from torchvision.transforms.functional import to_pil_image
 
 from dataset import VMDataset_v1
-from models.FC3D import FC3D_1_0
 from tools.visdom_plotter import VisdomLinePlotter
 from tools.loss import ssim, ms_ssim, PSNR
 
@@ -16,13 +15,14 @@ def visualise_imgs(args, dset, model,  n):
     """
     n is the number of images to visualise
     """
-    dset.set_mode("train")
+    dset.set_mode("valid")
     vis_loader = DataLoader(dset, batch_size=1, shuffle=True)
     # Image grid
+    return_imgs = []
     for batch_idx, batch in enumerate(vis_loader):
         if batch_idx == n:
             print("n images visualised. Exiting.")
-            sys.exit()
+            return(return_imgs)
         else:
             frames, positions, gt_frames, gt_positions = batch
             frames_use, gt_frames_use = frames[0], gt_frames[0]
@@ -35,11 +35,11 @@ def visualise_imgs(args, dset, model,  n):
             for y in range(args.out_no):
                 axarr[args.in_no+y,0].imshow(to_pil_image(gt_frames_use[y]))
 
-            frames = frames.squeeze(2).float()#.to(args.device)
+            frames = frames.squeeze(2).float().to(args.device)
             gt_frames = gt_frames.squeeze(2)#.to(args.device)
             out = model(frames).squeeze(2)
             out = out[0]
-            out = torch.round(out).int()
+            out = torch.round(out).cpu().int()
             
             # Conert produce frame back into image and add to plots
             for y in range(args.out_no):
@@ -51,9 +51,11 @@ def visualise_imgs(args, dset, model,  n):
                                 PSNR(out.float(),gt_frames.squeeze(0).float(),1), 
                                 ssim(out.unsqueeze(0).float(),gt_frames.float(),1), 
                                 0))
-                                # bugged right now ms_ssim(gt_frames.float(), out.unsqueeze(0).float(), 1)))
-            plt.show()
+            return_path = os.path.join(args.results_dir, "%d.png" % (batch_idx))
+            plt.savefig(return_path)
+            return_imgs.append(return_path)
 
+                                # bugged right now ms_ssim(gt_frames.float(), out.unsqueeze(0).float(), 1)))
 
 
 if __name__ == "__main__":

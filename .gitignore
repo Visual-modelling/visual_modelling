@@ -9,3 +9,5 @@ models/*.pyo
 tools/__pycache__
 tools/*.pyc
 tools/*.pyo
+
+.results

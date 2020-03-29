@@ -1,6 +1,7 @@
 import visdom
 import numpy as np
 import getpass
+import torch
 # TO DO:
 # -Plot successfully
 # -Have each keep track of highest accuracy so far
@@ -31,3 +32,9 @@ class VisdomLinePlotter(object):
             self.plots[var_name]    = self.viz.text(text=t, env=self.env)
         else:
             self.viz.text(text=t, env=self.env, win=self.plots[var_name])
+    def im_plot(self, var_name, im):
+        if var_name not in self.plots:
+            self.plots[var_name]    = self.viz.image(img=im, env=self.env)
+        else:
+            self.viz.image(img=im, env=self.env, win=self.plots[var_name])
+
