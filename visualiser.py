@@ -11,12 +11,10 @@ from dataset import VMDataset_v1
 from tools.visdom_plotter import VisdomLinePlotter
 from tools.loss import ssim, ms_ssim, PSNR
 
-def visualise_imgs(args, dset, model,  n):
+def visualise_imgs(args, vis_loader, model,  n):
     """
     n is the number of images to visualise
     """
-    dset.set_mode("valid")
-    vis_loader = DataLoader(dset, batch_size=1, shuffle=True)
     # Image grid
     return_imgs = []
     for batch_idx, batch in enumerate(vis_loader):

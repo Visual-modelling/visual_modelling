@@ -11,22 +11,31 @@ from models.UpDown2D import FCUp_Down
 from visualiser import visualise_imgs 
 import tools.utils as utils
 import tools.radam as radam
-import tools.loss as loss
+import tools.loss as myloss
+import torch.nn.functional as F
 from tools.visdom_plotter import VisdomLinePlotter
 
 def train(args, dset, model, optimizer, criterion, epoch, previous_best_loss):
+    dset.set_mode("val")
+    vis_loader = DataLoader(dset, batch_size=1, shuffle=True)
+    valid_loader = DataLoader(dset, batch_size=args.val_bsz, shuffle=True)
     dset.set_mode("train")
     model.train()
     train_loader = DataLoader(dset, batch_size=args.bsz, shuffle=True)
     train_loss = []
     for batch_idx, batch in enumerate(train_loader):
-        niter = epoch * len(train_loader) + batch_idx
-        print(niter, epoch, batch_idx)
+        #niter = epoch * len(train_loader) + batch_idx
+        #print(niter, epoch, batch_idx)
+        niter = round(epoch + (batch_idx/len(train_loader)), 3) # Changed niter to be epochs instead of iterations
         frames, positions, gt_frames, gt_positions = batch
         frames = frames.squeeze(2).float().to(args.device)
+        import ipdb; ipdb.set_trace()
         gt_frames = gt_frames.squeeze(2).float().to(args.device)
         out = model(frames).squeeze(2)
-        loss = criterion(out, gt_frames)
+        if args.loss == 'focal':
+            loss = criterion(out, gt_frames)
+        else:
+            loss = criterion(out, gt_frames, reduction=args.reduction)
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -34,13 +43,12 @@ def train(args, dset, model, optimizer, criterion, epoch, previous_best_loss):
 
         # Validate
         if(batch_idx % args.log_freq) == 0 and batch_idx != 0:
-            niter = epoch * len(train_loader) + batch_idx
             train_loss = sum(train_loss) / float(len(train_loss))#from train_corrects            
             args.plotter.plot("%s loss" % (args.loss), "train", args.jobname, niter, train_loss)
             train_loss = []
 
             # Validation
-            valid_loss = validate(args, dset, model, criterion)
+            valid_loss = validate(args, valid_loader, model, criterion)
             args.plotter.plot(args.loss, "val", args.jobname, niter, valid_loss)
             
             # If this is the best run yet
@@ -56,8 +64,7 @@ def train(args, dset, model, optimizer, criterion, epoch, previous_best_loss):
                     torch.save(model.state_dict(), args.checkpoint_path)
 
                     # Save 5 example images & Plot one to visdom
-                    img_paths = visualise_imgs(args, dset, model, 5)
-                    import ipdb; ipdb.set_trace
+                    img_paths = visualise_imgs(args, vis_loader, model, 5)
                     with Image.open(img_paths[0]) as plot_im:
                         plot_ret = transforms.ToTensor()(plot_im)
                     args.plotter.im_plot(args.jobname+" val", plot_ret) # Torch uint 0-255
@@ -66,11 +73,9 @@ def train(args, dset, model, optimizer, criterion, epoch, previous_best_loss):
     return previous_best_loss
 
 
-def validate(args, dset, model, criterion):
+def validate(args, valid_loader, model, criterion):
     print("Validating")
-    dset.set_mode("val")
     model.eval()
-    valid_loader = DataLoader(dset, batch_size=args.val_bsz, shuffle=True)
     valid_loss = []
     for batch_idx, batch in enumerate(valid_loader):
         frames, positions, gt_frames, gt_positions = batch
@@ -140,11 +145,11 @@ if __name__ == "__main__":
     #criterion = loss.l1_loss
     # Losses
     if args.loss == "MSE":
-        criterion = torch.nn.MSELoss(reduce=args.reduce, reduction=args.reduction).to(args.device)
+        criterion = F.mse_loss#(reduction=args.reduction)#torch.nn.MSELoss(reduce=args.reduce, reduction=args.reduction).to(args.device)
     elif args.loss == "focal":
-        criterion = loss.FocalLoss(reduce=args.reduce, reduction=args.reduction).to(args.device) 
+        criterion = myloss.FocalLoss(reduce=args.reduce, reduction=args.reduction).to(args.device) 
     elif args.loss == "smooth_l1":
-        criterion = loss.SmoothL1Loss(reduce=args.reduce, reduction=args.reduction).to(args.device)
+        criterion = F.smooth_l1_loss#(reudction=args.reduction) #loss.SmoothL1Loss(reduce=args.reduce, reduction=args.reduction).to(args.device)
     else:
         raise Exception("Loss not implemented")
     if args.visdom:

@@ -60,38 +60,38 @@ class FocalLoss(nn.Module):
 
 
 
-class SmoothL1Loss(nn.Module):
-    'Smooth L1 Loss'
-
-    def __init__(self, beta=0.11, reduce=False, reduction=None):
-        super().__init__()
-        self.beta = beta
-        self.reduce = reduce
-        self.reduction = reduction
-
-    def forward(self, pred, target):
-        x = (pred - target).abs()
-        l1 = x - 0.5 * self.beta
-        l2 = 0.5 * x ** 2 / self.beta
-        ret = torch.where(x >= self.beta, l1, l2)
-        if not self.reduce:
-            return ret
-        elif self.reduction == "sum":
-            return torch.sum(ret)
-        elif self.reduction == "mean":
-            return torch.mean(ret)
-        else:
-            raise Exception("%s Reduction not implemented" % (self.reduction))
-
-
+#class SmoothL1Loss(nn.Module):
+#    'Smooth L1 Loss'
+#
+#    def __init__(self, beta=0.11, reduce=False, reduction=None):
+#        super().__init__()
+#        self.beta = beta
+#        self.reduce = reduce
+#        self.reduction = reduction
+#
+#    def forward(self, pred, target):
+#        x = (pred - target).abs()
+#        l1 = x - 0.5 * self.beta
+#        l2 = 0.5 * x ** 2 / self.beta
+#        ret = torch.where(x >= self.beta, l1, l2)
+#        if not self.reduce:
+#            return ret
+#        elif self.reduction == "sum":
+#            return torch.sum(ret)
+#        elif self.reduction == "mean":
+#            return torch.mean(ret)
+#        else:
+#            raise Exception("%s Reduction not implemented" % (self.reduction))
 
 
-        if self.reduction is None:
-            return ret
-        elif self.reduction == "sum":
-            return torch.sum(ret)
-        elif self.reduction == "mean":
-            return torch.mean(ret)
-        else:
-            raise Exception("%s Reduction not implemented" % (self.reduction))
+
+
+#        if self.reduction is None:
+#            return ret
+#        elif self.reduction == "sum":
+#            return torch.sum(ret)
+#        elif self.reduction == "mean":
+#            return torch.mean(ret)
+#        else:
+#            raise Exception("%s Reduction not implemented" % (self.reduction))
 
