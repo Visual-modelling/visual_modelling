@@ -1,9 +1,20 @@
 #!/bin/bash
-#SBATCH --partition=part0
-#SBATCH --job-name=focal_d2_mean
-#SBATCH --ntasks=6
+#SBATCH -N 1
+#SBATCH -p res-gpu-small
+#SBATCH -c 4
+#SBATCH -t 2-00:00
+#SBATCH -x gpu[0-3]
+#SBATCH --qos short
+#SBATCH --job-name=focal_d3_sum
+#SBATCH --mem=5G
 #SBATCH --gres=gpu:1
-#SBATCH -o /home/crhf63/cnn_visual_modelling/.results/focal_d2_mean.out
+#SBATCH -o /home/crhf63/cnn_visual_modelling/.results/focal_d3_sum.out
+
+##SBATCH --partition=part0
+##SBATCH --job-name=focal_d3_sum
+##SBATCH --ntasks=6
+##SBATCH --gres=gpu:1
+##SBATCH -o /home/crhf63/cnn_visual_modelling/.results/focal_d3_sum.out
 cd /home/crhf63/cnn_visual_modelling/scripts
 source /home/crhf63/kable_management/python_venvs/vm/bin/activate
 python ../main.py \
@@ -19,7 +30,7 @@ python ../main.py \
     --epoch 30 \
     --early_stopping 3 \
     --log_freq 600 \
-    --jobname vm_mk0_focal_d2_mean \
+    --jobname vm_mk0_focal_d3_sum \
     --loss focal \
     --reduction sum \
     --save \

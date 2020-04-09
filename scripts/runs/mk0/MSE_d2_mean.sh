@@ -1,9 +1,20 @@
 #!/bin/bash
-#SBATCH --partition=part0
+#SBATCH -N 1
+#SBATCH -p res-gpu-small
+#SBATCH -c 4
+#SBATCH -t 2-00:00
+#SBATCH -x gpu[0-3]
+#SBATCH --qos short
 #SBATCH --job-name=MSE_d2_mean
-#SBATCH --ntasks=6
+#SBATCH --mem=5G
 #SBATCH --gres=gpu:1
 #SBATCH -o /home/crhf63/cnn_visual_modelling/.results/MSE_d2_mean.out
+
+##SBATCH --partition=part0
+##SBATCH --job-name=MSE_d2_mean
+##SBATCH --ntasks=6
+##SBATCH --gres=gpu:1
+##SBATCH -o /home/crhf63/cnn_visual_modelling/.results/MSE_d2_mean.out
 cd /home/crhf63/cnn_visual_modelling/scripts
 source /home/crhf63/kable_management/python_venvs/vm/bin/activate
 python ../main.py \
