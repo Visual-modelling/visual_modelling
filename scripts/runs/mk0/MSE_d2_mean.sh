@@ -3,12 +3,12 @@
 #SBATCH --job-name=MSE_d2_mean
 #SBATCH --ntasks=6
 #SBATCH --gres=gpu:1
-#SBATCH -o /home/jumperkables/cnn_visual_modelling/.results/MSE_d2_mean.out
-cd /home/jumperkables/cnn_visual_modelling/scripts
-source /home/jumperkables/kable_management/python_venvs/vm/bin/activate
+#SBATCH -o /home/crhf63/cnn_visual_modelling/.results/MSE_d2_mean.out
+cd /home/crhf63/cnn_visual_modelling/scripts
+source /home/crhf63/kable_management/python_venvs/vm/bin/activate
 python ../main.py \
-    --dataset_path /home/jumperkables/kable_management/data/visual_modelling/dataset_v1.0/11_dset.pickle \
-    --repo_rootdir /home/jumperkables/cnn_visual_modelling \
+    --dataset_path /home/crhf63/kable_management/data/visual_modelling/dataset_v1.0/11_dset.pickle \
+    --repo_rootdir /home/crhf63/cnn_visual_modelling \
     --bsz 32 \
     --val_bsz 100 \
     --in_no 10 \
