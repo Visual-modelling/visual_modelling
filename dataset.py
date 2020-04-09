@@ -1,6 +1,7 @@
 __author__ = "Jumperkables"
 
 import os, sys, random
+import getpass
 
 import numpy as np
 import torch
@@ -32,7 +33,7 @@ class VMDataset_v1(Dataset):
     def __getitem__(self, idx): # Indexs must count from 0
         data = self.current_data_dict[idx]  #data.keys = ['vid', 'vid_path', 'frame_idxs', 'frame_paths', 'positions']
         positions, gt_positions = data['positions'][:self.args.in_no], data['positions'][self.args.in_no:]
-        frames = [ (ToTensor()(Image.open(frame))>0).float() for frame in data['frame_paths'] ]
+        frames = [ (ToTensor()(Image.open(frame.replace('jumperkables', getpass.getuser()) ))>0).float() for frame in data['frame_paths'] ]
         frames = torch.stack(frames, dim=0)
         frames, gt_frames = frames[:self.args.in_no], frames[self.args.in_no:]
 
