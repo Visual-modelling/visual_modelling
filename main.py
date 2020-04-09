@@ -29,7 +29,6 @@ def train(args, dset, model, optimizer, criterion, epoch, previous_best_loss):
         niter = round(epoch + (batch_idx/len(train_loader)), 3) # Changed niter to be epochs instead of iterations
         frames, positions, gt_frames, gt_positions = batch
         frames = frames.squeeze(2).float().to(args.device)
-        import ipdb; ipdb.set_trace()
         gt_frames = gt_frames.squeeze(2).float().to(args.device)
         out = model(frames).squeeze(2)
         if args.loss == 'focal':
@@ -137,7 +136,7 @@ if __name__ == "__main__":
         args.checkpoint_path = os.path.join(args.results_dir, "model.pth")
 
     # Model info
-    model = FCUp_Down(args)
+    model = FCUp_Down(args)#.depth, args.in_no, args.out_no, args)
     args.device = torch.device("cuda:%d" % args.device if args.device>=0 else "cpu")
     model.to(args.device)
     optimizer = radam.RAdam([p for p in model.parameters() if p.requires_grad],
