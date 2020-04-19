@@ -41,16 +41,14 @@ def train(args, dset, model, optimizer, criterion, epoch, previous_best_loss):
         train_loss.append(loss.item())
 
         # Validate
-        if(batch_idx % args.log_freq) == 0 and batch_idx == 0:
-            print("change ==0 back")
+        if(batch_idx % args.log_freq) == 0 and batch_idx != 0:
             print(batch_idx)
             train_loss = sum(train_loss) / float(len(train_loss))#from train_corrects            
             args.plotter.plot("%s loss" % (args.loss), "train", args.jobname, niter, train_loss)
             train_loss = []
 
             # Validation
-            #valid_loss = validate(args, valid_loader, model, criterion)
-            valid_loss = 0
+            valid_loss = validate(args, valid_loader, model, criterion)
             args.plotter.plot(args.loss, "val", args.jobname, niter, valid_loss)
             
             # If this is the best run yet
