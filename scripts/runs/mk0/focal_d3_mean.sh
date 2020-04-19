@@ -34,7 +34,7 @@ python ../main.py \
     --jobname vm_mk0_focal_d3_mean \
     --loss focal \
     --reduction mean \
-    --img_type grescale \
+    --img_type greyscale \
     --save \
     --shuffle \
     --visdom \
