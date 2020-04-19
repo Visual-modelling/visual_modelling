@@ -27,20 +27,19 @@ def visualise_imgs(args, vis_loader, model,  n):
             # Convert old frames back to images and show them on the grid
             f, axarr = plt.subplots(args.in_no+args.out_no,2)
             for x in range(args.in_no):
-                axarr[x,0].imshow(to_pil_image(frames_use[x]))
-                axarr[x,1].imshow(to_pil_image(frames_use[x]))
+                axarr[x,0].imshow(to_pil_image(frames_use[x]), cmap='gray', vmin=0, vmax=255)
+                axarr[x,1].imshow(to_pil_image(frames_use[x]), cmap='gray', vmin=0, vmax=255)
             for y in range(args.out_no):
-                axarr[args.in_no+y,0].imshow(to_pil_image(gt_frames_use[y]))
+                axarr[args.in_no+y,0].imshow(to_pil_image(gt_frames_use[y]), cmap='gray', vmin=0, vmax=255)
 
             frames = frames.squeeze(2).float().to(args.device)
             gt_frames = gt_frames.squeeze(2)#.to(args.device)
             out = model(frames).squeeze(2)
             out = out[0]
             out = torch.round(out).cpu().int()
-            
             # Conert produce frame back into image and add to plots
             for y in range(args.out_no):
-                axarr[args.in_no+y,1].imshow(to_pil_image(out[y]))
+                axarr[args.in_no+y,1].imshow(to_pil_image(out[y]), cmap='gray', vmin=0, vmax=255) 
 
             # Calculate image comparison metrics
             plt.suptitle("Left = Ground Truth | Right = Predicted Final %d Frame(s)\n PSNR: %.3f, SSIM: %.3f, MS-SSIM: %.3f " 
