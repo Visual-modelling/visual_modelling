@@ -4,6 +4,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from ..tools.activations import 256_sigmoid
+
 class FCUp_Down(nn.Module):
     """
     __author__ = Jumperkables
@@ -130,6 +132,8 @@ class OutConv(nn.Module):
     def forward(self, x):
         if self.img_type == "binary":
             return F.sigmoid(self.conv(x))
+        if self.img_type == "greyscale":
+            return 256_sigmoid(self.conv(x)) 
         else:
             raise(Exception("Not yet implemented error"))
 

@@ -4,6 +4,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from tools.activations import sigmoid_256
+
 class FCUp_Down(nn.Module):
     """
     __author__ = Jumperkables
@@ -22,6 +24,7 @@ class FCUp_Down(nn.Module):
 
 
 class Up_Down_Chain(nn.Module):
+
     """
     __author__ = Jumperkables
     Chain of down sampling layers and upsampling layers
@@ -134,6 +137,8 @@ class OutConv(nn.Module):
         self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=1)
         if args.img_type == "binary":
             self.img_activation = F.sigmoid
+        if args.img_type == "greyscale":
+            self.img_activation = sigmoid_256
         else:
             raise(Exception("Not yet implemented this image activation"))
 

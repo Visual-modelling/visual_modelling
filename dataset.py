@@ -9,7 +9,7 @@ from torch import nn
 from torch.utils.data import DataLoader
 from torch.utils.data.dataset import Dataset
 from torchvision.transforms import ToTensor
-from PIL import Image
+import cv2
 
 import tools.utils as utils
 
@@ -26,6 +26,16 @@ class VMDataset_v1(Dataset):
             self.current_data_dict = self.train_dict
             assert(args.in_no+args.out_no == len(self.current_data_dict[0]['frame_paths']),
                 "In frames + Ground truth frames do not equal the frame sample size of the dataset")
+        
+        # Sort Image reading method
+        img_read_method_switch = {
+            'binary'    : read_ims_binary,
+            'greyscale' : read_ims_greyscale,
+            'RGB'       : None
+        }
+        if args.img_type == "RGB":
+            raise Exception("RGB image reading not implemented")
+        self.img_read_method = img_read_method_switch[args.img_type]
 
     def __len__(self):
         return(len(self.current_data_dict))
@@ -33,7 +43,8 @@ class VMDataset_v1(Dataset):
     def __getitem__(self, idx): # Indexs must count from 0
         data = self.current_data_dict[idx]  #data.keys = ['vid', 'vid_path', 'frame_idxs', 'frame_paths', 'positions']
         positions, gt_positions = data['positions'][:self.args.in_no], data['positions'][self.args.in_no:]
-        frames = [ (ToTensor()(Image.open(frame.replace('jumperkables', getpass.getuser()) ))>0).float() for frame in data['frame_paths'] ]
+        frames = data['frame_paths']
+        frames = self.img_read_method(frames)
         frames = torch.stack(frames, dim=0)
         frames, gt_frames = frames[:self.args.in_no], frames[self.args.in_no:]
 
@@ -49,6 +60,17 @@ class VMDataset_v1(Dataset):
         elif self.mode == 'valid':
             self.current_data_dict = self.valid_dict
 
+
+# Image reading methods
+def read_ims_binary(frames):
+    raise Exception("Not implemented binary image read yet")
+    return frames
+    #old pillow version return([ (ToTensor()(Image.open(frame.replace('jumperkables', getpass.getuser()) ))>0).float() for frame in frames ])
+
+def read_ims_greyscale(frames):
+    frames = [ torch.from_numpy(cv2.imread(frame, cv2.IMREAD_GRAYSCALE)) for frame in frames]
+    #old pillow version frames = [ (ToTensor()(Image.open(frame.replace('jumperkables', getpass.getuser()) ))>0).float() for frame in frames ]
+    return frames
 
 
 
@@ -104,6 +126,7 @@ class VMDataset_v1(Dataset):
             frames.remove('simulation.gif')
             frames = [ os.path.join(vid_path, frame) for frame in frames ]
             frame_paths = frames
+            raise Exception("Replace Image method from Pillow")
             frames = [ ToTensor()(Image.open(frame)) for frame in frames ]
             frames = torch.stack(frames, dim=0)
 

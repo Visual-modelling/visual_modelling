@@ -28,9 +28,9 @@ def train(args, dset, model, optimizer, criterion, epoch, previous_best_loss):
         #print(niter, epoch, batch_idx)
         niter = round(epoch + (batch_idx/len(train_loader)), 3) # Changed niter to be epochs instead of iterations
         frames, positions, gt_frames, gt_positions = batch
-        frames = frames.squeeze(2).float().to(args.device)
-        gt_frames = gt_frames.squeeze(2).float().to(args.device)
-        out = model(frames).squeeze(2)
+        frames = frames.float().to(args.device)
+        gt_frames = gt_frames.float().to(args.device)
+        out = model(frames)
         if args.loss == 'focal':
             loss = criterion(out, gt_frames)
         else:
@@ -42,6 +42,7 @@ def train(args, dset, model, optimizer, criterion, epoch, previous_best_loss):
 
         # Validate
         if(batch_idx % args.log_freq) == 0 and batch_idx != 0:
+            print(batch_idx)
             train_loss = sum(train_loss) / float(len(train_loss))#from train_corrects            
             args.plotter.plot("%s loss" % (args.loss), "train", args.jobname, niter, train_loss)
             train_loss = []
@@ -78,8 +79,8 @@ def validate(args, valid_loader, model, criterion):
     valid_loss = []
     for batch_idx, batch in enumerate(valid_loader):
         frames, positions, gt_frames, gt_positions = batch
-        frames = frames.squeeze(2).float().to(args.device)
-        gt_frames = gt_frames.squeeze(2).float().to(args.device)
+        frames = frames.float().to(args.device)
+        gt_frames = gt_frames.float().to(args.device)
         img = model(frames)
         loss = criterion(img, gt_frames)
         valid_loss.append(loss.item())

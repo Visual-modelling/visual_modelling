@@ -24,15 +24,16 @@ python ../main.py \
     --val_bsz 100 \
     --in_no 10 \
     --out_no 1 \
-    --depth 2 \
+    --depth 3 \
     --train_ratio 0.8 \
     --device 0 \
     --epoch 30 \
     --early_stopping 3 \
     --log_freq 600 \
-    --jobname vm_mk0_focal_d2_mean \
-    --loss focal \
+    --jobname vm_test \
+    --loss MSE \
     --reduction mean \
+    --img_type greyscale \
     --save \
     --shuffle \
     --visdom \

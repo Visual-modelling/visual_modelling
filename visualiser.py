@@ -24,7 +24,6 @@ def visualise_imgs(args, vis_loader, model,  n):
         else:
             frames, positions, gt_frames, gt_positions = batch
             frames_use, gt_frames_use = frames[0], gt_frames[0]
-
             # Convert old frames back to images and show them on the grid
             f, axarr = plt.subplots(args.in_no+args.out_no,2)
             for x in range(args.in_no):
