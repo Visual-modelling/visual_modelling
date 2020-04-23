@@ -85,7 +85,7 @@ def self_output(args, n_frames, model, dset):
     gt_frames = gt_frames.float().to(args.device)
     out = model(frames)
     gif_frames = []
-    for itr in range(args.in_no):
+    for itr in range(args.self_output_n):
         frames = torch.cat([ frames[:,:args.in_no-1] , out ], 1)
         out = model(frames)
         gif_frames.append(out[0][0].cpu().detach())
