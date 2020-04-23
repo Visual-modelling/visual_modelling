@@ -31,4 +31,4 @@ python ../main.py \
     --self_output \
     --self_output_n 100 \
     --model_path /home/jumperkables/cnn_visual_modelling/.results/vm_mk0_MSE_d3_mean/model.pth \
-    --gif_path /home/jumperkables/cnn_visual_modelling/.results/vm_mk0_MSE_d3_mean/d3_MSE_10-1.gif
+    --gif_path /home/jumperkables/cnn_visual_modelling/.results/vm_mk0_MSE_d3_mean/d3_MSE_10-1_

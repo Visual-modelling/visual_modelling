@@ -80,16 +80,17 @@ def self_output(args, n_frames, model, dset):
     model.load_state_dict(torch.load(args.model_path))
     model.eval()
     train_loader = DataLoader(dset, batch_size=args.bsz, shuffle=True)
-    frames, positions, gt_frames, gt_positions = next(iter(train_loader))
-    frames = frames.float().to(args.device)
-    gt_frames = gt_frames.float().to(args.device)
-    out = model(frames)
-    gif_frames = []
-    for itr in range(args.self_output_n):
-        frames = torch.cat([ frames[:,:args.in_no-1] , out ], 1)
+    for ngif in range(args.n_gifs):
+        frames, positions, gt_frames, gt_positions = next(iter(train_loader))
+        frames = frames.float().to(args.device)
+        gt_frames = gt_frames.float().to(args.device)
         out = model(frames)
-        gif_frames.append(out[0][0].cpu().detach())
-    imageio.mimsave(args.gif_path, gif_frames)
+        gif_frames = []
+        for itr in range(args.self_output_n):
+            frames = torch.cat([ frames[:,:args.in_no-1] , out ], 1)
+            out = model(frames)
+            gif_frames.append(out[0][0].cpu().detach())
+        imageio.mimsave(args.gif_path+str(ngif)+".gif" , gif_frames)
 
 
         
@@ -151,6 +152,7 @@ if __name__ == "__main__":
     parser.add_argument("--self_output_n", type=int, default=100, help="Number of frames to run self output on")
     parser.add_argument("--model_path", type=str, default=os.path.expanduser("~/cnn_visual_modelling/model.pth"), help="path of saved model")
     parser.add_argument("--gif_path", type=str, default=os.path.expanduser("~/cnn_visual_modelling/.results/self_out.gif"), help="path to save the gif")
+    parser.add_argument("--n_gifs", type=int, default=10, help="number of gifs to save")
 
     ####
     # Sorting arguements
