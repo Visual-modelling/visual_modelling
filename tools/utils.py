@@ -2,6 +2,7 @@ import os
 import json
 import pickle as pickle
 import pandas as pd
+import numpy as np
 
 def read_csv(file_path):
     return pd.read_csv(file_path)
@@ -59,3 +60,24 @@ def merge_two_dicts(x, y):
     z = x.copy()   # start with x's keys and values
     z.update(y)    # modifies z with y's keys and values & returns None
     return z
+
+
+def img_merge(imgs, mode, direction):
+    """
+    list_im: A list of images as numpy arrays
+    mode: greyscale, RGB
+    direction: vertical or horizontal stack
+    Take a list of cv2 image objects and return one with them combined
+    """
+    if mode == greyscale:
+        # pick the image which is the smallest, and resize the others to match it (can be arbitrary image shape here)
+        min_shape = sorted( [(np.sum(i.size), i.size ) for i in imgs])[0][1]
+        if direction == "horizontal":
+            imgs_comb = np.hstack( (np.asarray( i.resize(min_shape) ) for i in imgs ) )
+        elif idirection == "vertical":
+            imgs_comb = np.vstack( (np.asarray( i.resize(min_shape) ) for i in imgs ) )
+        else:
+            raise Exception("Not implemented %s direction stacking" % (direction))
+        return imgs_comb
+    else:
+        raise Exception("Not implemented %s mode" % (mode))

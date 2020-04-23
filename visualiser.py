@@ -10,6 +10,10 @@ from torchvision.transforms.functional import to_pil_image
 from dataset import VMDataset_v1
 from tools.visdom_plotter import VisdomLinePlotter
 from tools.loss import ssim, ms_ssim, PSNR
+import numpy as np
+import imageio
+
+from tools.utils import img_merge
 
 def visualise_imgs(args, vis_loader, model,  n):
     """
@@ -50,8 +54,17 @@ def visualise_imgs(args, vis_loader, model,  n):
             return_path = os.path.join(args.results_dir, "%d.png" % (batch_idx))
             plt.savefig(return_path)
             return_imgs.append(return_path)
+            
+            # Create a gif from groundtruth vs generated
+            gif_frames = [] 
+            for x in range(args.in_no):    
+                gif_frames.append(img_merge([frames_use[x]]*2, "greyscale", "horizontal"))
+            for y in range(args.out_no):
+                gif_frames.append(img_merge([gt_frames_use[y], out[y]], "greyscale", "horizontal"))
+            imageio.mimsave(os.path.join(args.results_dir, "example.gif"), gif_frames)
 
-                                # bugged right now ms_ssim(gt_frames.float(), out.unsqueeze(0).float(), 1)))
+            # bugged right now ms_ssim(gt_frames.float(), out.unsqueeze(0).float(), 1)))
+
 
 
 if __name__ == "__main__":

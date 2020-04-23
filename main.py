@@ -14,6 +14,7 @@ import tools.radam as radam
 import tools.loss as myloss
 import torch.nn.functional as F
 from tools.visdom_plotter import VisdomLinePlotter
+import imageio
 
 def train(args, dset, model, optimizer, criterion, epoch, previous_best_loss):
     dset.set_mode("val")
@@ -73,6 +74,29 @@ def train(args, dset, model, optimizer, criterion, epoch, previous_best_loss):
     return previous_best_loss
 
 
+def self_output(args, n_frames, model, dset):
+    print("to implement")
+    dset.set_mode("train")
+    model.load_state_dict(torch.load(args.model_path))
+    model.eval()
+    train_loader = DataLoader(dset, batch_size=args.bsz, shuffle=True)
+    frames, positions, gt_frames, gt_positions = next(iter(train_loader))
+    frames = frames.float().to(args.device)
+    gt_frames = gt_frames.float().to(args.device)
+    out = model(frames)
+    gif_frames = []
+    for itr in range(args.in_no):
+        frames = torch.cat([ frames[:,:args.in_no-1] , out ], 1)
+        out = model(frames)
+        gif_frames.append(out[0][0].cpu().detach())
+    imageio.mimsave(args.gif_path, gif_frames)
+
+
+        
+
+
+
+
 def validate(args, valid_loader, model, criterion):
     print("Validating")
     model.eval()
@@ -121,6 +145,13 @@ if __name__ == "__main__":
     parser.add_argument("--loss", type=str, default="MSE", choices=["MSE", "smooth_l1", "focal"], help="Loss function for the network")
     parser.add_argument("--reduce", action="store_true", help="reduction of loss function toggled")
     parser.add_argument("--reduction", type=str, choices=["mean", "sum"], help="type of reduction to apply on loss")
+
+    # Self input
+    parser.add_argument("--self_output", action="store_true", help="Run self output on specified model")
+    parser.add_argument("--self_output_n", type=int, default=100, help="Number of frames to run self output on")
+    parser.add_argument("--model_path", type=str, default=os.path.expanduser("~/cnn_visual_modelling/model.pth"), help="path of saved model")
+    parser.add_argument("--gif_path", type=str, default=os.path.expanduser("~/cnn_visual_modelling/.results/self_out.gif"), help="path to save the gif")
+
     ####
     # Sorting arguements
     args = parser.parse_args()
@@ -140,6 +171,12 @@ if __name__ == "__main__":
     model = FCUp_Down(args)#.depth, args.in_no, args.out_no, args)
     args.device = torch.device("cuda:%d" % args.device if args.device>=0 else "cpu")
     model.to(args.device)
+    
+    # Self output
+    if args.self_output:
+        self_output(args, args.self_output_n, model, dset)
+        sys.exit()
+
     optimizer = radam.RAdam([p for p in model.parameters() if p.requires_grad],
                                     lr=3e-4, weight_decay=1e-5)
     #criterion = loss.l1_loss
