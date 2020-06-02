@@ -3,6 +3,7 @@ import json
 import pickle as pickle
 import pandas as pd
 import numpy as np
+import cv2
 
 def read_csv(file_path):
     return pd.read_csv(file_path)
@@ -69,13 +70,11 @@ def img_merge(imgs, mode, direction):
     direction: vertical or horizontal stack
     Take a list of cv2 image objects and return one with them combined
     """
-    if mode == greyscale:
-        # pick the image which is the smallest, and resize the others to match it (can be arbitrary image shape here)
-        min_shape = sorted( [(np.sum(i.size), i.size ) for i in imgs])[0][1]
+    if mode == "greyscale":
         if direction == "horizontal":
-            imgs_comb = np.hstack( (np.asarray( i.resize(min_shape) ) for i in imgs ) )
-        elif idirection == "vertical":
-            imgs_comb = np.vstack( (np.asarray( i.resize(min_shape) ) for i in imgs ) )
+            imgs_comb = cv2.hconcat([i.byte().numpy() for i in imgs])
+        elif direction == "vertical":
+            imgs_comb = cv2.vconcat([i.byte().numpy() for i in imgs])
         else:
             raise Exception("Not implemented %s direction stacking" % (direction))
         return imgs_comb

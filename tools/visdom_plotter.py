@@ -2,6 +2,9 @@ import visdom
 import numpy as np
 import getpass
 import torch
+import sixfour, os 
+from subprocess import PIPE, run
+
 # TO DO:
 # -Plot successfully
 # -Have each keep track of highest accuracy so far
@@ -41,4 +44,28 @@ class VisdomLinePlotter(object):
             self.plots[var_name]    = self.viz.image(img=im, env=self.env)
         else:
             self.viz.image(img=im, env=self.env, win=self.plots[var_name])
+    
+    def gif_plot(self, var_name, gif_path):
+        gif_base64 = out('sixfour -i %s' % gif_path)
+        html = '<html><head></head><body>'
+        html += '<img src="data:image/gif;base64,{0}">'.format(gif_base64)
+        html += '</body></html>'
+        
+        if var_name not in self.plots:
+            self.plots[var_name]    = self.viz.text(text=html, env=self.env)
+        else:
+            self.viz.text(text=html, env=self.env, win=self.plots[var_name])
+
+
+def out(command):
+    result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True)
+    return result.stdout
+
+if __name__ == "__main__":
+    plotter = VisdomLinePlotter("gif_test")
+    aa = out('sixfour -i ~/d3_MSE_10-1.gif')   
+    html = '<html><head></head><body>'
+    html += '<img src="data:image/gif;base64,{0}">'.format(aa)
+    html += '</body></html>'
+
 

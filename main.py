@@ -41,47 +41,46 @@ def train(args, dset, model, optimizer, criterion, epoch, previous_best_loss):
         optimizer.step()
         train_loss.append(loss.item())
 
-        # Validate
-        if(batch_idx % args.log_freq) == 0 and batch_idx != 0:
-            print(batch_idx)
-            train_loss = sum(train_loss) / float(len(train_loss))#from train_corrects            
-            args.plotter.plot("%s loss" % (args.loss), "train", args.jobname, niter, train_loss)
-            train_loss = []
+    # Validate
+    print("Epoch %d done" % epoch)
+    train_loss = sum(train_loss) / float(len(train_loss))#from train_corrects            
+    args.plotter.plot("%s loss" % (args.loss), "train", args.jobname, niter, train_loss)
+    train_loss = []
 
-            # Validation
-            valid_loss = validate(args, valid_loader, model, criterion)
-            args.plotter.plot(args.loss, "val", args.jobname, niter, valid_loss)
-            
-            # If this is the best run yet
-            if valid_loss < previous_best_loss:
-                previous_best_loss = valid_loss
+    # Validation
+    valid_loss = validate(args, valid_loader, model, criterion)
+    args.plotter.plot(args.loss, "val", args.jobname, niter, valid_loss)
+         
+    # If this is the best run yet
+    if valid_loss < previous_best_loss:
+        previous_best_loss = valid_loss
 
 
-                # Plot best accuracy so far in text box
-                args.plotter.text_plot(args.jobname+" val", "Best %s val %.4f Iteration:%d" % (args.loss, previous_best_loss, niter))
+        # Plot best accuracy so far in text box
+        args.plotter.text_plot(args.jobname+" val", "Best %s val %.4f Iteration:%d" % (args.loss, previous_best_loss, niter))
 
-                if args.save:
-                    # Model save
-                    torch.save(model.state_dict(), args.checkpoint_path)
+        if args.save:
+            # Model save
+            torch.save(model.state_dict(), args.checkpoint_path)
 
-                    # Save 5 example images & Plot one to visdom
-                    img_paths = visualise_imgs(args, vis_loader, model, 5)
-                    with Image.open(img_paths[0]) as plot_im:
-                        plot_ret = transforms.ToTensor()(plot_im)
-                    args.plotter.im_plot(args.jobname+" val", plot_ret) # Torch uint 0-255
-                    
+            # Save 5 example images & Plot one to visdom
+            img_paths = visualise_imgs(args, vis_loader, model, 5)
+            with Image.open(img_paths[0]) as plot_im:
+                plot_ret = transforms.ToTensor()(plot_im)
+            args.plotter.im_plot(args.jobname+" val", plot_ret) # Torch uint 0-255
+            if args.self_output:
+                self_output(args, model, vis_loader)
+            model.train()
+                   
 
     return previous_best_loss
 
 
-def self_output(args, n_frames, model, dset):
-    print("to implement")
-    dset.set_mode("train")
-    model.load_state_dict(torch.load(args.model_path))
+def self_output(args, model, vis_loader):
     model.eval()
-    train_loader = DataLoader(dset, batch_size=args.bsz, shuffle=True)
+    print("self output commencing...")
     for ngif in range(args.n_gifs):
-        frames, positions, gt_frames, gt_positions = next(iter(train_loader))
+        frames, positions, gt_frames, gt_positions = next(iter(vis_loader))
         frames = frames.float().to(args.device)
         gt_frames = gt_frames.float().to(args.device)
         out = model(frames)
@@ -90,7 +89,12 @@ def self_output(args, n_frames, model, dset):
             frames = torch.cat([ frames[:,:args.in_no-1] , out ], 1)
             out = model(frames)
             gif_frames.append(out[0][0].cpu().detach())
-        imageio.mimsave(args.gif_path+str(ngif)+".gif" , gif_frames)
+        gif_save_path = os.path.join(args.results_dir, "%d.gif" % ngif) 
+        imageio.mimsave(gif_save_path, gif_frames)
+        args.plotter.gif_plot(args.jobname+" self_output"+str(ngif), gif_save_path)
+    print("self output finished!")  
+
+
 
 
         
@@ -116,7 +120,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--epoch", type=int, default=10)
     parser.add_argument("--early_stopping", type=int, default=2, help="number of epochs after no improvement before stopping")
-    parser.add_argument("--log_freq", type=int, default=5000, help="iterations between each run of the validation set")
     parser.add_argument("--train_ratio", type=float, default=0.8)
     parser.add_argument("--device", type=int, default=-1, help="-1 for CPU, 0, 1 for appropriate device")
     parser.add_argument("--bsz", type=int, default=32)
@@ -169,16 +172,18 @@ if __name__ == "__main__":
         args.results_dir = results_dir
         args.checkpoint_path = os.path.join(args.results_dir, "model.pth")
 
+    if args.extract_n_dset_file:
+        dset.save_dataset(args.in_no, args.out_no, args.extracted_n_dset_savepathdir)
+        print("Extraction successful. Saved to:\n", args.extracted_n_dset_savepathdir+"/"+str(args.in_no+args.out_no)+"_dset.pickle")
+        sys.exit()
+
+
+
     # Model info
     model = FCUp_Down(args)#.depth, args.in_no, args.out_no, args)
     args.device = torch.device("cuda:%d" % args.device if args.device>=0 else "cpu")
     model.to(args.device)
     
-    # Self output
-    if args.self_output:
-        self_output(args, args.self_output_n, model, dset)
-        sys.exit()
-
     optimizer = radam.RAdam([p for p in model.parameters() if p.requires_grad],
                                     lr=3e-4, weight_decay=1e-5)
     #criterion = loss.l1_loss
@@ -193,10 +198,6 @@ if __name__ == "__main__":
         raise Exception("Loss not implemented")
     if args.visdom:
         args.plotter = VisdomLinePlotter(env_name=args.jobname)
-    if args.extract_n_dset_file:
-        dset.save_dataset(args.in_no, args.out_no, args.extracted_n_dset_savepathdir)
-        print("Extraction successful. Saved to:\n", args.extracted_n_dset_savepathdir+"/"+str(args.in_no+args.out_no)+"_dset.pickle")
-        sys.exit()
 
     # Training loop
     early_stop_count = 0
