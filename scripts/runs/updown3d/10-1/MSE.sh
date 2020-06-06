@@ -17,7 +17,7 @@
 ##SBATCH -o /home/jumperkables/cnn_visual_modelling/.results/MSE_d3_mean.out
 
 source /home/jumperkables/kable_management/python_venvs/vm/bin/activate
-python ../../../main.py \
+python ../../../../main.py \
     --dataset_path /home/jumperkables/kable_management/data/visual_modelling/hudsons_multi/2000_blurred_masked/11_dset.pickle \
     --repo_rootdir /home/jumperkables/kable_management/projects/Visual-modelling/cnn_visual_modelling \
     --bsz 8 \
