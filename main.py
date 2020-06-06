@@ -7,7 +7,9 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 
 from dataset import VMDataset_v1
-from models.UpDown2D import FCUp_Down
+from models.UpDown2D import FCUp_Down2D
+from models.UpDown3D import FCUp_Down3D
+from models.transformer import load_model 
 from visualiser import visualise_imgs 
 import tools.utils as utils
 import tools.radam as radam
@@ -44,12 +46,12 @@ def train(args, dset, model, optimizer, criterion, epoch, previous_best_loss):
     # Validate
     print("Epoch %d done" % epoch)
     train_loss = sum(train_loss) / float(len(train_loss))#from train_corrects            
-    args.plotter.plot("%s loss" % (args.loss), "train", args.jobname, niter, train_loss)
+    args.plotter.plot("%s loss" % (args.loss), "train", "train "+args.jobname, niter, train_loss)
     train_loss = []
 
     # Validation
     valid_loss = validate(args, valid_loader, model, criterion)
-    args.plotter.plot(args.loss, "val", args.jobname, niter, valid_loss)
+    args.plotter.plot(args.loss, "val", "val "+args.jobname, niter, valid_loss)
          
     # If this is the best run yet
     if valid_loss < previous_best_loss:
@@ -86,9 +88,10 @@ def self_output(args, model, vis_loader):
         out = model(frames)
         gif_frames = []
         for itr in range(args.self_output_n):
-            frames = torch.cat([ frames[:,:args.in_no-1] , out ], 1)
+            frames = torch.cat([ frames[:,args.out_no:args.in_no] , out ], 1)
             out = model(frames)
-            gif_frames.append(out[0][0].cpu().detach())
+            for n in range(args.out_no):
+                gif_frames.append(out[0][n].cpu().detach())
         gif_save_path = os.path.join(args.results_dir, "%d.gif" % ngif) 
         imageio.mimsave(gif_save_path, gif_frames)
         args.plotter.gif_plot(args.jobname+" self_output"+str(ngif), gif_save_path)
@@ -142,8 +145,10 @@ if __name__ == "__main__":
     ##
     # Model Args
     parser.add_argument("--img_type", type=str, default="binary", choices=["binary", "greyscale", "RGB"], help="Type of input image")
-    parser.add_argument("--krnl_size", type=int, default=3, help="kernel sizes of the networks")
-    parser.add_argument("--padding", type=int, default=1, help="Padding for kernel 0")
+    parser.add_argument("--krnl_size", type=int, default=3, help="Height and width kernel size")
+    parser.add_argument("--krnl_size_t", type=int, default=3, help="Temporal kernel size")
+    parser.add_argument("--padding", type=int, default=1, help="Height and width Padding")
+    parser.add_argument("--padding_t", type=int, default=1, help="Temporal Padding")
     parser.add_argument("--depth", type=int, default=2, help="depth of the updown")
     parser.add_argument("--channel_factor", type=int, default=64, help="channel scale factor for up down network")
     parser.add_argument("--loss", type=str, default="MSE", choices=["MSE", "smooth_l1", "focal"], help="Loss function for the network")
@@ -156,6 +161,7 @@ if __name__ == "__main__":
     parser.add_argument("--model_path", type=str, default=os.path.expanduser("~/cnn_visual_modelling/model.pth"), help="path of saved model")
     parser.add_argument("--gif_path", type=str, default=os.path.expanduser("~/cnn_visual_modelling/.results/self_out.gif"), help="path to save the gif")
     parser.add_argument("--n_gifs", type=int, default=10, help="number of gifs to save")
+    parser.add_argument("--model", type=str, default="UpDown2D", choices=["UpDown2D", "UpDown3D", "transformer"], help="Type of model to run")
 
     ####
     # Sorting arguements
@@ -180,7 +186,16 @@ if __name__ == "__main__":
 
 
     # Model info
-    model = FCUp_Down(args)#.depth, args.in_no, args.out_no, args)
+    if args.model == "UpDown3D":
+        model = FCUp_Down3D(args)
+    elif args.model == "UpDown2D":
+        model = FCUp_Down2D(args)#.depth, args.in_no, args.out_no, args)
+    elif args.model == "transformer":
+        model = load_model("VMTransformer", ['4096', '1', '1', 'True', 'False', 'True', '10'])
+        print("Note to self: Tidy this and explain Dean's parameters here")
+    else:
+        raise Exception("Model: %s not implemented" % (args.model))
+
     args.device = torch.device("cuda:%d" % args.device if args.device>=0 else "cpu")
     model.to(args.device)
     
@@ -211,6 +226,7 @@ if __name__ == "__main__":
                 if early_stop_count >= args.early_stopping:
                     early_stop_flag = True
             else:
+                early_stop_count  = 0
                 best_loss = epoch_best_loss
         else:
             print_string = "Early stop on epoch %d/%d. Best %s %.3f at epoch %d" % (epoch+1, args.epoch, args.loss, best_loss, epoch+1-early_stop_count)

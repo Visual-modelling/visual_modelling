@@ -76,15 +76,16 @@ class VMDataset_v1(Dataset):
         self.frame_path = self.args.raw_frame_rootdir
         vids = os.listdir(self.frame_path)
         vids.remove('config.yml')
+        vids = [vid for vid in vids if not vid.endswith('.pickle')]
         self.current_data_dict = [ os.path.join(self.frame_path, vid) for vid in vids ]
         self.total_data ={ idx:path for idx, path in enumerate(self.current_data_dict) }
         dataset_save = []
         for vidx, vid_path in enumerate(self.total_data.values()):
             print(vidx)
             vid_name = vid_path.split('/')[-1]
-            positions = utils.read_csv(os.path.join(vid_path, 'positions.csv'))
-            #viddle_path = '/home/jumperkables/kable_management/data/visual_modelling/hudsons_og/2000/%.5d' % vidx
-            #positions = utils.read_csv(os.path.join(viddle_path, 'positions.csv')) # For use if Tom's Positions are buggy
+            #positions = utils.read_csv(os.path.join(vid_path, 'positions.csv'))
+            viddle_path = '/home/jumperkables/kable_management/data/visual_modelling/hudsons_og/2000/%.5d' % vidx
+            positions = utils.read_csv(os.path.join(viddle_path, 'positions.csv')) # For use if Tom's Positions are buggy
 
             indexs = torch.tensor(positions.values)[:,:1].long()
             positions = torch.tensor(positions.values)[:,1:]    # Remove the useless frame index for now
