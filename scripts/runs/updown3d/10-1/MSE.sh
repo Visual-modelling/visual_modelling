@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH --partition=part0
-#SBATCH --job-name=ud3d_10-1_multibm_MSE_mean
+#SBATCH --job-name=ud3d_99-1_multi_MSE_mean
 #SBATCH --ntasks=6
 #SBATCH --gres=gpu:1
-#SBATCH -o /home/jumperkables/kable_management/projects/Visual-modelling/cnn_visual_modelling/.results/ud3d_10-1_multibm_MSE_d3_mean.out
+#SBATCH -o /home/jumperkables/kable_management/projects/Visual-modelling/cnn_visual_modelling/.results/ud3d_99-1_multi_MSE_d3_mean.out
 
 ##SBATCH -N 1
 ##SBATCH -p res-gpu-small
@@ -18,11 +18,11 @@
 
 source /home/jumperkables/kable_management/python_venvs/vm/bin/activate
 python ../../../../main.py \
-    --dataset_path /home/jumperkables/kable_management/data/visual_modelling/hudsons_multi/2000_blurred_masked/11_dset.pickle \
+    --dataset_path /home/jumperkables/kable_management/data/visual_modelling/hudsons_multi/2000/100_dset.pickle \
     --repo_rootdir /home/jumperkables/kable_management/projects/Visual-modelling/cnn_visual_modelling \
     --bsz 8 \
     --val_bsz 100 \
-    --in_no 10 \
+    --in_no 99 \
     --out_no 1 \
     --depth 1 \
     --train_ratio 0.8 \
@@ -36,7 +36,7 @@ python ../../../../main.py \
     --krnl_size_t 5 \
     --padding 1 \
     --padding_t 2 \
-    --jobname vm_ud3d_10-1_multibm_MSE_d3_mean \
+    --jobname vm_ud3d_99-1_multi_MSE_d3_mean \
     --loss MSE \
     --reduction mean \
     --img_type greyscale \

@@ -191,7 +191,7 @@ if __name__ == "__main__":
     elif args.model == "UpDown2D":
         model = FCUp_Down2D(args)#.depth, args.in_no, args.out_no, args)
     elif args.model == "transformer":
-        model = load_model("VMTransformer", ['4096', '1', '1', 'True', 'False', 'True', '10'])
+        model = load_model("VMTransformer", ['4096', '1', '1', 'True', 'False', 'True', str(args.in_no)])
         print("Note to self: Tidy this and explain Dean's parameters here")
     else:
         raise Exception("Model: %s not implemented" % (args.model))

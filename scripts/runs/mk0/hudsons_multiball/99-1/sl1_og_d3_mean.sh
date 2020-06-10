@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH --partition=part0
-#SBATCH --job-name=99-1_multibm_sl1_d3_mean
+#SBATCH --job-name=99-1_multi_sl1_d3_mean
 #SBATCH --ntasks=6
 #SBATCH --gres=gpu:1
-#SBATCH -o /home/jumperkables/kable_management/projects/Visual-modelling/cnn_visual_modelling/.results/mk0_99-1_multibm_sl1_d3_mean.out
+#SBATCH -o /home/jumperkables/kable_management/projects/Visual-modelling/cnn_visual_modelling/.results/mk0_99-1_multi_sl1_d3_mean.out
 
 ##SBATCH -N 1
 ##SBATCH -p res-gpu-small
@@ -18,7 +18,7 @@
 
 source /home/jumperkables/kable_management/python_venvs/vm/bin/activate
 python ../../../../../main.py \
-    --dataset_path /home/jumperkables/kable_management/data/visual_modelling/hudsons_multi/2000_blurred_masked/100_dset.pickle \
+    --dataset_path /home/jumperkables/kable_management/data/visual_modelling/hudsons_multi/2000/100_dset.pickle \
     --repo_rootdir /home/jumperkables/kable_management/projects/Visual-modelling/cnn_visual_modelling \
     --bsz 8 \
     --val_bsz 100 \
@@ -31,7 +31,7 @@ python ../../../../../main.py \
     --early_stopping 3 \
     --n_gifs 3 \
     --self_output_n 30 \
-    --jobname vm_mk0_99-1_multibm_sl1_d3_mean \
+    --jobname vm_mk0_99-1_multi_sl1_d3_mean \
     --loss smooth_l1 \
     --reduction mean \
     --img_type greyscale \
