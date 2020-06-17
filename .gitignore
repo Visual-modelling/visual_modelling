@@ -12,3 +12,5 @@ tools/*.pyo
 
 .results
 .old
+
+data
