@@ -7,9 +7,9 @@
 #SBATCH --job-name=transformer_MSE-mean
 #SBATCH -c 4
 #SBATCH --gres=gpu:1
-#SBATCH -o /home/crhf63/kable_management/projects/Visual-modelling/cnn_visual_modelling/.results/transformer_MSE-mean.out
+#SBATCH -o /home2/crhf63/kable_management/projects/Visual-modelling/cnn_visual_modelling/.results/transformer_MSE-mean.out
 
-source /home/crhf63/kable_management/python_venvs/vm/bin/activate
+source /home2/crhf63/kable_management/python_venvs/vm/bin/activate
 python ../../../../main.py \
     --dataset_path data/hudsons_og/2000/100_dset.pickle \
     --bsz 16 \
