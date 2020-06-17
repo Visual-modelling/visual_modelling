@@ -1,11 +1,15 @@
 #!/bin/bash
-#SBATCH --partition=part0
+#SBATCH --mem=12G
+#SBATCH --qos short
+#SBATCH -t 2-00:00
+#SBATCH -N 1
+#SBATCH --partition=res-gpu-small
 #SBATCH --job-name=transformer_focal-mean
-#SBATCH --ntasks=6
+#SBATCH -c 4
 #SBATCH --gres=gpu:1
-#SBATCH -o /home/jumperkables/kable_management/projects/Visual-modelling/cnn_visual_modelling/.results/transformer_focal-mean.out
+#SBATCH -o /home/crhf63/kable_management/projects/Visual-modelling/cnn_visual_modelling/.results/transformer_focal-mean.out
 
-source /home/jumperkables/kable_management/python_venvs/vm/bin/activate
+source /home/crhf63/kable_management/python_venvs/vm/bin/activate
 python ../../../../main.py \
     --dataset_path data/hudsons_og/2000/100_dset.pickle \
     --bsz 16 \
