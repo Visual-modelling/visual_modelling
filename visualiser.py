@@ -28,6 +28,36 @@ def visualise_imgs(args, vis_loader, model,  n):
         else:
             frames, positions, gt_frames, gt_positions = batch
             frames_use, gt_frames_use = frames[0], gt_frames[0]
+            frames = frames.squeeze(2).float().to(args.device)
+            gt_frames = gt_frames.squeeze(2)#.to(args.device)
+            out = model(frames).squeeze(2)
+            out = out[0]
+            out = torch.round(out).cpu().int()
+
+            # Create a gif from groundtruth vs generated
+            gif_frames = [] 
+            for x in range(args.in_no):    
+                gif_frames.append(img_merge([frames_use[x]]*2, "greyscale", "horizontal"))
+            for y in range(args.out_no):
+                gif_frames.append(img_merge([gt_frames_use[y], out[y]], "greyscale", "horizontal"))
+            imageio.mimsave(os.path.join(args.results_dir, "gt_vs_out.gif"), gif_frames)
+            args.plotter.gif_plot(args.jobname+" gt_vs_out", os.path.join(args.results_dir, "gt_vs_out.gif"))
+
+
+
+def old_visualise_imgs(args, vis_loader, model,  n):
+    """
+    n is the number of images to visualise
+    """
+    # Image grid
+    return_imgs = []
+    for batch_idx, batch in enumerate(vis_loader):
+        if batch_idx == n:
+            print("n images visualised. Exiting.")
+            return(return_imgs)
+        else:
+            frames, positions, gt_frames, gt_positions = batch
+            frames_use, gt_frames_use = frames[0], gt_frames[0]
             # Convert old frames back to images and show them on the grid
             f, axarr = plt.subplots(args.in_no+args.out_no,2)
             for x in range(args.in_no):
@@ -46,7 +76,7 @@ def visualise_imgs(args, vis_loader, model,  n):
                 axarr[args.in_no+y,1].imshow(to_pil_image(out[y]), cmap='gray', vmin=0, vmax=255) 
 
             # Calculate image comparison metrics
-            plt.suptitle("Left = Ground Truth | Right = Predicted Final %d Frame(s)\n PSNR: %.3f, SSIM: %.3f, MS-SSIM: %.3f " 
+            plt.suptitle("Left = Ground Truth | Right = Predicted Final %d Frame(s)" 
                             % (args.out_no, 
                                 PSNR(out.float(),gt_frames.squeeze(0).float(),1), 
                                 ssim(out.unsqueeze(0).float(),gt_frames.float(),1), 
@@ -62,6 +92,7 @@ def visualise_imgs(args, vis_loader, model,  n):
             for y in range(args.out_no):
                 gif_frames.append(img_merge([gt_frames_use[y], out[y]], "greyscale", "horizontal"))
             imageio.mimsave(os.path.join(args.results_dir, "example.gif"), gif_frames)
+            args.plotter.gif_plot(os.path.join(args.results_dir, "example.gif"))
 
             # bugged right now ms_ssim(gt_frames.float(), out.unsqueeze(0).float(), 1)))
 
@@ -88,6 +119,7 @@ if __name__ == "__main__":
     print(args)
     dset = VMDataset_v1(args)
     model = FC3D_1_0(args)
+    args.checkpoint_path = os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), args.checkpoint_path)
     model.load_state_dict(torch.load(args.checkpoint_path))
     #model.to(args.device)
     if args.visdom:

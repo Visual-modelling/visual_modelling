@@ -80,3 +80,4 @@ def img_merge(imgs, mode, direction):
         return imgs_comb
     else:
         raise Exception("Not implemented %s mode" % (mode))
+

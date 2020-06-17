@@ -13,7 +13,7 @@ from models.transformer import load_model
 from visualiser import visualise_imgs 
 import tools.utils as utils
 import tools.radam as radam
-import tools.loss as myloss
+import tools.loss
 import torch.nn.functional as F
 from tools.visdom_plotter import VisdomLinePlotter
 import imageio
@@ -34,25 +34,24 @@ def train(args, dset, model, optimizer, criterion, epoch, previous_best_loss):
         frames = frames.float().to(args.device)
         gt_frames = gt_frames.float().to(args.device)
         out = model(frames)
-        if args.loss == 'focal':
-            loss = criterion(out, gt_frames)
-        else:
-            loss = criterion(out, gt_frames, reduction=args.reduction)
+        loss = criterion(out, gt_frames)
+        if args.loss == "SSIM":
+            loss = 1 - loss
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
         train_loss.append(loss.item())
 
     # Validate
-    print("Epoch %d done" % epoch)
+    #print("Epoch %d done" % epoch)
     train_loss = sum(train_loss) / float(len(train_loss))#from train_corrects            
     args.plotter.plot("%s loss" % (args.loss), "train", "train "+args.jobname, niter, train_loss)
-    train_loss = []
+    #train_loss = []
 
     # Validation
     valid_loss = validate(args, valid_loader, model, criterion)
     args.plotter.plot(args.loss, "val", "val "+args.jobname, niter, valid_loss)
-         
+    
     # If this is the best run yet
     if valid_loss < previous_best_loss:
         previous_best_loss = valid_loss
@@ -66,16 +65,12 @@ def train(args, dset, model, optimizer, criterion, epoch, previous_best_loss):
             torch.save(model.state_dict(), args.checkpoint_path)
 
             # Save 5 example images & Plot one to visdom
-            img_paths = visualise_imgs(args, vis_loader, model, 5)
-            with Image.open(img_paths[0]) as plot_im:
-                plot_ret = transforms.ToTensor()(plot_im)
-            args.plotter.im_plot(args.jobname+" val", plot_ret) # Torch uint 0-255
+            visualise_imgs(args, vis_loader, model, 5)
             if args.self_output:
                 self_output(args, model, vis_loader)
             model.train()
-                   
 
-    return previous_best_loss
+    return train_loss, previous_best_loss
 
 
 def self_output(args, model, vis_loader):
@@ -91,18 +86,11 @@ def self_output(args, model, vis_loader):
             frames = torch.cat([ frames[:,args.out_no:args.in_no] , out ], 1)
             out = model(frames)
             for n in range(args.out_no):
-                gif_frames.append(out[0][n].cpu().detach())
+                gif_frames.append(out[0][n].cpu().detach().byte())
         gif_save_path = os.path.join(args.results_dir, "%d.gif" % ngif) 
         imageio.mimsave(gif_save_path, gif_frames)
         args.plotter.gif_plot(args.jobname+" self_output"+str(ngif), gif_save_path)
     print("self output finished!")  
-
-
-
-
-        
-
-
 
 
 def validate(args, valid_loader, model, criterion):
@@ -115,8 +103,11 @@ def validate(args, valid_loader, model, criterion):
         gt_frames = gt_frames.float().to(args.device)
         img = model(frames)
         loss = criterion(img, gt_frames)
+        if args.loss == "SSIM":
+            loss = 1 - loss
         valid_loss.append(loss.item())
     return sum(valid_loss)/len(valid_loss)
+
 
 if __name__ == "__main__":
     torch.manual_seed(2667)
@@ -139,7 +130,6 @@ if __name__ == "__main__":
     """
     parser.add_argument("--in_no", type=int, default=5, help="number of frames to use for forward pass")
     parser.add_argument("--out_no", type=int, default=1, help="number of frames to use for ground_truth")
-    parser.add_argument("--repo_rootdir", type=str, default=os.path.expanduser("~/cnn_visual_modelling"), help="The rootdir of the cnn_visual_modelling repo")
     parser.add_argument("--save", action="store_true", help="Save models/validation things to checkpoint location")
     ####
     ##
@@ -151,7 +141,7 @@ if __name__ == "__main__":
     parser.add_argument("--padding_t", type=int, default=1, help="Temporal Padding")
     parser.add_argument("--depth", type=int, default=2, help="depth of the updown")
     parser.add_argument("--channel_factor", type=int, default=64, help="channel scale factor for up down network")
-    parser.add_argument("--loss", type=str, default="MSE", choices=["MSE", "smooth_l1", "focal"], help="Loss function for the network")
+    parser.add_argument("--loss", type=str, default="MSE", choices=["MSE", "smooth_l1", "focal", "SSIM"], help="Loss function for the network")
     parser.add_argument("--reduce", action="store_true", help="reduction of loss function toggled")
     parser.add_argument("--reduction", type=str, choices=["mean", "sum"], help="type of reduction to apply on loss")
 
@@ -169,7 +159,8 @@ if __name__ == "__main__":
     print(args)
     dset = VMDataset_v1(args)
     if args.save:
-        results_dir = os.path.join(args.repo_rootdir, ".results", args.jobname )
+        repo_rootdir = os.path.dirname(os.path.realpath(sys.argv[0]))
+        results_dir = os.path.join(repo_rootdir, ".results", args.jobname )
         if(os.path.isdir(results_dir)):
             shutil.rmtree(results_dir)
             os.makedirs(results_dir)
@@ -179,7 +170,7 @@ if __name__ == "__main__":
         args.checkpoint_path = os.path.join(args.results_dir, "model.pth")
 
     if args.extract_n_dset_file:
-        dset.save_dataset(args.in_no, args.out_no, args.extracted_n_dset_savepathdir)
+        dset.save_dataset(args.in_no, args.out_no, os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), args.extracted_n_dset_savepathdir))
         print("Extraction successful. Saved to:\n", args.extracted_n_dset_savepathdir+"/"+str(args.in_no+args.out_no)+"_dset.pickle")
         sys.exit()
 
@@ -204,11 +195,13 @@ if __name__ == "__main__":
     #criterion = loss.l1_loss
     # Losses
     if args.loss == "MSE":
-        criterion = F.mse_loss#(reduction=args.reduction)#torch.nn.MSELoss(reduce=args.reduce, reduction=args.reduction).to(args.device)
+        criterion = torch.nn.MSELoss(reduce=args.reduce, reduction=args.reduction).to(args.device)
     elif args.loss == "focal":
-        criterion = myloss.FocalLoss(reduce=args.reduce, reduction=args.reduction).to(args.device) 
+        criterion = tools.loss.FocalLoss(reduce=args.reduce, reduction=args.reduction).to(args.device) 
     elif args.loss == "smooth_l1":
-        criterion = F.smooth_l1_loss#(reudction=args.reduction) #loss.SmoothL1Loss(reduce=args.reduce, reduction=args.reduction).to(args.device)
+        criterion = torch.nn.SmoothL1Loss(reduce=args.reduce, reduction=args.reduction).to(args.device)
+    elif args.loss == "SSIM":
+        criterion = tools.loss.ssim(data_range=255, size_average=True, channel=1).to(args.device)
     else:
         raise Exception("Loss not implemented")
     if args.visdom:
@@ -218,9 +211,10 @@ if __name__ == "__main__":
     early_stop_count = 0
     early_stop_flag = False
     best_loss = 10**20    # Mean average precision
+    print("Training Start")
     for epoch in range(args.epoch):
         if not early_stop_flag:
-            epoch_best_loss = train(args, dset, model, optimizer, criterion, epoch, best_loss)
+            train_loss, epoch_best_loss = train(args, dset, model, optimizer, criterion, epoch, best_loss)
             if epoch_best_loss > best_loss:   # If the best loss for an epoch doesnt beat the current best
                 early_stop_count += 1
                 if early_stop_count >= args.early_stopping:
@@ -228,6 +222,10 @@ if __name__ == "__main__":
             else:
                 early_stop_count  = 0
                 best_loss = epoch_best_loss
+            print(f"Train Loss {train_loss:.3f} |",
+                f"Val Loss {epoch_best_loss:.3f} |",
+                f"Early Stop Flag {early_stop_count}")
+            args.plotter.text_plot(args.jobname+" epoch", f"Train Loss {train_loss:.3f} | Val Loss {epoch_best_loss:.3f} | Early Stop Count {early_stop_count}")
         else:
             print_string = "Early stop on epoch %d/%d. Best %s %.3f at epoch %d" % (epoch+1, args.epoch, args.loss, best_loss, epoch+1-early_stop_count)
             print(print_string)

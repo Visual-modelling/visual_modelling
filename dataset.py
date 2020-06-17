@@ -18,7 +18,7 @@ class VMDataset_v1(Dataset):
         self.mode = "train"
         self.args = args
         if not args.extract_n_dset_file:
-            total_dset = utils.load_pickle(args.dataset_path)
+            total_dset = utils.load_pickle( os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), args.dataset_path))
             if args.shuffle:
                 random.shuffle(total_dset)
             self.train_dict = { idx:data for idx, data in enumerate(total_dset[:round(len(total_dset)*args.train_ratio)]) }
@@ -73,7 +73,7 @@ class VMDataset_v1(Dataset):
         in_no = number of images for input
         out_no = number of images for ground truth
         """
-        self.frame_path = self.args.raw_frame_rootdir
+        self.frame_path = os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), self.args.raw_frame_rootdir)
         vids = os.listdir(self.frame_path)
         vids.remove('config.yml')
         vids = [vid for vid in vids if not vid.endswith('.pickle')]
