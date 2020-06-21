@@ -21,9 +21,9 @@ python ../../../../main.py \
     --self_output_n 30 \
     --channel_factor 32 \
     --krnl_size 3 \
-    --krnl_size_t 5 \
+    --krnl_size_t 3 \
     --padding 1 \
-    --padding_t 2 \
+    --padding_t 1 \
     --jobname poc_5-1_3d-d2_sl1_mean \
     --loss smooth_l1 \
     --reduction mean \
