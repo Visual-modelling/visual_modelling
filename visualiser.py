@@ -26,7 +26,14 @@ def visualise_imgs(args, vis_loader, model,  n):
             print("n images visualised. Exiting.")
             return(return_imgs)
         else:
-            frames, positions, gt_frames, gt_positions = batch
+            if args.dataset == "hudsons":
+                frames, positions, gt_frames, gt_positions = batch
+            elif args.dataset == "mmnist":
+                frames, gt_frames = batch
+            else:
+                raise Exception(f"{args.dataset} is not implemented.")
+
+           
             frames_use, gt_frames_use = frames[0], gt_frames[0]
             frames = frames.squeeze(2).float().to(args.device)
             gt_frames = gt_frames.squeeze(2)#.to(args.device)

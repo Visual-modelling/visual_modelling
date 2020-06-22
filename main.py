@@ -6,7 +6,7 @@ from PIL import Image
 from torch.utils.data import DataLoader
 from torchvision import transforms
 
-from dataset import VMDataset_v1
+from dataset import VMDataset_v1, MMNIST
 from models.UpDown2D import FCUp_Down2D
 from models.UpDown3D import FCUp_Down3D
 from models.transformer import load_model 
@@ -30,7 +30,12 @@ def train(args, dset, model, optimizer, criterion, epoch, previous_best_loss):
         #niter = epoch * len(train_loader) + batch_idx
         #print(niter, epoch, batch_idx)
         niter = round(epoch + (batch_idx/len(train_loader)), 3) # Changed niter to be epochs instead of iterations
-        frames, positions, gt_frames, gt_positions = batch
+        if args.dataset == "hudsons":
+            frames, positions, gt_frames, gt_positions = batch
+        elif args.dataset == "mmnist":
+            frames, gt_frames = batch
+        else:
+            raise Exception(f"{args.dataset} is not implemented.")
         frames = frames.float().to(args.device)
         gt_frames = gt_frames.float().to(args.device)
         out = model(frames)
@@ -77,7 +82,13 @@ def self_output(args, model, vis_loader):
     model.eval()
     print("self output commencing...")
     for ngif in range(args.n_gifs):
-        frames, positions, gt_frames, gt_positions = next(iter(vis_loader))
+        if args.dataset == "hudsons":
+            frames, positions, gt_frames, gt_positions = next(iter(vis_loader))
+        elif args.dataset == "mmnist":
+            frames, gt_frames = next(iter(vis_loader))
+        else:
+            raise Exception(f"{args.dataset} is not implemented.")
+
         frames = frames.float().to(args.device)
         gt_frames = gt_frames.float().to(args.device)
         out = model(frames)
@@ -98,7 +109,13 @@ def validate(args, valid_loader, model, criterion):
     model.eval()
     valid_loss = []
     for batch_idx, batch in enumerate(valid_loader):
-        frames, positions, gt_frames, gt_positions = batch
+        if args.dataset == "hudsons":
+            frames, positions, gt_frames, gt_positions = batch
+        elif args.dataset == "mmnist":
+            frames, gt_frames = batch
+        else:
+            raise Exception(f"{args.dataset} is not implemented.")
+
         frames = frames.float().to(args.device)
         gt_frames = gt_frames.float().to(args.device)
         img = model(frames)
@@ -122,6 +139,7 @@ if __name__ == "__main__":
     parser.add_argument("--extract_n_dset_file", action="store_true", help="activate this if you would like to extract your n_dset")
     parser.add_argument("--extracted_n_dset_savepathdir", type=str, default=os.path.expanduser("~/"), help="root directory of where you would like to save your n_dset.pickle")
     parser.add_argument("--dataset_path", type=str, default=os.path.expanduser("~/"))
+    parser.add_argument("--dataset", type=str, default="hudsons", choices=["hudsons","mmnist"])
     parser.add_argument("--shuffle", action="store_true", help="shuffle dataset")
     parser.add_argument("--visdom", action="store_true", help="use a visdom ploter")
     parser.add_argument("--jobname", type=str, default="jobname", help="jobname")
@@ -157,7 +175,13 @@ if __name__ == "__main__":
     # Sorting arguements
     args = parser.parse_args()
     print(args)
-    dset = VMDataset_v1(args)
+    if args.dataset == "hudsons":
+        dset = VMDataset_v1(args)
+    elif args.dataset == "mmnist":
+        dset = MMNIST(args)
+    else:
+        raise Exception(f"{args.dataset} dataset not implemented")
+
     if args.save:
         repo_rootdir = os.path.dirname(os.path.realpath(sys.argv[0]))
         results_dir = os.path.join(repo_rootdir, ".results", args.jobname )

@@ -13,6 +13,50 @@ import cv2
 
 import tools.utils as utils
 
+class MMNIST(Dataset):
+    def __init__(self, args):
+        self.mode = "train"
+        self.args = args
+        total_dset = np.load( os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), args.dataset_path))
+        total_dset = np.transpose(total_dset, (1,0,2,3))
+
+        if args.shuffle:
+            random.shuffle(total_dset)
+        self.train_dict = { idx:data for idx, data in enumerate(total_dset[:round(len(total_dset)*args.train_ratio)]) }
+        self.valid_dict = { idx:data for idx, data in enumerate(total_dset[round(len(total_dset)*args.train_ratio):]) }
+        self.current_data_dict = self.train_dict
+        
+        # Sort Image reading method
+        #img_read_method_switch = {
+        #    'binary'    : read_ims_binary,
+        #    'greyscale' : read_ims_greyscale,
+        #    'RGB'       : None
+        #}
+        #if args.img_type == "RGB":
+        #    raise Exception("RGB image reading not implemented")
+        #self.img_read_method = img_read_method_switch[args.img_type]
+
+    def __len__(self):
+        return(len(self.current_data_dict))
+
+    def __getitem__(self, idx): # Indexs must count from 0
+        frames = self.current_data_dict[idx]  #data.keys = ['vid', 'vid_path', 'frame_idxs', 'frame_paths', 'positions']
+        frames, gt_frames = frames[:self.args.in_no], frames[self.args.in_no:]
+
+        return (frames, gt_frames)
+
+    def set_mode(self, mode):
+        """
+        Jump between training/validation mode
+        """
+        self.mode = mode
+        if self.mode == 'train':
+            self.current_data_dict = self.train_dict
+        elif self.mode == 'valid':
+            self.current_data_dict = self.valid_dict
+
+
+
 class VMDataset_v1(Dataset):
     def __init__(self, args):
         self.mode = "train"
