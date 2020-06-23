@@ -1,4 +1,7 @@
 # CNN Based Visual Modelling
+
+# THIS README IS NO LONGER ENTIRELY ACCURATE AND REQUIRES AN OVERHAULL
+
 ## Features
 1) Extraction code for Hudson's dataset v1,
 2) Variable in-frame/ground truth frames
