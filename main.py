@@ -34,6 +34,8 @@ def train(args, dset, model, optimizer, criterion, epoch, previous_best_loss):
             frames, positions, gt_frames, gt_positions = batch
         elif args.dataset == "mmnist":
             frames, gt_frames = batch
+            frames = frames.squeeze(2)
+            gt_frames = gt_frames.squeeze(2)
         else:
             raise Exception(f"{args.dataset} is not implemented.")
         frames = frames.float().to(args.device)
@@ -86,6 +88,8 @@ def self_output(args, model, vis_loader):
             frames, positions, gt_frames, gt_positions = next(iter(vis_loader))
         elif args.dataset == "mmnist":
             frames, gt_frames = next(iter(vis_loader))
+            frames = frames.squeeze(2)
+            gt_frames = gt_frames.squeeze(2)
         else:
             raise Exception(f"{args.dataset} is not implemented.")
 
@@ -113,6 +117,8 @@ def validate(args, valid_loader, model, criterion):
             frames, positions, gt_frames, gt_positions = batch
         elif args.dataset == "mmnist":
             frames, gt_frames = batch
+            frames = frames.squeeze(2)
+            gt_frames = gt_frames.squeeze(2)
         else:
             raise Exception(f"{args.dataset} is not implemented.")
 
@@ -135,9 +141,6 @@ if __name__ == "__main__":
     parser.add_argument("--device", type=int, default=-1, help="-1 for CPU, 0, 1 for appropriate device")
     parser.add_argument("--bsz", type=int, default=32)
     parser.add_argument("--val_bsz", type=int, default=100)
-    parser.add_argument("--raw_frame_rootdir", type=str, default=os.path.expanduser("~/"), help="The root directory containing 00000, 00001...")
-    parser.add_argument("--extract_n_dset_file", action="store_true", help="activate this if you would like to extract your n_dset")
-    parser.add_argument("--extracted_n_dset_savepathdir", type=str, default=os.path.expanduser("~/"), help="root directory of where you would like to save your n_dset.pickle")
     parser.add_argument("--dataset_path", type=str, default=os.path.expanduser("~/"))
     parser.add_argument("--dataset", type=str, default="hudsons", choices=["hudsons","mmnist"])
     parser.add_argument("--shuffle", action="store_true", help="shuffle dataset")
@@ -149,6 +152,8 @@ if __name__ == "__main__":
     parser.add_argument("--in_no", type=int, default=5, help="number of frames to use for forward pass")
     parser.add_argument("--out_no", type=int, default=1, help="number of frames to use for ground_truth")
     parser.add_argument("--save", action="store_true", help="Save models/validation things to checkpoint location")
+    parser.add_argument("--extract_dset", action="store_true", help="activate this if you would like to extract your n_dset")
+
     ####
     ##
     # Model Args
@@ -192,12 +197,6 @@ if __name__ == "__main__":
             os.makedirs(results_dir)
         args.results_dir = results_dir
         args.checkpoint_path = os.path.join(args.results_dir, "model.pth")
-
-    if args.extract_n_dset_file:
-        dset.save_dataset(args.in_no, args.out_no, os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), args.extracted_n_dset_savepathdir))
-        print("Extraction successful. Saved to:\n", args.extracted_n_dset_savepathdir+"/"+str(args.in_no+args.out_no)+"_dset.pickle")
-        sys.exit()
-
 
 
     # Model info

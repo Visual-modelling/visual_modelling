@@ -30,6 +30,7 @@ def visualise_imgs(args, vis_loader, model,  n):
                 frames, positions, gt_frames, gt_positions = batch
             elif args.dataset == "mmnist":
                 frames, gt_frames = batch
+                frames, gt_frames = frames.squeeze(2), gt_frames.squeeze(2)
             else:
                 raise Exception(f"{args.dataset} is not implemented.")
 
