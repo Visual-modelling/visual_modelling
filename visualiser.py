@@ -4,7 +4,6 @@ import os, sys, argparse
 import matplotlib.pyplot as plt
 from PIL import Image
 import torch
-from torch.utils.data import DataLoader
 from torchvision.transforms.functional import to_pil_image
 
 from dataset import VMDataset_v1
@@ -27,7 +26,7 @@ def visualise_imgs(args, vis_loader, model,  n):
             return(return_imgs)
         else:
             if args.dataset == "hudsons":
-                frames, positions, gt_frames, gt_positions = batch
+                frames, gt_frames = batch
             elif args.dataset == "mmnist":
                 frames, gt_frames = batch
                 frames, gt_frames = frames.squeeze(2), gt_frames.squeeze(2)

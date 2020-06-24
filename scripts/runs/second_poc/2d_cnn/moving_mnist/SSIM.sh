@@ -1,8 +1,8 @@
 #!/bin/bash
-#SBATCH --partition=part0
-#SBATCH --job-name=mmnist_2d-d3_SSIM-mean
-#SBATCH --ntasks=6
-#SBATCH --gres=gpu:1
+#SBATCH -p part0
+#SBATCH --job-name mmnist_2d-d3_SSIM-mean
+#SBATCH --ntasks 6
+#SBATCH --gres gpu:1
 #SBATCH -o /home/jumperkables/kable_management/projects/Visual-modelling/cnn_visual_modelling/.results/mmnist_2d-d3_SSIM-mean.out
 
 source /home/jumperkables/kable_management/python_venvs/vm/bin/activate

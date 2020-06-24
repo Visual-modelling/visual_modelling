@@ -252,8 +252,8 @@ class VMDataset_v1(Dataset):
         frames = self.img_read_method(frames)
         frames = torch.stack(frames, dim=0)
         frames, gt_frames = frames[:self.args.in_no], frames[self.args.in_no:]
-
-        return (frames, positions, gt_frames, gt_positions)
+        return (frames, gt_frames)
+        #return (frames, positions, gt_frames, gt_positions) # Variably sized not solved yet
 
     def set_mode(self, mode):
         """

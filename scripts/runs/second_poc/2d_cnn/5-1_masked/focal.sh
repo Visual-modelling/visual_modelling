@@ -1,13 +1,13 @@
 #!/bin/bash
-#SBATCH --partition=part0
-#SBATCH --job-name=multi_gm_2d-d3_focal-mean
-#SBATCH --ntasks=6
-#SBATCH --gres=gpu:1
+#SBATCH -p part0
+#SBATCH --job-name multi_gm_2d-d3_focal-mean
+#SBATCH --ntasks 6
+#SBATCH --gres gpu:1
 #SBATCH -o /home/jumperkables/kable_management/projects/Visual-modelling/cnn_visual_modelling/.results/multi_gm_2d-d3_focal-mean.out
 
 source /home/jumperkables/kable_management/python_venvs/vm/bin/activate
 python ../../../../../main.py \
-    --dataset_path data/hudson_multi_xygrav/15000_masked/6_dset.pickle \
+    --dataset_path data/hudsons_multi_xygrav/15000_masked/6_dset.pickle \
     --bsz 16 \
     --val_bsz 100 \
     --in_no 5 \

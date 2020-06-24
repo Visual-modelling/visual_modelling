@@ -21,18 +21,18 @@ import imageio
 
 def train(args, dset, model, optimizer, criterion, epoch, previous_best_loss):
     dset.set_mode("val")
-    vis_loader = DataLoader(dset, batch_size=1, shuffle=True)
-    valid_loader = DataLoader(dset, batch_size=args.val_bsz, shuffle=True)
+    vis_loader = DataLoader(dset, batch_size=1, shuffle=True, drop_last=True)
+    valid_loader = DataLoader(dset, batch_size=args.val_bsz, shuffle=True, drop_last=True)
     dset.set_mode("train")
     model.train()
-    train_loader = DataLoader(dset, batch_size=args.bsz, shuffle=True)
+    train_loader = DataLoader(dset, batch_size=args.bsz, shuffle=True, drop_last=True)
     train_loss = []
     for batch_idx, batch in enumerate(train_loader):
         #niter = epoch * len(train_loader) + batch_idx
         #print(niter, epoch, batch_idx)
         niter = round(epoch + (batch_idx/len(train_loader)), 3) # Changed niter to be epochs instead of iterations
         if args.dataset == "hudsons":
-            frames, positions, gt_frames, gt_positions = batch
+            frames, gt_frames = batch
         elif args.dataset == "mmnist":
             frames, gt_frames = batch
             frames = frames.squeeze(2)
@@ -86,7 +86,7 @@ def self_output(args, model, vis_loader):
     print("self output commencing...")
     for ngif in range(args.n_gifs):
         if args.dataset == "hudsons":
-            frames, positions, gt_frames, gt_positions = next(iter(vis_loader))
+            frames, gt_frames = next(iter(vis_loader))
         elif args.dataset == "mmnist":
             frames, gt_frames = next(iter(vis_loader))
             frames = frames.squeeze(2)
@@ -115,7 +115,7 @@ def validate(args, valid_loader, model, criterion):
     valid_loss = []
     for batch_idx, batch in enumerate(valid_loader):
         if args.dataset == "hudsons":
-            frames, positions, gt_frames, gt_positions = batch
+            frames, gt_frames = batch
         elif args.dataset == "mmnist":
             frames, gt_frames = batch
             frames = frames.squeeze(2)
