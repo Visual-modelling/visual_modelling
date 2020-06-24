@@ -9,9 +9,10 @@ from torchvision import transforms
 from dataset import VMDataset_v1, MMNIST
 from models.UpDown2D import FCUp_Down2D
 from models.UpDown3D import FCUp_Down3D
-from models.transformer import load_model 
+from models.transformer import VMTransformer, VMTransformer2 
 from visualiser import visualise_imgs 
 import tools.utils as utils
+from tools.utils import model_fwd
 import tools.radam as radam
 import tools.loss
 import torch.nn.functional as F
@@ -40,7 +41,7 @@ def train(args, dset, model, optimizer, criterion, epoch, previous_best_loss):
             raise Exception(f"{args.dataset} is not implemented.")
         frames = frames.float().to(args.device)
         gt_frames = gt_frames.float().to(args.device)
-        out = model(frames)
+        out = model_fwd(model, frames, args)
         loss = criterion(out, gt_frames)
         if args.loss == "SSIM":
             loss = 1 - loss
@@ -95,11 +96,11 @@ def self_output(args, model, vis_loader):
 
         frames = frames.float().to(args.device)
         gt_frames = gt_frames.float().to(args.device)
-        out = model(frames)
+        out = model_fwd(model, frames, args)
         gif_frames = []
         for itr in range(args.self_output_n):
             frames = torch.cat([ frames[:,args.out_no:args.in_no] , out ], 1)
-            out = model(frames)
+            out = model_fwd(model, frames, args)
             for n in range(args.out_no):
                 gif_frames.append(out[0][n].cpu().detach().byte())
         gif_save_path = os.path.join(args.results_dir, "%d.gif" % ngif) 
@@ -124,12 +125,17 @@ def validate(args, valid_loader, model, criterion):
 
         frames = frames.float().to(args.device)
         gt_frames = gt_frames.float().to(args.device)
-        img = model(frames)
+        img = model_fwd(model, frames, args)
         loss = criterion(img, gt_frames)
         if args.loss == "SSIM":
             loss = 1 - loss
         valid_loss.append(loss.item())
     return sum(valid_loss)/len(valid_loss)
+
+
+
+
+
 
 
 if __name__ == "__main__":
@@ -205,8 +211,7 @@ if __name__ == "__main__":
     elif args.model == "UpDown2D":
         model = FCUp_Down2D(args)#.depth, args.in_no, args.out_no, args)
     elif args.model == "transformer":
-        model = load_model("VMTransformer", ['4096', '1', '1', 'True', 'False', 'True', str(args.in_no)])
-        print("Note to self: Tidy this and explain Dean's parameters here")
+        model = VMTransformer()
     else:
         raise Exception("Model: %s not implemented" % (args.model))
 

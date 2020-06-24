@@ -223,15 +223,14 @@ class VMDataset_v1(Dataset):
         self.args = args
         if args.extract_dset:
             return None
-        if not args.extract_dset_file:
-            total_dset = utils.load_pickle( os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), args.dataset_path))
-            if args.shuffle:
-                random.shuffle(total_dset)
-            self.train_dict = { idx:data for idx, data in enumerate(total_dset[:round(len(total_dset)*args.train_ratio)]) }
-            self.valid_dict = { idx:data for idx, data in enumerate(total_dset[round(len(total_dset)*args.train_ratio):]) }
-            self.current_data_dict = self.train_dict
-            assert(args.in_no+args.out_no == len(self.current_data_dict[0]['frame_paths']),
-                "In frames + Ground truth frames do not equal the frame sample size of the dataset")
+        total_dset = utils.load_pickle( os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), args.dataset_path))
+        if args.shuffle:
+            random.shuffle(total_dset)
+        self.train_dict = { idx:data for idx, data in enumerate(total_dset[:round(len(total_dset)*args.train_ratio)]) }
+        self.valid_dict = { idx:data for idx, data in enumerate(total_dset[round(len(total_dset)*args.train_ratio):]) }
+        self.current_data_dict = self.train_dict
+        assert(args.in_no+args.out_no == len(self.current_data_dict[0]['frame_paths']),
+            "In frames + Ground truth frames do not equal the frame sample size of the dataset")
         
         # Sort Image reading method
         img_read_method_switch = {

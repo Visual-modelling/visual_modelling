@@ -1,15 +1,8 @@
-import random
-import math
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.nn.utils.rnn import pack_padded_sequence
-from transformers import BertModel
-
-#####
-# Dean's transformer model adapted by Winterbottom 
-#####
+from tools.activations import sigmoid_256
 
 def load_model(model_name, config):
     """ Model Loader for all the models contained within this file.
@@ -21,64 +14,33 @@ def load_model(model_name, config):
 
     if model_name == 'VMTransformer':
         model = VMTransformer(*config)
-    if model_name == 'VMTransformerOld':
-        model = VMTransformerOld(*config)
+    if model_name == 'VMTransformer2':
+        model = VMTransformer2(*config)
 
     return model
-
-
-class Maxout(nn.Module):
-    def __init__(self, pool_size):
-        super().__init__()
-        self._pool_size = pool_size
-
-    def forward(self, x):
-        assert x.shape[1] % self._pool_size == 0, \
-            'Wrong input last dim size ({}) for Maxout({})'.format(x.shape[1], self._pool_size)
-        m, i = x.view(*x.shape[:1], x.shape[1] // self._pool_size, self._pool_size, *x.shape[2:]).max(2)
-        return m
-
-
-class PositionalEmbedding(nn.Module):
-    def __init__(self, d_model, max_len=10):
-        super().__init__()
-
-        # Compute the positional encodings once in log space.
-        pe = torch.zeros(max_len, d_model).float()
-        pe.require_grad = False
-
-        position = torch.arange(0, max_len).float().unsqueeze(1)
-        div_term = (torch.arange(0, d_model, 2).float() * -(math.log(10000.0) / d_model)).exp()
-
-        pe[:, 0::2] = torch.sin(position * div_term)
-        pe[:, 1::2] = torch.cos(position * div_term)
-
-        pe = pe.unsqueeze(0)
-        self.register_buffer('pe', pe)
-
-    def forward(self, x):
-        return self.pe[:, :x.size(1)]
 
 
 class SelfAttention(nn.Module):
     def __init__(self, k, heads=1):
         super().__init__()
         self.k, self.heads = k, heads
-
+        # initialise query, key, and value layer for all heads (as single concatenated tensor)
         self.tokeys = nn.Linear(k, k * heads, bias=False)
         self.toqueries = nn.Linear(k, k * heads, bias=False)
         self.tovalues = nn.Linear(k, k * heads, bias=False)
 
+        # unify outputs of attention heads into k dim tensor
         self.unifyheads = nn.Sequential(nn.Linear(heads * k, k))
 
     def forward(self, x):
         b, t, k = x.size()
+
         h = self.heads
         queries = self.toqueries(x).view(b, t, h, k)
-        keys = self.tokeys(x)   .view(b, t, h, k)
-        values = self.tovalues(x) .view(b, t, h, k)
+        keys = self.tokeys(x).view(b, t, h, k)
+        values = self.tovalues(x).view(b, t, h, k)
 
-        # - fold heads into the batch dimension
+        # fold heads into the batch dimension
         keys = keys.transpose(1, 2).contiguous().view(b * h, t, k)
         queries = queries.transpose(1, 2).contiguous().view(b * h, t, k)
         values = values.transpose(1, 2).contiguous().view(b * h, t, k)
@@ -86,13 +48,19 @@ class SelfAttention(nn.Module):
         queries = queries / (k ** (1/4))
         keys = keys / (k ** (1/4))
 
+        # get dot product of queries and keys, and scale
         dot = torch.bmm(queries, keys.transpose(1, 2))
+        # dot has size (b*h, t, t) containing raw weights
 
         dot = F.softmax(dot, dim=2)
+        # dot now contains row-wise normalized weights
 
+        # apply the self attention to the values
         out = torch.bmm(dot, values).view(b, h, t, k)
 
+        # swap h, t back, unify heads
         out = out.transpose(1, 2).contiguous().view(b, t, h * k)
+
         return self.unifyheads(out)
 
 
@@ -100,10 +68,9 @@ class TransformerBlock(nn.Module):
   def __init__(self, k, heads, ff=False, residual=False, norm=True):
     super().__init__()
 
-    self.ff = ff
-    self.residual = residual
-    self.norm = norm
+    self.ff, self.residual, self.norm = ff, residual, norm
 
+    # initialise attenion layer
     self.attention = SelfAttention(k, heads=heads)
 
     self.norm1 = nn.LayerNorm(k)
@@ -116,6 +83,7 @@ class TransformerBlock(nn.Module):
     )
 
   def forward(self, x):
+
     if self.residual:
         x = x + self.attention(x)
     else:
@@ -137,53 +105,105 @@ class TransformerBlock(nn.Module):
 
 
 class VMTransformer(nn.Module):
-    def __init__(self, k, heads=1, depth=1, ff=True, residual=False, norm=True, seq_len=5):
+    """
+    Simplest transformer encoder model for next image prediction. No positional encoding - position
+    of each image in time is implicitly inferred using the last image representation query as input
+    to the classification layer.
+    """
+    def __init__(self, k=4096, heads=1, depth=1, ff=True, residual=True, norm=True):
+        super().__init__()
+
+        # self attention layers
+        self.tblocks = []
+        for _ in range(depth):
+            self.tblocks.append(TransformerBlock(k=k, heads=heads, ff=ff,
+                                                 residual=residual, norm=norm))
+        self.tblocks = nn.Sequential(*self.tblocks)
+
+        # classification / pixel regression block
+        self.to_pixels = nn.Sequential(
+            nn.Linear(k, k),
+            nn.Linear(k, k),
+            nn.Linear(k, k)#,
+            # rectify output to between 0 and 1
+            #nn.Hardtanh(0, 1)
+        )
+
+    def forward(self, x):
+        # get input batch dimensions
+        b, t, k = x.size()
+
+        # send input to transformer block
+        x = self.tblocks(x)
+        # use image representation from last image query
+        x = x[:, -1, :]
+
+        # send last image representation to pixel regression block
+        x = self.to_pixels(x)
+
+        #######
+        # To work with grayscale images
+        x = sigmoid_256(x) 
+        #x = 255*x
+        #######
+
+        return x
+
+
+
+
+
+
+
+
+
+
+
+class VMTransformer2(nn.Module):
+    """
+    Includes encoding of image to higher dimensional representation.
+
+    """
+    def __init__(self, k=4096, seq_len=5, heads=1, depth=1, ff=True, residual=True, norm=True):
         super().__init__()
 
         self.seq_len = seq_len
-        # self.label_dim = label_dim
+        self.emb_dim = 8192
 
-        # initialize pixel and temporal embedding layers
-        self.pix_emb = nn.Embedding(k, k)
-        self.pos_emb = PositionalEmbedding(k, max_len=self.seq_len)
+        self.img_emb = nn.Sequential(
+            # trial with non-linearity
+            nn.Linear(k, self.emb_dim)
+        )
 
         # self attention layers
-        tblocks = []
-        for i in range(depth):
-            tblocks.append(TransformerBlock(k=k, heads=heads, ff=ff, residual=residual, norm=norm))
-        self.tblocks = nn.Sequential(*tblocks)
+        self.tblocks = []
+        for _ in range(depth):
+            self.tblocks.append(TransformerBlock(k=self.emb_dim, heads=heads, ff=ff,
+                                                 residual=residual, norm=norm))
+        self.tblocks = nn.Sequential(*self.tblocks)
 
-        # classification/regression layer
-        self.toprobs = nn.Sequential(
+        # classification / pixel regression layer
+        self.to_pixels = nn.Sequential(
+            nn.Linear(self.emb_dim, k),
             nn.Linear(k, k),
             nn.Linear(k, k),
-            nn.Sigmoid())
+            # rectify output to between 0 and 1
+            nn.Hardtanh(0, 1)
+        )
 
     def forward(self, x):
+        # get input batch dimensions
+        b, t, k = x.size()
 
-        b, t, h, w = x.size()
-        k = h*w
-        x=x.view(b, t, -1)
-        # generate pixel positional embeddings
-        coordinates = torch.arange(t).cuda()
-        coordinates = self.pix_emb(coordinates)[None, :, :].expand(b, t, k)
-        # generate temporal embeddings
-        positions = self.pos_emb(x)
+        # project image tensor to parameterised image embedding space
+        x = self.img_emb(x)
 
-        # add pixel coordinate embeddings
-        x *= coordinates
-        # add pixel temporal embeddings
-        x += positions
+        # send input to transformer block
+        x = self.tblocks(x)
+        # use image representation from last image query
+        x = x[:, -1, :]
 
-        # cls_token = torch.ones(b, 1, k).cuda()
-        # x = torch.cat((cls_token, x), dim=1)
+        # send last image representation to pixel regression block
+        x = self.to_pixels(x)
 
-        x = self.tblocks(x.cuda())
-
-        # Average-pool over the t dimension and project to class
-        # probabilities
-        # x = self.toprobs(x.mean(dim=1))
-
-        x = self.toprobs(x[:, 0, :])
-
-        return x.view(b,h,w).unsqueeze(1)
+        return x
