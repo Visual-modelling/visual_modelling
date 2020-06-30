@@ -7,7 +7,7 @@
 
 source /home/jumperkables/kable_management/python_venvs/vm/bin/activate
 python ../../../../../main.py \
-    --dataset_path data/hudsons_multi_xygrav/15000/6_dset.pickle \
+    --dataset_path data/hudsons_multi_ygrav/10000/6_dset.pickle \
     --bsz 16 \
     --val_bsz 100 \
     --in_no 5 \

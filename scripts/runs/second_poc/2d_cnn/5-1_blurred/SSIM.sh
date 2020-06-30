@@ -1,8 +1,8 @@
 #!/bin/bash
-#SBATCH --qos short
+#SBATCH --qos long-high-prio
 #SBATCH -N 1
 #SBATCH -c 4
-#SBATCH -t 2-00:00
+#SBATCH -t 7-00:00
 #SBATCH -x gpu[0-3]
 #SBATCH --mem 12G
 #SBATCH -p res-gpu-small
@@ -12,7 +12,7 @@
 
 source /home2/crhf63/kable_management/python_venvs/vm/bin/activate
 python ../../../../../main.py \
-    --dataset_path data/hudsons_multi_xygrav/15000_blurred/6_dset.pickle \
+    --dataset_path data/hudsons_multi_ygrav/10000_blurred/6_dset.pickle \
     --bsz 16 \
     --val_bsz 100 \
     --in_no 5 \

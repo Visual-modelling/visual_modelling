@@ -1,13 +1,13 @@
 #!/bin/bash
 #SBATCH -p part0
-#SBATCH --job-name multi_g_2d-d3_focal-mean
+#SBATCH --job-name multi_smallg_2d-d3_focal-mean
 #SBATCH --ntasks 6
 #SBATCH --gres gpu:1
-#SBATCH -o /home/jumperkables/kable_management/projects/Visual-modelling/cnn_visual_modelling/.results/multi_g_2d-d3_focal-mean.out
+#SBATCH -o /home/jumperkables/kable_management/projects/Visual-modelling/cnn_visual_modelling/.results/multi_smallg_2d-d3_focal-mean.out
 
 source /home/jumperkables/kable_management/python_venvs/vm/bin/activate
 python ../../../../../main.py \
-    --dataset_path data/hudsons_multi_ygrav/10000/6_dset.pickle \
+    --dataset_path data/hudsons_multi_ygrav/2000/6_dset.pickle \
     --bsz 16 \
     --val_bsz 100 \
     --in_no 5 \
@@ -19,7 +19,7 @@ python ../../../../../main.py \
     --early_stopping 3 \
     --n_gifs 5 \
     --self_output_n 30 \
-    --jobname 2poc_5-1_multi_g_2d-d3_focal_mean \
+    --jobname 2poc_5-1_multi_smallg_2d-d3_focal_mean \
     --loss focal \
     --reduction mean \
     --img_type greyscale \
