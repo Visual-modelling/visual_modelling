@@ -322,7 +322,8 @@ def read_ims_binary(frames):
     #old pillow version return([ (ToTensor()(Image.open(frame.replace('jumperkables', getpass.getuser()) ))>0).float() for frame in frames ])
 
 def read_ims_greyscale(frames):
-    frames = [ torch.from_numpy(cv2.imread(frame.replace('jumperkables', getpass.getuser()), cv2.IMREAD_GRAYSCALE)) for frame in frames]
+    home_dir = os.path.expanduser("~").split("/")[1]
+    frames = [ torch.from_numpy(cv2.imread(frame.replace('jumperkables', getpass.getuser()).replace("/home/", f"/{home_dir}/" ), cv2.IMREAD_GRAYSCALE)) for frame in frames]
     #old pillow version frames = [ (ToTensor()(Image.open(frame.replace('jumperkables', getpass.getuser()) ))>0).float() for frame in frames ]
     return frames
           
