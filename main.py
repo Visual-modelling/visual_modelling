@@ -16,7 +16,10 @@ from tools.utils import model_fwd
 import tools.radam as radam
 import tools.loss
 import torch.nn.functional as F
+
 from tools.visdom_plotter import VisdomLinePlotter
+import wandb
+
 import imageio
 
 def train(args, dset, model, optimizer, criterion, epoch, previous_best_loss):
@@ -234,6 +237,8 @@ if __name__ == "__main__":
         raise Exception("Loss not implemented")
     if args.visdom:
         args.plotter = VisdomLinePlotter(env_name=args.jobname)
+        wandb.init(project=args.jobname)
+        wandb.config.update(args)
 
     # Training loop
     early_stop_count = 0
@@ -254,6 +259,8 @@ if __name__ == "__main__":
                 f"Val Loss {epoch_best_loss:.3f} |",
                 f"Early Stop Flag {early_stop_count}")
             args.plotter.text_plot(args.jobname+" epoch", f"Train Loss {train_loss:.3f} | Val Loss {epoch_best_loss:.3f} | Early Stop Count {early_stop_count}")
+            if args.visdom:
+                wandb.log('val_loss': epoch_best_loss)
         else:
             print_string = "Early stop on epoch %d/%d. Best %s %.3f at epoch %d" % (epoch+1, args.epoch, args.loss, best_loss, epoch+1-early_stop_count)
             print(print_string)
