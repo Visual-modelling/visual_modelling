@@ -15,4 +15,4 @@ tools/*.pyo
 
 data
 
-**/wandb/
+**/wandb/*
