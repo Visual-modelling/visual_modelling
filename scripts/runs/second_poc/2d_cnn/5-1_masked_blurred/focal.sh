@@ -17,8 +17,8 @@ python ../../../../../main.py \
     --device 0 \
     --epoch 300 \
     --early_stopping 3 \
-    --n_gifs 5 \
-    --self_output_n 30 \
+    --n_gifs 20 \
+    --self_output_n 100 \
     --jobname 2poc_5-1_multi_gmb_2d-d3_focal_mean \
     --loss focal \
     --reduction mean \

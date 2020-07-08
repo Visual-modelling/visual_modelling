@@ -87,6 +87,7 @@ def train(args, dset, model, optimizer, criterion, epoch, previous_best_loss):
 def self_output(args, model, vis_loader):
     model.eval()
     print("self output commencing...")
+    wandb_save = []
     for ngif in range(args.n_gifs):
         if args.dataset == "hudsons":
             frames, gt_frames = next(iter(vis_loader))
@@ -109,6 +110,8 @@ def self_output(args, model, vis_loader):
         gif_save_path = os.path.join(args.results_dir, "%d.gif" % ngif) 
         imageio.mimsave(gif_save_path, gif_frames)
         args.plotter.gif_plot(args.jobname+" self_output"+str(ngif), gif_save_path)
+        wandb_save.append(wandb.Video(gif_save_path))
+    wandb.log({"self_output_gifs": wandb_save})
     print("self output finished!")  
 
 
@@ -237,7 +240,7 @@ if __name__ == "__main__":
         raise Exception("Loss not implemented")
     if args.visdom:
         args.plotter = VisdomLinePlotter(env_name=args.jobname)
-        wandb.init(project="Visual_Modelling", name=args.jobname)
+        wandb.init(project="visual_modelling", name=args.jobname)
         wandb.config.update(args)
 
     # Training loop
@@ -260,7 +263,7 @@ if __name__ == "__main__":
                 f"Early Stop Flag {early_stop_count}")
             args.plotter.text_plot(args.jobname+" epoch", f"Train Loss {train_loss:.3f} | Val Loss {epoch_best_loss:.3f} | Early Stop Count {early_stop_count}")
             if args.visdom:
-                wandb.log('val_loss': epoch_best_loss)
+                wandb.log({'val_loss': epoch_best_loss})
         else:
             print_string = "Early stop on epoch %d/%d. Best %s %.3f at epoch %d" % (epoch+1, args.epoch, args.loss, best_loss, epoch+1-early_stop_count)
             print(print_string)
