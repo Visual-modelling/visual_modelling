@@ -161,10 +161,12 @@ if __name__ == "__main__":
     """
     Please note, in_no + out_no must equal the size your dataloader is returning. Default is batches of 6 frames, 5 forward and 1 for ground truth
     """
+    # Dataset
     parser.add_argument("--in_no", type=int, default=5, help="number of frames to use for forward pass")
     parser.add_argument("--out_no", type=int, default=1, help="number of frames to use for ground_truth")
     parser.add_argument("--save", action="store_true", help="Save models/validation things to checkpoint location")
     parser.add_argument("--extract_dset", action="store_true", help="activate this if you would like to extract your n_dset")
+    parser.add_argument("--dset_sze", type=int, default=-1, help="Number of training samples from dataset")
 
     ####
     ##
@@ -187,7 +189,7 @@ if __name__ == "__main__":
     parser.add_argument("--gif_path", type=str, default=os.path.expanduser("~/cnn_visual_modelling/.results/self_out.gif"), help="path to save the gif")
     parser.add_argument("--n_gifs", type=int, default=10, help="number of gifs to save")
     parser.add_argument("--model", type=str, default="UpDown2D", choices=["UpDown2D", "UpDown3D", "transformer"], help="Type of model to run")
-
+    
     ####
     # Sorting arguements
     args = parser.parse_args()
@@ -240,7 +242,7 @@ if __name__ == "__main__":
         raise Exception("Loss not implemented")
     if args.visdom:
         args.plotter = VisdomLinePlotter(env_name=args.jobname)
-        wandb.init(project="visual_modelling", name=args.jobname)
+        wandb.init(project="visual-modelling", entity="visual-modelling", name=args.jobname)
         wandb.config.update(args)
 
     # Training loop
