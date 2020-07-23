@@ -23,8 +23,20 @@ class Old_MMNIST(Dataset):
 
         if args.shuffle:
             random.shuffle(total_dset)
-        self.train_dict = { idx:data for idx, data in enumerate(total_dset[:round(len(total_dset)*args.train_ratio)]) }
-        self.valid_dict = { idx:data for idx, data in enumerate(total_dset[round(len(total_dset)*args.train_ratio):]) }
+        if args.dset_sze == -1: # If no specific dataset size is specified, use all of it
+            self.train_dict = { idx:data for idx, data in enumerate(total_dset[:round(len(total_dset)*args.train_ratio)]) }
+            self.valid_dict = { idx:data for idx, data in enumerate(total_dset[round(len(total_dset)*args.train_ratio):]) }
+        else:
+            val_size = round(args.dset_sze / args.train_ratio) - args.dset_sze  # Account for validation size too
+            if len(total_dset) < (val_size + args.dset_sze):
+                raise Exception(f"{val_size + args.dset_sze} needed samples for training ({args.dset_sze}) and validating ({val_size}) with specified train ratio of {args.train_ratio}. Exceeds available sample count: {len(total_dset)}")
+            else:
+                self.train_dict = { idx:data for idx, data in enumerate(total_dset[:args.dset_sze]) }
+                self.valid_dict = { idx:data for idx, data in enumerate(total_dset[args.dset_sze:(args.dset_sze+val_size)]) }
+                import ipdb; ipdb.set_trace()
+                print("dsadsa")
+
+
         self.current_data_dict = self.train_dict
         
         # Sort Image reading method
@@ -79,11 +91,18 @@ class MMNIST(Dataset):
             return None
         total_dset = np.load( os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), args.dataset_path))
         total_dset = total_dset['arr_0']
-
         if args.shuffle:
             random.shuffle(total_dset)
-        self.train_dict = { idx:data for idx, data in enumerate(total_dset[:round(len(total_dset)*args.train_ratio)]) }
-        self.valid_dict = { idx:data for idx, data in enumerate(total_dset[round(len(total_dset)*args.train_ratio):]) }
+        if args.dset_sze == -1: # If no specific dataset size is specified, use all of it
+            self.train_dict = { idx:data for idx, data in enumerate(total_dset[:round(len(total_dset)*args.train_ratio)]) }
+            self.valid_dict = { idx:data for idx, data in enumerate(total_dset[round(len(total_dset)*args.train_ratio):]) }
+        else:
+            val_size = round(args.dset_sze / args.train_ratio) - args.dset_sze  # Account for validation size too
+            if len(total_dset) < (val_size + args.dset_sze):
+                raise Exception(f"{val_size + args.dset_sze} needed samples for training ({args.dset_sze}) and validating ({val_size}) with specified train ratio of {args.train_ratio}. Exceeds available sample count: {len(total_dset)}")
+            else:
+                self.train_dict = { idx:data for idx, data in enumerate(total_dset[:args.dset_sze]) }
+                self.valid_dict = { idx:data for idx, data in enumerate(total_dset[args.dset_sze:(args.dset_sze+val_size)]) }
         self.current_data_dict = self.train_dict
         
         # Sort Image reading method
@@ -102,8 +121,7 @@ class MMNIST(Dataset):
     def __getitem__(self, idx): # Indexs must count from 0
         frames = self.current_data_dict[idx]  #data.keys = ['vid', 'vid_path', 'frame_idxs', 'frame_paths', 'positions']
         frames, gt_frames = frames[:self.args.in_no], frames[self.args.in_no:]
-
-        return (frames, gt_frames)
+        return (torch.from_numpy(frames.squeeze(1)), torch.from_numpy(gt_frames.squeeze(1)))
 
     def set_mode(self, mode):
         """
@@ -224,10 +242,19 @@ class VMDataset_v1(Dataset):
         if args.extract_dset:
             return None
         total_dset = utils.load_pickle( os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), args.dataset_path))
+
         if args.shuffle:
             random.shuffle(total_dset)
-        self.train_dict = { idx:data for idx, data in enumerate(total_dset[:round(len(total_dset)*args.train_ratio)]) }
-        self.valid_dict = { idx:data for idx, data in enumerate(total_dset[round(len(total_dset)*args.train_ratio):]) }
+        if args.dset_sze == -1: # If no specific dataset size is specified, use all of it
+            self.train_dict = { idx:data for idx, data in enumerate(total_dset[:round(len(total_dset)*args.train_ratio)]) }
+            self.valid_dict = { idx:data for idx, data in enumerate(total_dset[round(len(total_dset)*args.train_ratio):]) }
+        else:
+            val_size = round(args.dset_sze / args.train_ratio) - args.dset_sze  # Account for validation size too
+            if len(total_dset) < (val_size + args.dset_sze):
+                raise Exception(f"{val_size + args.dset_sze} needed samples for training ({args.dset_sze}) and validating ({val_size}) with specified train ratio of {args.train_ratio}. Exceeds available sample count: {len(total_dset)}")
+            else:
+                self.train_dict = { idx:data for idx, data in enumerate(total_dset[:args.dset_sze]) }
+                self.valid_dict = { idx:data for idx, data in enumerate(total_dset[args.dset_sze:(args.dset_sze+val_size)]) }
         self.current_data_dict = self.train_dict
         assert(args.in_no+args.out_no == len(self.current_data_dict[0]['frame_paths']),
             "In frames + Ground truth frames do not equal the frame sample size of the dataset")

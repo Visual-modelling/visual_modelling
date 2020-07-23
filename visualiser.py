@@ -27,9 +27,9 @@ def visualise_imgs(args, vis_loader, model,  n):
         else:
             if args.dataset == "hudsons":
                 frames, gt_frames = batch
-            elif args.dataset == "mmnist":
+            elif args.dataset == "mmnist":  # Redundant unless manual squeezing is needed here again
                 frames, gt_frames = batch
-                frames, gt_frames = frames.squeeze(2), gt_frames.squeeze(2)
+                frames, gt_frames = frames, gt_frames
             else:
                 raise Exception(f"{args.dataset} is not implemented.")
 

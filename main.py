@@ -1,6 +1,6 @@
 __author__ = "Jumperkables"
 
-import os, sys, argparse, shutil
+import os, sys, argparse, shutil, copy
 import torch
 from PIL import Image
 from torch.utils.data import DataLoader
@@ -23,23 +23,26 @@ import wandb
 import imageio
 
 def train(args, dset, model, optimizer, criterion, epoch, previous_best_loss):
-    dset.set_mode("val")
-    vis_loader = DataLoader(dset, batch_size=1, shuffle=True, drop_last=True)
-    valid_loader = DataLoader(dset, batch_size=args.val_bsz, shuffle=True, drop_last=True)
-    dset.set_mode("train")
+    if args.hudson_mmnist_mix:
+        mixed_set_mode(dset, "val")
+    else:
+        dset.set_mode("val")
+    vis_loader = DataLoader(dset, batch_size=1, shuffle=True)#, drop_last=True)
+    valid_loader = DataLoader(dset, batch_size=args.val_bsz, shuffle=True)#, drop_last=True)
+    if args.hudson_mmnist_mix:
+        mixed_set_mode(dset, "train")
+    else:
+        dset.set_mode("train")
     model.train()
-    train_loader = DataLoader(dset, batch_size=args.bsz, shuffle=True, drop_last=True)
+    train_loader = DataLoader(dset, batch_size=args.bsz, shuffle=True)#, drop_last=True)
     train_loss = []
     for batch_idx, batch in enumerate(train_loader):
-        #niter = epoch * len(train_loader) + batch_idx
-        #print(niter, epoch, batch_idx)
-        niter = round(epoch + (batch_idx/len(train_loader)), 3) # Changed niter to be epochs instead of iterations
         if args.dataset == "hudsons":
             frames, gt_frames = batch
-        elif args.dataset == "mmnist":
+        elif args.dataset == "mmnist":  # We may need to resqueeze here later, potentially redudant
             frames, gt_frames = batch
-            frames = frames.squeeze(2)
-            gt_frames = gt_frames.squeeze(2)
+            frames = frames
+            gt_frames = gt_frames
         else:
             raise Exception(f"{args.dataset} is not implemented.")
         frames = frames.float().to(args.device)
@@ -54,34 +57,10 @@ def train(args, dset, model, optimizer, criterion, epoch, previous_best_loss):
         train_loss.append(loss.item())
 
     # Validate
-    #print("Epoch %d done" % epoch)
     train_loss = sum(train_loss) / float(len(train_loss))#from train_corrects            
-    args.plotter.plot("%s loss" % (args.loss), "train", "train "+args.jobname, niter, train_loss)
-    #train_loss = []
-
-    # Validation
     valid_loss = validate(args, valid_loader, model, criterion)
-    args.plotter.plot(args.loss, "val", "val "+args.jobname, niter, valid_loss)
-    
-    # If this is the best run yet
-    if valid_loss < previous_best_loss:
-        previous_best_loss = valid_loss
 
-
-        # Plot best accuracy so far in text box
-        args.plotter.text_plot(args.jobname+" val", "Best %s val %.4f Iteration:%d" % (args.loss, previous_best_loss, niter))
-
-        if args.save:
-            # Model save
-            torch.save(model.state_dict(), args.checkpoint_path)
-
-            # Save 5 example images & Plot one to visdom
-            visualise_imgs(args, vis_loader, model, 5)
-            if args.self_output:
-                self_output(args, model, vis_loader)
-            model.train()
-
-    return train_loss, previous_best_loss
+    return train_loss, valid_loss
 
 
 def self_output(args, model, vis_loader):
@@ -91,10 +70,10 @@ def self_output(args, model, vis_loader):
     for ngif in range(args.n_gifs):
         if args.dataset == "hudsons":
             frames, gt_frames = next(iter(vis_loader))
-        elif args.dataset == "mmnist":
+        elif args.dataset == "mmnist":  # Potentially redudant
             frames, gt_frames = next(iter(vis_loader))
-            frames = frames.squeeze(2)
-            gt_frames = gt_frames.squeeze(2)
+            frames = frames
+            gt_frames = gt_frames
         else:
             raise Exception(f"{args.dataset} is not implemented.")
 
@@ -111,7 +90,7 @@ def self_output(args, model, vis_loader):
         imageio.mimsave(gif_save_path, gif_frames)
         args.plotter.gif_plot(args.jobname+" self_output"+str(ngif), gif_save_path)
         wandb_save.append(wandb.Video(gif_save_path))
-    wandb.log({"self_output_gifs": wandb_save})
+    wandb.log({"self_output_gifs": wandb_save}, commit=False)
     print("self output finished!")  
 
 
@@ -122,10 +101,10 @@ def validate(args, valid_loader, model, criterion):
     for batch_idx, batch in enumerate(valid_loader):
         if args.dataset == "hudsons":
             frames, gt_frames = batch
-        elif args.dataset == "mmnist":
+        elif args.dataset == "mmnist": # potentially redudant is squeezing is not needed here in the future
             frames, gt_frames = batch
-            frames = frames.squeeze(2)
-            gt_frames = gt_frames.squeeze(2)
+            frames = frames
+            gt_frames = gt_frames
         else:
             raise Exception(f"{args.dataset} is not implemented.")
 
@@ -141,6 +120,10 @@ def validate(args, valid_loader, model, criterion):
 
 
 
+def mixed_set_mode(dset, mode):
+    for dst in dset.datasets:
+        dst.set_mode(mode)
+
 
 
 
@@ -154,7 +137,7 @@ if __name__ == "__main__":
     parser.add_argument("--bsz", type=int, default=32)
     parser.add_argument("--val_bsz", type=int, default=100)
     parser.add_argument("--dataset_path", type=str, default=os.path.expanduser("~/"))
-    parser.add_argument("--dataset", type=str, default="hudsons", choices=["hudsons","mmnist"])
+    parser.add_argument("--dataset", type=str, default="hudsons", choices=["hudsons","mmnist","mixed"])
     parser.add_argument("--shuffle", action="store_true", help="shuffle dataset")
     parser.add_argument("--visdom", action="store_true", help="use a visdom ploter")
     parser.add_argument("--jobname", type=str, default="jobname", help="jobname")
@@ -167,6 +150,8 @@ if __name__ == "__main__":
     parser.add_argument("--save", action="store_true", help="Save models/validation things to checkpoint location")
     parser.add_argument("--extract_dset", action="store_true", help="activate this if you would like to extract your n_dset")
     parser.add_argument("--dset_sze", type=int, default=-1, help="Number of training samples from dataset")
+    parser.add_argument("--hudson_mmnist_mix", action="store_true", help="Concat 2 the bouncing ball hudson dataset and moving MMNIST dataset")
+    parser.add_argument("--MMNIST_path", type=str, default=os.path.expanduser("~/"), help="If mixing Moving MNIST dataset, specify its path")
 
     ####
     ##
@@ -194,7 +179,12 @@ if __name__ == "__main__":
     # Sorting arguements
     args = parser.parse_args()
     print(args)
-    if args.dataset == "hudsons":
+    if args.hudson_mmnist_mix:  # If we're mixing MMNIST and hudson dataset. total_dset object will be hudson dataset for now
+        temp_args = copy.deepcopy(args)
+        temp_args.dataset_path = temp_args.MMNIST_path
+        dset = [VMDataset_v1(args), MMNIST(temp_args)]
+        dset = torch.utils.data.ConcatDataset(dset)
+    elif args.dataset == "hudsons":
         dset = VMDataset_v1(args)
     elif args.dataset == "mmnist":
         dset = MMNIST(args)
@@ -252,21 +242,43 @@ if __name__ == "__main__":
     print("Training Start")
     for epoch in range(args.epoch):
         if not early_stop_flag:
-            train_loss, epoch_best_loss = train(args, dset, model, optimizer, criterion, epoch, best_loss)
-            if epoch_best_loss > best_loss:   # If the best loss for an epoch doesnt beat the current best
+            train_loss, valid_loss = train(args, dset, model, optimizer, criterion, epoch, best_loss)
+            if valid_loss > best_loss:  # No improvement
                 early_stop_count += 1
                 if early_stop_count >= args.early_stopping:
                     early_stop_flag = True
-            else:
+            else:                       # New Best Epoch
                 early_stop_count  = 0
-                best_loss = epoch_best_loss
-            print(f"Train Loss {train_loss:.3f} |",
-                f"Val Loss {epoch_best_loss:.3f} |",
-                f"Early Stop Flag {early_stop_count}")
-            args.plotter.text_plot(args.jobname+" epoch", f"Train Loss {train_loss:.3f} | Val Loss {epoch_best_loss:.3f} | Early Stop Count {early_stop_count}")
+                best_loss = valid_loss
+                if args.visdom:
+                    args.plotter.text_plot(args.jobname+" val", "Best %s val %.4f Iteration:%d" % (args.loss, best_loss, epoch))
+                if args.save:
+                    torch.save(model.state_dict(), args.checkpoint_path)
+                    model.eval()
+                    if args.hudson_mmnist_mix:
+                        mixed_set_mode(dset, "val")
+                    else:
+                        dset.set_mode("val")
+                    vis_loader = DataLoader(dset, batch_size=1, shuffle=True)#, drop_last=True)
+                    if args.hudson_mmnist_mix:
+                        mixed_set_mode(dset, "train")
+                    else:
+                        dset.set_mode("train")
+                    #visualise_imgs(args, vis_loader, model, 5)
+                    if args.self_output:
+                        self_output(args, model, vis_loader)
+                    model.train()
+
+            # Printing and logging either way
+            print(f"Epoch {epoch}", f"Train Loss {train_loss:.3f} |", f"Val Loss {valid_loss:.3f} |", f"Early Stop Flag {early_stop_count}")
             if args.visdom:
-                wandb.log({'val_loss': epoch_best_loss})
+                wandb.log({'val_loss' : best_loss})
+                args.plotter.text_plot(args.jobname+" epoch", f"Train Loss {train_loss:.3f} | Val Loss {valid_loss:.3f} | Early Stop Count {early_stop_count}")
+                args.plotter.plot(args.loss, "val", "val "+args.jobname, epoch, valid_loss)
+                args.plotter.plot(args.loss, "train", "train "+args.jobname, epoch, train_loss)
+
         else:
             print_string = "Early stop on epoch %d/%d. Best %s %.3f at epoch %d" % (epoch+1, args.epoch, args.loss, best_loss, epoch+1-early_stop_count)
             print(print_string)
             args.plotter.text_plot(args.jobname+" epoch", print_string)
+            sys.exit()
