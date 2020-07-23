@@ -9,7 +9,7 @@ source /home/jumperkables/kable_management/python_venvs/vm/bin/activate
 python ../../../../../../main.py \
     --dataset_path data/hudsons_multi_ygrav/10000_masked_blurred/6_dset.pickle \
     --hudson_mmnist_mix \
-    --MMNIST_path /home/jumperkables/kable_management/data/visual_modelling/moving_mnist/6_50000.npz \
+    --MMNIST_path /home/jumperkables/kable_management/data/visual_modelling/moving_mnist/6_400000.npz \
     --bsz 16 \
     --val_bsz 100 \
     --in_no 5 \
