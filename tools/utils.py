@@ -1,6 +1,6 @@
 import os
 import json
-import pickle as pickle
+import pickle 
 import pandas as pd
 import numpy as np
 import cv2

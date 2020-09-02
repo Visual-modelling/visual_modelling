@@ -14,59 +14,59 @@ import cv2
 
 import tools.utils as utils
 
-class Old_MMNIST(Dataset):
-    def __init__(self, args):
-        self.mode = "train"
-        self.args = args
-        total_dset = np.load( os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), args.dataset_path))
-        total_dset = np.transpose(total_dset, (1,0,2,3))
-
-        if args.shuffle:
-            random.shuffle(total_dset)
-        if args.dset_sze == -1: # If no specific dataset size is specified, use all of it
-            self.train_dict = { idx:data for idx, data in enumerate(total_dset[:round(len(total_dset)*args.train_ratio)]) }
-            self.valid_dict = { idx:data for idx, data in enumerate(total_dset[round(len(total_dset)*args.train_ratio):]) }
-        else:
-            val_size = round(args.dset_sze / args.train_ratio) - args.dset_sze  # Account for validation size too
-            if len(total_dset) < (val_size + args.dset_sze):
-                raise Exception(f"{val_size + args.dset_sze} needed samples for training ({args.dset_sze}) and validating ({val_size}) with specified train ratio of {args.train_ratio}. Exceeds available sample count: {len(total_dset)}")
-            else:
-                self.train_dict = { idx:data for idx, data in enumerate(total_dset[:args.dset_sze]) }
-                self.valid_dict = { idx:data for idx, data in enumerate(total_dset[args.dset_sze:(args.dset_sze+val_size)]) }
-                import ipdb; ipdb.set_trace()
-                print("dsadsa")
-
-
-        self.current_data_dict = self.train_dict
-        
-        # Sort Image reading method
-        #img_read_method_switch = {
-        #    'binary'    : read_ims_binary,
-        #    'greyscale' : read_ims_greyscale,
-        #    'RGB'       : None
-        #}
-        #if args.img_type == "RGB":
-        #    raise Exception("RGB image reading not implemented")
-        #self.img_read_method = img_read_method_switch[args.img_type]
-
-    def __len__(self):
-        return(len(self.current_data_dict))
-
-    def __getitem__(self, idx): # Indexs must count from 0
-        frames = self.current_data_dict[idx]  #data.keys = ['vid', 'vid_path', 'frame_idxs', 'frame_paths', 'positions']
-        frames, gt_frames = frames[:self.args.in_no], frames[self.args.in_no:]
-
-        return (frames, gt_frames)
-
-    def set_mode(self, mode):
-        """
-        Jump between training/validation mode
-        """
-        self.mode = mode
-        if self.mode == 'train':
-            self.current_data_dict = self.train_dict
-        elif self.mode == 'valid':
-            self.current_data_dict = self.valid_dict
+#class Old_MMNIST(Dataset):
+#    def __init__(self, args):
+#        self.mode = "train"
+#        self.args = args
+#        total_dset = np.load( os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), args.dataset_path))
+#        total_dset = np.transpose(total_dset, (1,0,2,3))
+#
+#        if args.shuffle:
+#            random.shuffle(total_dset)
+#        if args.dset_sze == -1: # If no specific dataset size is specified, use all of it
+#            self.train_dict = { idx:data for idx, data in enumerate(total_dset[:round(len(total_dset)*args.train_ratio)]) }
+#            self.valid_dict = { idx:data for idx, data in enumerate(total_dset[round(len(total_dset)*args.train_ratio):]) }
+#        else:
+#            val_size = round(args.dset_sze / args.train_ratio) - args.dset_sze  # Account for validation size too
+#            if len(total_dset) < (val_size + args.dset_sze):
+#                raise Exception(f"{val_size + args.dset_sze} needed samples for training ({args.dset_sze}) and validating ({val_size}) with specified train ratio of {args.train_ratio}. Exceeds available sample count: {len(total_dset)}")
+#            else:
+#                self.train_dict = { idx:data for idx, data in enumerate(total_dset[:args.dset_sze]) }
+#                self.valid_dict = { idx:data for idx, data in enumerate(total_dset[args.dset_sze:(args.dset_sze+val_size)]) }
+#                import ipdb; ipdb.set_trace()
+#                print("dsadsa")
+#
+#
+#        self.current_data_dict = self.train_dict
+#        
+#        # Sort Image reading method
+#        #img_read_method_switch = {
+#        #    'binary'    : read_ims_binary,
+#        #    'greyscale' : read_ims_greyscale,
+#        #    'RGB'       : None
+#        #}
+#        #if args.img_type == "RGB":
+#        #    raise Exception("RGB image reading not implemented")
+#        #self.img_read_method = img_read_method_switch[args.img_type]
+#
+#    def __len__(self):
+#        return(len(self.current_data_dict))
+#
+#    def __getitem__(self, idx): # Indexs must count from 0
+#        frames = self.current_data_dict[idx]  #data.keys = ['vid', 'vid_path', 'frame_idxs', 'frame_paths', 'positions']
+#        frames, gt_frames = frames[:self.args.in_no], frames[self.args.in_no:]
+#
+#        return (frames, gt_frames)
+#
+#    def set_mode(self, mode):
+#        """
+#        Jump between training/validation mode
+#        """
+#        self.mode = mode
+#        if self.mode == 'train':
+#            self.current_data_dict = self.train_dict
+#        elif self.mode == 'valid':
+#            self.current_data_dict = self.valid_dict
 
 
 

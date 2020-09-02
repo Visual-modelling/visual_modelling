@@ -88,7 +88,7 @@ def self_output(args, model, vis_loader):
                 gif_frames.append(out[0][n].cpu().detach().byte())
         gif_save_path = os.path.join(args.results_dir, "%d.gif" % ngif) 
         imageio.mimsave(gif_save_path, gif_frames)
-        args.plotter.gif_plot(args.jobname+" self_output"+str(ngif), gif_save_path)
+        #args.plotter.gif_plot(args.jobname+" self_output"+str(ngif), gif_save_path)
         wandb_save.append(wandb.Video(gif_save_path))
     wandb.log({"self_output_gifs": wandb_save}, commit=False)
     print("self output finished!")  
@@ -125,6 +125,10 @@ def mixed_set_mode(dset, mode):
         dst.set_mode(mode)
 
 
+def arg_dset_assign(args, path):
+    args = copy.deepcopy(args)
+    args.dataset_path = path
+    return args
 
 
 if __name__ == "__main__":
@@ -136,7 +140,7 @@ if __name__ == "__main__":
     parser.add_argument("--device", type=int, default=-1, help="-1 for CPU, 0, 1 for appropriate device")
     parser.add_argument("--bsz", type=int, default=32)
     parser.add_argument("--val_bsz", type=int, default=100)
-    parser.add_argument("--dataset_path", type=str, default=os.path.expanduser("~/"))
+    parser.add_argument("--dataset_path", type=str, nargs="+", default=os.path.expanduser("~/"), help="USE THIS AS MAIN DATASET PATH. INCLUDING FOR MMNIST")
     parser.add_argument("--dataset", type=str, default="hudsons", choices=["hudsons","mmnist","mixed"])
     parser.add_argument("--shuffle", action="store_true", help="shuffle dataset")
     parser.add_argument("--visdom", action="store_true", help="use a visdom ploter")
@@ -151,7 +155,6 @@ if __name__ == "__main__":
     parser.add_argument("--extract_dset", action="store_true", help="activate this if you would like to extract your n_dset")
     parser.add_argument("--dset_sze", type=int, default=-1, help="Number of training samples from dataset")
     parser.add_argument("--hudson_mmnist_mix", action="store_true", help="Concat 2 the bouncing ball hudson dataset and moving MMNIST dataset")
-    parser.add_argument("--MMNIST_path", type=str, default=os.path.expanduser("~/"), help="If mixing Moving MNIST dataset, specify its path")
 
     ####
     ##
@@ -180,13 +183,18 @@ if __name__ == "__main__":
     args = parser.parse_args()
     print(args)
     if args.hudson_mmnist_mix:  # If we're mixing MMNIST and hudson dataset. total_dset object will be hudson dataset for now
-        temp_args = copy.deepcopy(args)
-        temp_args.dataset_path = temp_args.MMNIST_path
-        dset = [VMDataset_v1(args), MMNIST(temp_args)]
+        dataset_list = args.dataset_path
+        hudson_list = [ arg_dset_assign(args, i) for i in dataset_list if "hudson" in i ]
+        mmnist_list = [ arg_dset_assign(args, i) for i in dataset_list if "moving_mnist" in i ]
+        hudson_list = [VMDataset_v1(argz) for argz in hudson_list ]
+        mmnist_list = [MMNIST(argz) for argz in mmnist_list]
+        dset = hudson_list + mmnist_list
         dset = torch.utils.data.ConcatDataset(dset)
     elif args.dataset == "hudsons":
+        args.dataset_path = args.dataset_path[0]
         dset = VMDataset_v1(args)
     elif args.dataset == "mmnist":
+        args.dataset_path = args.dataset_path[0]
         dset = MMNIST(args)
     else:
         raise Exception(f"{args.dataset} dataset not implemented")
@@ -231,7 +239,7 @@ if __name__ == "__main__":
     else:
         raise Exception("Loss not implemented")
     if args.visdom:
-        args.plotter = VisdomLinePlotter(env_name=args.jobname)
+        #args.plotter = VisdomLinePlotter(env_name=args.jobname)
         wandb.init(project="visual-modelling", entity="visual-modelling", name=args.jobname)
         wandb.config.update(args)
 
@@ -251,7 +259,8 @@ if __name__ == "__main__":
                 early_stop_count  = 0
                 best_loss = valid_loss
                 if args.visdom:
-                    args.plotter.text_plot(args.jobname+" val", "Best %s val %.4f Iteration:%d" % (args.loss, best_loss, epoch))
+                    pass
+                    #args.plotter.text_plot(args.jobname+" val", "Best %s val %.4f Iteration:%d" % (args.loss, best_loss, epoch))
                 if args.save:
                     torch.save(model.state_dict(), args.checkpoint_path)
                     model.eval()
@@ -273,12 +282,12 @@ if __name__ == "__main__":
             print(f"Epoch {epoch}", f"Train Loss {train_loss:.3f} |", f"Val Loss {valid_loss:.3f} |", f"Early Stop Flag {early_stop_count}")
             if args.visdom:
                 wandb.log({'val_loss' : best_loss})
-                args.plotter.text_plot(args.jobname+" epoch", f"Train Loss {train_loss:.3f} | Val Loss {valid_loss:.3f} | Early Stop Count {early_stop_count}")
-                args.plotter.plot(args.loss, "val", "val "+args.jobname, epoch, valid_loss)
-                args.plotter.plot(args.loss, "train", "train "+args.jobname, epoch, train_loss)
+                #args.plotter.text_plot(args.jobname+" epoch", f"Train Loss {train_loss:.3f} | Val Loss {valid_loss:.3f} | Early Stop Count {early_stop_count}")
+                #args.plotter.plot(args.loss, "val", "val "+args.jobname, epoch, valid_loss)
+                #args.plotter.plot(args.loss, "train", "train "+args.jobname, epoch, train_loss)
 
         else:
             print_string = "Early stop on epoch %d/%d. Best %s %.3f at epoch %d" % (epoch+1, args.epoch, args.loss, best_loss, epoch+1-early_stop_count)
             print(print_string)
-            args.plotter.text_plot(args.jobname+" epoch", print_string)
+            #args.plotter.text_plot(args.jobname+" epoch", print_string)
             sys.exit()
