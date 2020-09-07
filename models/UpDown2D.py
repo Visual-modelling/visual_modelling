@@ -107,6 +107,7 @@ class Up(nn.Module):
         self.conv = DoubleConv(in_channels, out_channels, args)
 
     def forward(self, x1, x2):
+        
         x1 = self.up(x1)
         x2 = self.up(x2)
         # input is CHW

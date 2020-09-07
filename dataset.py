@@ -300,7 +300,10 @@ class VMDataset_v1(Dataset):
         """
         self.frame_path = os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), self.args.raw_frame_rootdir)
         vids = os.listdir(self.frame_path)
-        vids.remove('config.yml')
+        try:
+            vids.remove('config.yml')
+        except:
+            pass
         vids = [vid for vid in vids if not vid.endswith('.pickle')]
         self.current_data_dict = [ os.path.join(self.frame_path, vid) for vid in vids ]
         self.total_data ={ idx:path for idx, path in enumerate(self.current_data_dict) }
@@ -308,17 +311,33 @@ class VMDataset_v1(Dataset):
         for vidx, vid_path in enumerate(self.total_data.values()):
             print(vidx)
             vid_name = vid_path.split('/')[-1]
-            positions = utils.read_csv(os.path.join(vid_path, 'positions.csv'))
-            #viddle_path = '/home/jumperkables/kable_management/data/visual_modelling/hudsons_og/2000/%.5d' % vidx
-            #positions = utils.read_csv(os.path.join(viddle_path, 'positions.csv')) # For use if Tom's Positions are buggy
-
+            try:
+                positions = utils.read_csv(os.path.join(vid_path, 'positions.csv'))
+            except FileNotFoundError:
+                print(f"{vid_path} not found.\nCreating dummy 'positions' information")
+                import pandas as pd
+                frame_cnt = len(os.listdir(vid_path))
+                positions = {
+                    'timestep': [i for i in range(frame_cnt)],
+                    'x': [0]*frame_cnt,
+                    'y': [0]*frame_cnt
+                }
+                positions = pd.DataFrame(data=positions)
             indexs = torch.tensor(positions.values)[:,:1].long()
             positions = torch.tensor(positions.values)[:,1:]    # Remove the useless frame index for now
             frames = os.listdir(vid_path)
             frames.sort()
-            frames.remove('config.yml')
-            frames.remove('positions.csv')
-            frames.remove('simulation.gif')
+            try:
+                frames.remove('config.yml')
+            except:
+                pass
+            try: 
+                frames.remove('positions.csv')
+            except:
+                pass
+            try:    
+                frames.remove('simulation.gif')
+            except: pass
             frames = [ os.path.join(vid_path, frame) for frame in frames ]
             frame_paths = frames
 

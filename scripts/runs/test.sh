@@ -6,9 +6,9 @@
 #SBATCH -x gpu[0-3]
 #SBATCH --mem 12G
 #SBATCH -p res-gpu-small
-#SBATCH --job-name varysize-64_multi_gmb_2d-d3_sl1-mean
+#SBATCH --job-name varysize-128_multi_gmb_2d-d3_sl1-mean
 #SBATCH --gres gpu:1
-#SBATCH -o /home2/crhf63/kable_management/projects/Visual-modelling/cnn_visual_modelling/.results/varysize-64_multi_gmb_2d-d3_sl1-mean.out
+#SBATCH -o /home2/crhf63/kable_management/projects/Visual-modelling/cnn_visual_modelling/.results/varysize-128_multi_gmb_2d-d3_sl1-mean.out
 
 source /home2/crhf63/kable_management/python_venvs/vm/bin/activate
 python ../../../../../../main.py \
@@ -34,4 +34,4 @@ python ../../../../../../main.py \
     --shuffle \
     --visdom \
     --reduce \
-    --dset_sze 64 
+    --dset_sze 128 
