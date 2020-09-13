@@ -3,16 +3,28 @@ import torch.nn as nn
 import torch.nn.functional as F
 import math
 import pytorch_msssim # import ssim, ms_ssim, SSIM, MS_SSIM
+import piq 
+import frechet_video_distance as fvd
+import tensorflow as tf
 
-def PSNR(img1, img2, pixel_max):
+def FVD(vid, gt):
+    # This requires tensorflow, so turn torch into TF and work
+    result = fvd.calculate_fvd(
+                fvd.create_id3_embedding(fvd.preprocess(vid, (224, 224))),
+                fvd.create_id3_embedding(fvd.preprocess(gt, (224, 224))))
+    return result
+
+def lpips(img1, img2):
     """
-    Torch/numpy tensor inputs
+    LPIPS
     """
-    mse = torch.mean( (img1 - img2) ** 2 )
-    if mse == 0:
-        return 100
-    PIXEL_MAX = pixel_max #255.0 previously
-    return 20 * math.log10(PIXEL_MAX / math.sqrt(mse))
+    return piq.LPIPS(img1, img2)
+
+def psnr(img1, img2, pixel_max):
+    """
+    PSNR
+    """
+    return piq.psnr(img1, img2, data_range=255., reduction="mean")
 
 def ssim(data_range=255, size_average=True, channel=1): # data_range = 255
     """
@@ -50,3 +62,15 @@ class FocalLoss(nn.Module):
             return torch.mean(ret)
         else:
             raise Exception("%s Reduction not implemented" % (self.reduction))
+
+def torch_to_tf(tensor):
+    return tf.convert_to_tensor(tensor.numpy())
+
+if __name__ == "__main__":
+    import ipdb; ipdb.set_trace()
+    real_videos = torch.zeros(10,64,64)
+    generated_videos = torch.ones(10,64,64)
+    result = fvd.calculate_fvd(
+        fvd.create_id3_embedding(fvd.preprocess(torch_to_tf(real_videos), (64, 64))),
+        fvd.create_id3_embedding(fvd.preprocess(torch_to_tf(generated_videos), (64, 64)))
+    )
