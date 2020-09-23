@@ -12,6 +12,8 @@ from torch.utils.data.dataset import Dataset
 from torchvision.transforms import ToTensor
 import cv2
 
+from torchvision.utils import save_image
+
 import tools.utils as utils
 
 
@@ -43,9 +45,10 @@ def read_ims_greyscale(frames):
 ###########################################################################################
 class MMNIST(Dataset):
     def __init__(self, dataset_path, args):
-        import ipdb; ipdb.set_trace()
-        self.mode = "train"
         self.args = args
+        self.generate_moving_mnist((64,64), 100, [1000,2000,3000], 28, [1,2,3])
+        sys.exit()
+        self.mode = "train"
         total_dset = np.load( os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), dataset_path))
         total_dset = total_dset['arr_0']
 
@@ -79,6 +82,7 @@ class MMNIST(Dataset):
         """
         Return train and validation data dictionaries
         """
+        import ipdb; ipdb.set_trace()
         if self.args.dset_sze != -1:
             data = dict( list( data.items()[self.args.dset_sze:] ) )
         # See the argparse in main for a description of splitting functions
@@ -92,6 +96,7 @@ class MMNIST(Dataset):
 
     def prepare_dicts(self):
         # Training
+        import ipdb; ipdb.set_trace()
         iter_len = self.args.in_no + self.args.out_no
         new_train = {}
         counter = 0
@@ -156,40 +161,63 @@ class MMNIST(Dataset):
         return load_mnist_images('train-images-idx3-ubyte.gz')
     
     # generates and returns video frames in uint8 array
-    def generate_moving_mnist(self, shape, seq_len, seqs, num_sz, nums_per_image):
+    def generate_moving_mnist(self, shape, seq_len, seqss, num_sz, nums_per_images):
+        """
+        shape:          (int,int)   Shape of desired frames
+        seq_len:        int         How many frames in sequences
+        seqss:          [int,int..] How many gifs for each subset, ALIGN WITH nums_per_images
+        num_sz:         int         Cant remember
+        nums_per_images [int,int..] e.g. [2,3] = some videos with 2 MMNIST digits, and some with 3      
+        """
+        root_dir = "data/moving_mnist/various"
+        root_dir = os.path.join(os.path.dirname(__file__), root_dir)
+        #root_dir = self.args.dataset_path
         mnist = self.load_dataset()
         width, height = shape
         lims = (x_lim, y_lim) = width-num_sz, height-num_sz
-        dataset = np.empty((seq_len*seqs, 1, width, height), dtype=np.uint8)
-        prcnt = round(seqs/100)
-        prcnt_cnt = 0
-        for seq_idx in range(seqs):
-            if seq_idx%prcnt == 0:
-                print(f"{prcnt_cnt}% done!")
-                prcnt_cnt += 1
-            # randomly generate direc/speed/position, calculate velocity vector
-            direcs = np.pi * (np.random.rand(nums_per_image)*2 - 1)
-            speeds = np.random.randint(5, size=nums_per_image)+2
-            veloc = [(v*math.cos(d), v*math.sin(d)) for d,v in tuple(zip(direcs, speeds))]
-            mnist_images = [Image.fromarray(self.get_picture_array(mnist,r,shift=0)).resize((num_sz,num_sz), Image.ANTIALIAS) \
-                   for r in np.random.randint(0, mnist.shape[0], nums_per_image)]
-            positions = [(np.random.rand()*x_lim, np.random.rand()*y_lim) for _ in range(nums_per_image)]
-            for frame_idx in range(seq_len):
-                canvases = [Image.new('L', (width,height)) for _ in range(nums_per_image)]
-                canvas = np.zeros((1,width,height), dtype=np.float32)
-                for i,canv in enumerate(canvases):
-                    canv.paste(mnist_images[i], tuple(map(lambda p: int(round(p)), positions[i])))
-                    canvas += self.arr_from_img(canv, shift=0)
-                # update positions based on velocity
-                next_pos = [tuple(map(sum, tuple(zip(p,v)))) for p,v in tuple(zip(positions, veloc))]
-                # bounce off wall if a we hit one
-                for i, pos in enumerate(next_pos):
-                    for j, coord in enumerate(pos):
-                        if coord < -2 or coord > lims[j]+2:
-                            veloc[i] = tuple(list(veloc[i][:j]) + [-1 * veloc[i][j]] + list(veloc[i][j+1:]))
-                positions = [tuple(map(sum, tuple(zip(p,v)))) for p,v in tuple(zip(positions, veloc))]
-                # copy additive canvas to data array
-                dataset[seq_idx*seq_len+frame_idx] = (canvas * 255).astype(np.uint8).clip(0,255)
+        for xx, nums_per_image in enumerate(nums_per_images):
+            seqs = seqss[xx]
+            sub_root_dir = os.path.join(root_dir, str(nums_per_image))
+            utils.mkdir_replc(sub_root_dir)
+            dataset = np.empty((seq_len*seqs, 1, width, height), dtype=np.uint8)
+            prcnt = round(seqs/100)
+            prcnt_cnt = 0
+            for seq_idx in range(seqs):
+                if seq_idx%prcnt == 0:
+                    print(f"{prcnt_cnt}% done!")
+                    prcnt_cnt += 1
+                sub_sub_root_dir = os.path.join(sub_root_dir, f"{seq_idx:05d}")
+                # randomly generate direc/speed/position, calculate velocity vector
+                utils.mkdir_replc(sub_sub_root_dir)
+                direcs = np.pi * (np.random.rand(nums_per_image)*2 - 1)
+                speeds = np.random.randint(5, size=nums_per_image)+2
+                veloc = [(v*math.cos(d), v*math.sin(d)) for d,v in tuple(zip(direcs, speeds))]
+                mnist_images = [Image.fromarray(self.get_picture_array(mnist,r,shift=0)).resize((num_sz,num_sz), Image.ANTIALIAS) \
+                       for r in np.random.randint(0, mnist.shape[0], nums_per_image)]
+                positions = [(np.random.rand()*x_lim, np.random.rand()*y_lim) for _ in range(nums_per_image)]
+                for frame_idx in range(seq_len):
+                    canvases = [Image.new('L', (width,height)) for _ in range(nums_per_image)]
+                    canvas = np.zeros((1,width,height), dtype=np.float32)
+                    for i,canv in enumerate(canvases):
+                        canv.paste(mnist_images[i], tuple(map(lambda p: int(round(p)), positions[i])))
+                        canvas += self.arr_from_img(canv, shift=0)
+                    # update positions based on velocity
+                    next_pos = [tuple(map(sum, tuple(zip(p,v)))) for p,v in tuple(zip(positions, veloc))]
+                    # bounce off wall if a we hit one
+                    for i, pos in enumerate(next_pos):
+                        for j, coord in enumerate(pos):
+                            if coord < -2 or coord > lims[j]+2:
+                                veloc[i] = tuple(list(veloc[i][:j]) + [-1 * veloc[i][j]] + list(veloc[i][j+1:]))
+                    positions = [tuple(map(sum, tuple(zip(p,v)))) for p,v in tuple(zip(positions, veloc))]
+                    # copy additive canvas to data array
+                    imgsv = (canvas * 255).astype(np.uint8).clip(0,255)
+                    imgsv = Image.fromarray(imgsv[0])
+                    imgsv.save(os.path.join(sub_sub_root_dir, f"frame_{frame_idx:03d}.png"))
+                    #save_image(torch.from_numpy(imgsv), os.path.join(sub_sub_root_dir, f"frame_{frame_idx:03d}.png"))
+                    # Save frame
+
+                    dataset[seq_idx*seq_len+frame_idx] = imgsv #(canvas * 255).astype(np.uint8).clip(0,255)
+        sys.exit()
         return dataset
     
     def save_dataset(self, dest, filetype, frame_size, seq_len, seqs, num_sz, nums_per_image):

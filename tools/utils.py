@@ -4,6 +4,7 @@ import pickle
 import pandas as pd
 import numpy as np
 import cv2
+import shutil
 
 def read_csv(file_path):
     return pd.read_csv(file_path)
@@ -52,6 +53,10 @@ def mkdirp(p):
     if not os.path.exists(p):
         os.makedirs(p)
 
+def mkdir_replc(dirp):
+    if os.path.exists(dirp):
+        shutil.rmtree(dirp)
+    os.makedirs(dirp)
 
 def files_exist(filepath_list):
     """check whether all the files exist"""

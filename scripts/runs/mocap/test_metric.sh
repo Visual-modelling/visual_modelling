@@ -7,8 +7,8 @@
 
 source ../../../python_venvs/vm/bin/activate
 python ../../../main.py \
-    --dataset from_raw mmnist \
-    --dataset_path data/hudsons_multi_ygrav/500 data/moving_mnist/6_500.npz \
+    --dataset mmnist \
+    --dataset_path data/moving_mnist/various \
     --bsz 16 \
     --val_bsz 100 \
     --in_no 5 \
