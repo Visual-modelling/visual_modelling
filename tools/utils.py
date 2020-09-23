@@ -22,6 +22,10 @@ def save_json(data, file_path):
     with open(file_path, "w") as f:
         json.dump(data, f)
 
+def round_down(num, divisor):
+    return num - (num%divisor)
+
+
 
 def save_json_pretty(data, file_path):
     """save formatted json, use this one for some json config files"""
@@ -62,6 +66,11 @@ def merge_two_dicts(x, y):
     z.update(y)    # modifies z with y's keys and values & returns None
     return z
 
+
+def split_dict_ratio(dic, ratio):
+    cutoff = round(len(dic)*ratio)
+    dic1, dic2 = dict(list( dic.items())[:cutoff]) , dict(list( dic.items())[cutoff:])
+    return dic1, dic2
 
 def img_merge(imgs, mode, direction):
     """

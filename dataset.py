@@ -14,63 +14,21 @@ import cv2
 
 import tools.utils as utils
 
-#class Old_MMNIST(Dataset):
-#    def __init__(self, args):
-#        self.mode = "train"
-#        self.args = args
-#        total_dset = np.load( os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), args.dataset_path))
-#        total_dset = np.transpose(total_dset, (1,0,2,3))
-#
-#        if args.shuffle:
-#            random.shuffle(total_dset)
-#        if args.dset_sze == -1: # If no specific dataset size is specified, use all of it
-#            self.train_dict = { idx:data for idx, data in enumerate(total_dset[:round(len(total_dset)*args.train_ratio)]) }
-#            self.valid_dict = { idx:data for idx, data in enumerate(total_dset[round(len(total_dset)*args.train_ratio):]) }
-#        else:
-#            val_size = round(args.dset_sze / args.train_ratio) - args.dset_sze  # Account for validation size too
-#            if len(total_dset) < (val_size + args.dset_sze):
-#                raise Exception(f"{val_size + args.dset_sze} needed samples for training ({args.dset_sze}) and validating ({val_size}) with specified train ratio of {args.train_ratio}. Exceeds available sample count: {len(total_dset)}")
-#            else:
-#                self.train_dict = { idx:data for idx, data in enumerate(total_dset[:args.dset_sze]) }
-#                self.valid_dict = { idx:data for idx, data in enumerate(total_dset[args.dset_sze:(args.dset_sze+val_size)]) }
-#                import ipdb; ipdb.set_trace()
-#                print("dsadsa")
-#
-#
-#        self.current_data_dict = self.train_dict
-#        
-#        # Sort Image reading method
-#        #img_read_method_switch = {
-#        #    'binary'    : read_ims_binary,
-#        #    'greyscale' : read_ims_greyscale,
-#        #    'RGB'       : None
-#        #}
-#        #if args.img_type == "RGB":
-#        #    raise Exception("RGB image reading not implemented")
-#        #self.img_read_method = img_read_method_switch[args.img_type]
-#
-#    def __len__(self):
-#        return(len(self.current_data_dict))
-#
-#    def __getitem__(self, idx): # Indexs must count from 0
-#        frames = self.current_data_dict[idx]  #data.keys = ['vid', 'vid_path', 'frame_idxs', 'frame_paths', 'positions']
-#        frames, gt_frames = frames[:self.args.in_no], frames[self.args.in_no:]
-#
-#        return (frames, gt_frames)
-#
-#    def set_mode(self, mode):
-#        """
-#        Jump between training/validation mode
-#        """
-#        self.mode = mode
-#        if self.mode == 'train':
-#            self.current_data_dict = self.train_dict
-#        elif self.mode == 'valid':
-#            self.current_data_dict = self.valid_dict
 
+###########################################################################################
+# Utility methods
+###########################################################################################
+# Image reading methods
+def read_ims_binary(frames):
+    raise Exception("Not implemented binary image read yet")
+    return frames
+    #old pillow version return([ (ToTensor()(Image.open(frame.replace('jumperkables', getpass.getuser()) ))>0).float() for frame in frames ])
 
-
-
+def read_ims_greyscale(frames):
+    home_dir = os.path.expanduser("~").split("/")[1]
+    frames = [ torch.from_numpy(cv2.imread(frame.replace('jumperkables', getpass.getuser()).replace("/home/", f"/{home_dir}/" ), cv2.IMREAD_GRAYSCALE)) for frame in frames]
+    #old pillow version frames = [ (ToTensor()(Image.open(frame.replace('jumperkables', getpass.getuser()) ))>0).float() for frame in frames ]
+    return frames
 
 
 
@@ -84,36 +42,18 @@ import tools.utils as utils
 # saves in hdf5, npz, or jpg (individual frames) format
 ###########################################################################################
 class MMNIST(Dataset):
-    def __init__(self, args):
+    def __init__(self, dataset_path, args):
+        import ipdb; ipdb.set_trace()
         self.mode = "train"
         self.args = args
-        if args.extract_dset:
-            return None
-        total_dset = np.load( os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), args.dataset_path))
+        total_dset = np.load( os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), dataset_path))
         total_dset = total_dset['arr_0']
-        if args.shuffle:
-            random.shuffle(total_dset)
-        if args.dset_sze == -1: # If no specific dataset size is specified, use all of it
-            self.train_dict = { idx:data for idx, data in enumerate(total_dset[:round(len(total_dset)*args.train_ratio)]) }
-            self.valid_dict = { idx:data for idx, data in enumerate(total_dset[round(len(total_dset)*args.train_ratio):]) }
-        else:
-            val_size = round(args.dset_sze / args.train_ratio) - args.dset_sze  # Account for validation size too
-            if len(total_dset) < (val_size + args.dset_sze):
-                raise Exception(f"{val_size + args.dset_sze} needed samples for training ({args.dset_sze}) and validating ({val_size}) with specified train ratio of {args.train_ratio}. Exceeds available sample count: {len(total_dset)}")
-            else:
-                self.train_dict = { idx:data for idx, data in enumerate(total_dset[:args.dset_sze]) }
-                self.valid_dict = { idx:data for idx, data in enumerate(total_dset[args.dset_sze:(args.dset_sze+val_size)]) }
+
+        self.train_dict, self.valid_dict = self.train_val_split(data, args.split_condition)
+        self.prepare_dicts()
+        self.set_mode("train")
+
         self.current_data_dict = self.train_dict
-        
-        # Sort Image reading method
-        #img_read_method_switch = {
-        #    'binary'    : read_ims_binary,
-        #    'greyscale' : read_ims_greyscale,
-        #    'RGB'       : None
-        #}
-        #if args.img_type == "RGB":
-        #    raise Exception("RGB image reading not implemented")
-        #self.img_read_method = img_read_method_switch[args.img_type]
 
     def __len__(self):
         return(len(self.current_data_dict))
@@ -132,6 +72,52 @@ class MMNIST(Dataset):
             self.current_data_dict = self.train_dict
         elif self.mode == 'valid':
             self.current_data_dict = self.valid_dict
+        elif self.mode == "self_out":
+            self.current_data_dict = self.self_out_dict 
+
+    def train_val_split(self, data, condition):
+        """
+        Return train and validation data dictionaries
+        """
+        if self.args.dset_sze != -1:
+            data = dict( list( data.items()[self.args.dset_sze:] ) )
+        # See the argparse in main for a description of splitting functions
+        if condition[:8] == "tv_ratio":
+            tv_ratio = condition[9:].split('-')
+            tv_ratio = float(tv_ratio[0])/( float(tv_ratio[0]) + float(tv_ratio[1]) )
+            train_dict, valid_dict = utils.split_dict_ratio(data, tv_ratio)
+            return train_dict, valid_dict
+        else:
+            raise ValueError(f"Condition: {condition} not recognised")
+
+    def prepare_dicts(self):
+        # Training
+        iter_len = self.args.in_no + self.args.out_no
+        new_train = {}
+        counter = 0
+        for idx, clip in enumerate(self.train_dict.values()):
+            clip_len = len(clip.keys())
+            for x in range(0, clip_len-(clip_len % iter_len), iter_len):
+                new_train[counter] = { y:clip[y] for y in range(x,x+iter_len) }
+                counter+=1
+        self.train_dict = new_train
+
+        # Validation
+        new_valid = {}
+        new_self_output = {}
+        counter = 0
+        for idx, clip in enumerate(self.valid_dict.values()):
+            clip_len = len(clip.keys())
+            new_self_output[idx] = clip
+            for x in range(0, clip_len-(clip_len % iter_len), iter_len):
+                new_valid[counter] = { y:clip[y] for y in range(x,x+iter_len) }
+                counter+=1
+        self.valid_dict = new_valid
+        self.self_out_dict = new_self_output
+
+
+
+
 
 
 
@@ -233,32 +219,19 @@ class MMNIST(Dataset):
  
 
 
-
-
-class VMDataset_v1(Dataset):
-    def __init__(self, args):
+class Dataset_from_raw(Dataset):
+    """
+    Dataset object that processes from raw frames:
+    Designed to work with dataset of depth 3.
+    root_dir -> clip_0,...clip_999 -> frame_000.png, frame_001.png
+    """
+    def __init__(self, dataset_path, args):
         self.mode = "train"
         self.args = args
-        if args.extract_dset:
-            return None
-        total_dset = utils.load_pickle( os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), args.dataset_path))
-
-        if args.shuffle:
-            random.shuffle(total_dset)
-        if args.dset_sze == -1: # If no specific dataset size is specified, use all of it
-            self.train_dict = { idx:data for idx, data in enumerate(total_dset[:round(len(total_dset)*args.train_ratio)]) }
-            self.valid_dict = { idx:data for idx, data in enumerate(total_dset[round(len(total_dset)*args.train_ratio):]) }
-        else:
-            val_size = round(args.dset_sze / args.train_ratio) - args.dset_sze  # Account for validation size too
-            if len(total_dset) < (val_size + args.dset_sze):
-                raise Exception(f"{val_size + args.dset_sze} needed samples for training ({args.dset_sze}) and validating ({val_size}) with specified train ratio of {args.train_ratio}. Exceeds available sample count: {len(total_dset)}")
-            else:
-                self.train_dict = { idx:data for idx, data in enumerate(total_dset[:args.dset_sze]) }
-                self.valid_dict = { idx:data for idx, data in enumerate(total_dset[args.dset_sze:(args.dset_sze+val_size)]) }
-        self.current_data_dict = self.train_dict
-        assert(args.in_no+args.out_no == len(self.current_data_dict[0]['frame_paths']),
-            "In frames + Ground truth frames do not equal the frame sample size of the dataset")
-        
+        data = self.read_frames(dataset_path)
+        self.train_dict, self.valid_dict = self.train_val_split(data, args.split_condition)
+        self.prepare_dicts()
+        self.set_mode("train")
         # Sort Image reading method
         img_read_method_switch = {
             'binary'    : read_ims_binary,
@@ -269,19 +242,6 @@ class VMDataset_v1(Dataset):
             raise Exception("RGB image reading not implemented")
         self.img_read_method = img_read_method_switch[args.img_type]
 
-    def __len__(self):
-        return(len(self.current_data_dict))
-
-    def __getitem__(self, idx): # Indexs must count from 0
-        data = self.current_data_dict[idx]  #data.keys = ['vid', 'vid_path', 'frame_idxs', 'frame_paths', 'positions']
-        positions, gt_positions = data['positions'][:self.args.in_no], data['positions'][self.args.in_no:]
-        frames = data['frame_paths']
-        frames = self.img_read_method(frames)
-        frames = torch.stack(frames, dim=0)
-        frames, gt_frames = frames[:self.args.in_no], frames[self.args.in_no:]
-        return (frames, gt_frames)
-        #return (frames, positions, gt_frames, gt_positions) # Variably sized not solved yet
-
     def set_mode(self, mode):
         """
         Jump between training/validation mode
@@ -291,24 +251,98 @@ class VMDataset_v1(Dataset):
             self.current_data_dict = self.train_dict
         elif self.mode == 'valid':
             self.current_data_dict = self.valid_dict
+        elif self.mode == "self_out":
+            self.current_data_dict = self.self_out_dict
+        else:
+            raise ValueError(f"Mode {mode} invalid")
 
-    def save_dataset(self, in_no, out_no, save_path):
+    def __len__(self):
+        return(len(self.current_data_dict))
+
+    def __getitem__(self, idx): # Indexs must count from 0
+        if self.mode is not "self_out":
+            data = self.current_data_dict[idx]  #data.keys = ['vid', 'vid_path', 'frame_idxs', 'frame_paths', 'positions']
+            positions = torch.stack([ pos['positions'] for pos in data.values() ])
+            positions, gt_positions = positions[:self.args.in_no], positions[self.args.in_no:]
+            frames = [ frm['frame_paths'] for frm in data.values() ]
+            frames = self.img_read_method(frames)
+            frames = torch.stack(frames, dim=0)
+            frames, gt_frames = frames[:self.args.in_no], frames[self.args.in_no:]
+            return (frames, gt_frames)
+        else:
+            data = self.current_data_dict[idx]  #data.keys = ['vid', 'vid_path', 'frame_idxs', 'frame_paths', 'positions']
+            frames = [ frm['frame_paths'] for frm in data.values() ]
+            frames = self.img_read_method(frames)
+            frames = torch.stack(frames, dim=0)
+            start_frames, gt_frames = frames[:self.args.in_no], frames[self.args.in_no:]
+            vid_name = [ frm['vid'] for frm in data.values() ][0] 
+            return (start_frames, gt_frames, vid_name)           
+
+    def prepare_dicts(self):
+        # Training
+        iter_len = self.args.in_no + self.args.out_no
+        new_train = {}
+        counter = 0
+        for idx, clip in enumerate(self.train_dict.values()):
+            clip_len = len(clip.keys())
+            for x in range(0, clip_len-(clip_len % iter_len), iter_len):
+                new_train[counter] = { y:clip[y] for y in range(x,x+iter_len) }
+                counter+=1
+        self.train_dict = new_train
+
+        # Validation
+        new_valid = {}
+        new_self_output = {}
+        counter = 0
+        for idx, clip in enumerate(self.valid_dict.values()):
+            clip_len = len(clip.keys())
+            new_self_output[idx] = clip
+            for x in range(0, clip_len-(clip_len % iter_len), iter_len):
+                new_valid[counter] = { y:clip[y] for y in range(x,x+iter_len) }
+                counter+=1
+        self.valid_dict = new_valid
+        self.self_out_dict = new_self_output
+
+    def train_val_split(self, data, condition):
         """
-        Save the dataset as preprocessed json
-        in_no = number of images for input
-        out_no = number of images for ground truth
+        Return train and validation data dictionaries
         """
-        self.frame_path = os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), self.args.raw_frame_rootdir)
-        vids = os.listdir(self.frame_path)
+        if self.args.dset_sze != -1:
+            data = dict( list( data.items()[self.args.dset_sze:] ) )
+        # See the argparse in main for a description of splitting functions
+        if condition[:8] == "tv_ratio":
+            tv_ratio = condition[9:].split('-')
+            tv_ratio = float(tv_ratio[0])/( float(tv_ratio[0]) + float(tv_ratio[1]) )
+            train_dict, valid_dict = utils.split_dict_ratio(data, tv_ratio)
+            return train_dict, valid_dict
+        else:
+            raise ValueError(f"Condition: {condition} not recognised")
+
+    def read_frames(self, dataset_path):
+        """
+        Read in the raw images as frames into a dictionary
+        Returns:
+        {
+            'clip_name':{0: {frame_0_data}}
+            ...
+        }
+        """
+        frame_path = os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), dataset_path)
+        vids = os.listdir(frame_path)
+
+        ##########################
+        # Remove all excess files
         try:
             vids.remove('config.yml')
         except:
             pass
         vids = [vid for vid in vids if not vid.endswith('.pickle')]
-        self.current_data_dict = [ os.path.join(self.frame_path, vid) for vid in vids ]
-        self.total_data ={ idx:path for idx, path in enumerate(self.current_data_dict) }
-        dataset_save = []
-        for vidx, vid_path in enumerate(self.total_data.values()):
+        vids.sort()
+        ##########################
+        
+        total_data = { vid:os.path.join(frame_path, vid) for vid in vids }
+        return_dataset = {}
+        for vidx, vid_path in total_data.items():
             print(vidx)
             vid_name = vid_path.split('/')[-1]
             try:
@@ -327,84 +361,159 @@ class VMDataset_v1(Dataset):
             positions = torch.tensor(positions.values)[:,1:]    # Remove the useless frame index for now
             frames = os.listdir(vid_path)
             frames.sort()
-            try:
-                frames.remove('config.yml')
-            except:
-                pass
-            try: 
-                frames.remove('positions.csv')
-            except:
-                pass
-            try:    
-                frames.remove('simulation.gif')
-            except: pass
-            frames = [ os.path.join(vid_path, frame) for frame in frames ]
+            exclude = ['config.yml','positions.csv','simulation.gif']
+            frames = [ os.path.join(vid_path, frame) for frame in frames if frame not in exclude]
             frame_paths = frames
 
-            for x in range(0, len(frames), in_no+out_no):
-                if(x+in_no+out_no<=len(frames)):    # Drop the remaining frames
-                    dataset_save.append(
-                        {
+            return_dataset[vidx] = {x:{
                             "vid":vid_name,
                             "vid_path":vid_path,
-                            "frame_idxs":indexs[x:x+in_no+out_no],
-                            "frame_paths":frame_paths[x:x+in_no+out_no],
-                            "positions":positions[x:x+in_no+out_no]
-                            #"frames":frames[x:x+in_no+out_no]
-                        }
-                    )
-        utils.save_pickle(dataset_save, os.path.join(save_path, str(in_no+out_no)+"_dset.pickle"))
-        # Frames, positions and indexs stacked, save a list of these
+                            "frame_idx":indexs[x],
+                            "frame_paths":frame_paths[x],
+                            "positions":positions[x],
+                            "frame":frames[x]} 
+                        for x in range(len(frames))}
+        return return_dataset
  
 
 
 
 
 
-# Image reading methods
-def read_ims_binary(frames):
-    raise Exception("Not implemented binary image read yet")
-    return frames
-    #old pillow version return([ (ToTensor()(Image.open(frame.replace('jumperkables', getpass.getuser()) ))>0).float() for frame in frames ])
 
-def read_ims_greyscale(frames):
-    home_dir = os.path.expanduser("~").split("/")[1]
-    frames = [ torch.from_numpy(cv2.imread(frame.replace('jumperkables', getpass.getuser()).replace("/home/", f"/{home_dir}/" ), cv2.IMREAD_GRAYSCALE)) for frame in frames]
-    #old pillow version frames = [ (ToTensor()(Image.open(frame.replace('jumperkables', getpass.getuser()) ))>0).float() for frame in frames ]
-    return frames
-          
 
-if __name__ == "__main__":
-    torch.manual_seed(2667)
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--extract_dset", action="store_true", help="activate this if you would like to extract your n_dset")
-    parser.add_argument("--extracted_dset_savepathdir", type=str, default=os.path.expanduser("~/"), help="root directory of where you would like to save your n_dset.pickle")
-    parser.add_argument("--in_no", type=int, default=5, help="number of frames to use for forward pass")
-    parser.add_argument("--out_no", type=int, default=1, help="number of frames to use for ground_truth")
-    parser.add_argument("--raw_frame_rootdir", type=str, default=os.path.expanduser("~/"), help="The root directory containing 00000, 00001...")
-    parser.add_argument("--dataset", type=str, default="hudsons", choices=["hudsons","mmnist"])
 
-    # MMNIST Specific settings
-    parser.add_argument('--dest', type=str, dest='dest')
-    parser.add_argument('--filetype', default='npz', type=str, dest='filetype')
-    parser.add_argument('--frame_size', default=64, type=int, dest='frame_size')
-    parser.add_argument('--seq_len', default=30, type=int, dest='seq_len') # length of each sequence
-    parser.add_argument('--seqs', default=100, type=int, dest='seqs') # number of sequences to generate
-    parser.add_argument('--num_sz', default=28, type=int, dest='num_sz') # size of mnist digit within frame
-    parser.add_argument('--nums_per_image', default=2, type=int, dest='nums_per_image') # number of digits in each frame
-    args = parser.parse_args()
-    print(args)
-    if not args.extract_dset:
-        print("Must explicitly set --extract_dset flag to avoid accidental dataset erasure.")
-        sys.exit()
-    if args.dataset == "hudsons":
-        dset = VMDataset_v1(args)
-        dset.save_dataset(args.in_no, args.out_no, os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), args.extracted_dset_savepathdir))
-        print("Extraction successful. Saved to:\n", args.extracted_dset_savepathdir+"/"+str(args.in_no+args.out_no)+"_dset.pickle")
-    elif args.dataset == "mmnist":
-        print("Finish implementing MMNIST")
-        dset = MMNIST(args)
-        dset.save_dataset(dest=args.dest, filetype=args.filetype, frame_size=args.frame_size, seq_len=args.seq_len, seqs=args.seqs, num_sz=args.num_sz, nums_per_image=args.nums_per_image)
 
-    else:
-        raise Exception(f"{args.dataset} dataset not implemented")
+
+
+
+
+
+
+
+
+
+
+
+
+
+#class VMDataset_v1(Dataset):
+#    def __init__(self, args):
+#        self.mode = "train"
+#        self.args = args
+#        if args.extract_dset:
+#            return None
+#        total_dset = utils.load_pickle( os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), args.dataset_path))
+#
+#        if args.shuffle:
+#            random.shuffle(total_dset)
+#        if args.dset_sze == -1: # If no specific dataset size is specified, use all of it
+#            self.train_dict = { idx:data for idx, data in enumerate(total_dset[:round(len(total_dset)*args.train_ratio)]) }
+#            self.valid_dict = { idx:data for idx, data in enumerate(total_dset[round(len(total_dset)*args.train_ratio):]) }
+#        else:
+#            val_size = round(args.dset_sze / args.train_ratio) - args.dset_sze  # Account for validation size too
+#            if len(total_dset) < (val_size + args.dset_sze):
+#                raise Exception(f"{val_size + args.dset_sze} needed samples for training ({args.dset_sze}) and validating ({val_size}) with specified train ratio of {args.train_ratio}. Exceeds available sample count: {len(total_dset)}")
+#            else:
+#                self.train_dict = { idx:data for idx, data in enumerate(total_dset[:args.dset_sze]) }
+#                self.valid_dict = { idx:data for idx, data in enumerate(total_dset[args.dset_sze:(args.dset_sze+val_size)]) }
+#        self.current_data_dict = self.train_dict
+#        assert(args.in_no+args.out_no == len(self.current_data_dict[0]['frame_paths']),
+#            "In frames + Ground truth frames do not equal the frame sample size of the dataset")
+#        
+#        # Sort Image reading method
+#        img_read_method_switch = {
+#            'binary'    : read_ims_binary,
+#            'greyscale' : read_ims_greyscale,
+#            'RGB'       : None
+#        }
+#        if args.img_type == "RGB":
+#            raise Exception("RGB image reading not implemented")
+#        self.img_read_method = img_read_method_switch[args.img_type]
+#
+#    def __len__(self):
+#        return(len(self.current_data_dict))
+#
+#    def __getitem__(self, idx): # Indexs must count from 0
+#        data = self.current_data_dict[idx]  #data.keys = ['vid', 'vid_path', 'frame_idxs', 'frame_paths', 'positions']
+#        positions, gt_positions = data['positions'][:self.args.in_no], data['positions'][self.args.in_no:]
+#        frames = data['frame_paths']
+#        frames = self.img_read_method(frames)
+#        frames = torch.stack(frames, dim=0)
+#        frames, gt_frames = frames[:self.args.in_no], frames[self.args.in_no:]
+#        return (frames, gt_frames)
+#        #return (frames, positions, gt_frames, gt_positions) # Variably sized not solved yet
+#
+#    def set_mode(self, mode):
+#        """
+#        Jump between training/validation mode
+#        """
+#        self.mode = mode
+#        if self.mode == 'train':
+#            self.current_data_dict = self.train_dict
+#        elif self.mode == 'valid':
+#            self.current_data_dict = self.valid_dict
+#
+#    def save_dataset(self, in_no, out_no, save_path):
+#        """
+#        Save the dataset as preprocessed json
+#        in_no = number of images for input
+#        out_no = number of images for ground truth
+#        """
+#        self.frame_path = os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), self.args.raw_frame_rootdir)
+#        vids = os.listdir(self.frame_path)
+#        try:
+#            vids.remove('config.yml')
+#        except:
+#            pass
+#        vids = [vid for vid in vids if not vid.endswith('.pickle')]
+#        self.current_data_dict = [ os.path.join(self.frame_path, vid) for vid in vids ]
+#        self.total_data ={ idx:path for idx, path in enumerate(self.current_data_dict) }
+#        dataset_save = []
+#        for vidx, vid_path in enumerate(self.total_data.values()):
+#            print(vidx)
+#            vid_name = vid_path.split('/')[-1]
+#            try:
+#                positions = utils.read_csv(os.path.join(vid_path, 'positions.csv'))
+#            except FileNotFoundError:
+#                print(f"{vid_path} not found.\nCreating dummy 'positions' information")
+#                import pandas as pd
+#                frame_cnt = len(os.listdir(vid_path))
+#                positions = {
+#                    'timestep': [i for i in range(frame_cnt)],
+#                    'x': [0]*frame_cnt,
+#                    'y': [0]*frame_cnt
+#                }
+#                positions = pd.DataFrame(data=positions)
+#            indexs = torch.tensor(positions.values)[:,:1].long()
+#            positions = torch.tensor(positions.values)[:,1:]    # Remove the useless frame index for now
+#            frames = os.listdir(vid_path)
+#            frames.sort()
+#            try:
+#                frames.remove('config.yml')
+#            except:
+#                pass
+#            try: 
+#                frames.remove('positions.csv')
+#            except:
+#                pass
+#            try:    
+#                frames.remove('simulation.gif')
+#            except: pass
+#            frames = [ os.path.join(vid_path, frame) for frame in frames ]
+#            frame_paths = frames
+#
+#            for x in range(0, len(frames), in_no+out_no):
+#                if(x+in_no+out_no<=len(frames)):    # Drop the remaining frames
+#                    dataset_save.append(
+#                        {
+#                            "vid":vid_name,
+#                            "vid_path":vid_path,
+#                            "frame_idxs":indexs[x:x+in_no+out_no],
+#                            "frame_paths":frame_paths[x:x+in_no+out_no],
+#                            "positions":positions[x:x+in_no+out_no]
+#                            #"frames":frames[x:x+in_no+out_no]
+#                        }
+#                    )
+#        utils.save_pickle(dataset_save, os.path.join(save_path, str(in_no+out_no)+"_dset.pickle"))
+#        # Frames, positions and indexs stacked, save a list of these

@@ -6,7 +6,7 @@ from PIL import Image
 from torch.utils.data import DataLoader
 from torchvision import transforms
 
-from dataset import VMDataset_v1, MMNIST
+from dataset import MMNIST, Dataset_from_raw
 from models.UpDown2D import FCUp_Down2D
 from models.UpDown3D import FCUp_Down3D
 from models.transformer import VMTransformer, VMTransformer2 
@@ -19,32 +19,18 @@ import torch.nn.functional as F
 
 from tools.visdom_plotter import VisdomLinePlotter
 import wandb
+import piq
 
 import imageio
 
 def train(args, dset, model, optimizer, criterion, epoch, previous_best_loss):
-    if args.hudson_mmnist_mix:
-        mixed_set_mode(dset, "val")
-    else:
-        dset.set_mode("val")
-    vis_loader = DataLoader(dset, batch_size=1, shuffle=True)#, drop_last=True)
-    valid_loader = DataLoader(dset, batch_size=args.val_bsz, shuffle=True)#, drop_last=True)
-    if args.hudson_mmnist_mix:
-        mixed_set_mode(dset, "train")
-    else:
-        dset.set_mode("train")
-    model.train()
-    train_loader = DataLoader(dset, batch_size=args.bsz, shuffle=True)#, drop_last=True)
+    # Prepare validation loader
+    #(dset, model, mode, args)
+    set_modes(dset, model, "train", args)
+    train_loader = DataLoader(dset, batch_size=args.bsz, shuffle=args.shuffle)#, drop_last=True)
     train_loss = []
     for batch_idx, batch in enumerate(train_loader):
-        if args.dataset == "hudsons":
-            frames, gt_frames = batch
-        elif args.dataset == "mmnist":  # We may need to resqueeze here later, potentially redudant
-            frames, gt_frames = batch
-            frames = frames
-            gt_frames = gt_frames
-        else:
-            raise Exception(f"{args.dataset} is not implemented.")
+        frames, gt_frames = batch
         frames = frames.float().to(args.device)
         gt_frames = gt_frames.float().to(args.device)
         out = model_fwd(model, frames, args)
@@ -58,56 +44,88 @@ def train(args, dset, model, optimizer, criterion, epoch, previous_best_loss):
 
     # Validate
     train_loss = sum(train_loss) / float(len(train_loss))#from train_corrects            
-    valid_loss = validate(args, valid_loader, model, criterion)
+    valid_loss = validate(args, dset, model, criterion)
 
     return train_loss, valid_loss
 
+def get_gif_metrics(gif_frames, gt_frames, metrics):
+    #import ipdb; ipdb.set_trace()
+    gif_frames, gt_frames = torch.stack(gif_frames).unsqueeze(1), gt_frames[0].unsqueeze(1)
+    metric_vals = {
+        'PSNR':float(metrics['PSNR'](gif_frames, gt_frames, data_range=255., reduction="mean")),
+        'LPIPS':float(metrics['LPIPS'](gif_frames.float(), gt_frames.float())),
+        'SSIM':float(metrics['SSIM'](gif_frames, gt_frames, data_range=255.)),
+        'MS_SSIM':-1. if (gif_frames.shape[2]<=161 and gif_frames.shape[3]<=161) else float(metrics['MS_SSIM'](gif_frames, gt_frames, data_range=255.)),
+        #'FID':float(metrics['FID'](metrics['FID']._compute_feats(DataLoader(FID_dset(gif_frames.float()))), metrics['FID']._compute_feats(DataLoader(FID_dset(gt_frames.float()))))),
+        #'FVD':metrics['FVD'](gif_frames[:utils.round_down(gif_frames.shape[0],16)], gt_frames[:utils.round_down(gt_frames.shape[0],16)] )
+        'FVD':metrics['FVD'](gif_frames, gt_frames)
+    }
+    return metric_vals
 
-def self_output(args, model, vis_loader):
-    model.eval()
+#### Wrapper classes for FID loss
+class FID_dset(torch.utils.data.Dataset):
+    def __init__(self, frames):
+        self.frames = frames
+    def __len__(self):
+        return(self.frames.shape[0])
+    def __getitem__(self, idx):
+        return self.frames(idx)
+
+#class FID_dloader(DataLoader):
+
+
+
+##########
+def self_output(args, model, dset):
+    set_modes(dset, model, "self_out", args)
+    vis_loader = DataLoader(dset, batch_size=1, shuffle=args.shuffle)#, drop_last=True)
+    #visualise_imgs(args, vis_loader, model, 5)
     print("self output commencing...")
-    wandb_save = []
+    wandb_frames = []
+    wandb_metric_n_names = []
+    metrics = {
+        'PSNR':piq.psnr,
+        'LPIPS':piq.LPIPS(),
+        'SSIM':piq.ssim,
+        'MS_SSIM':piq.multi_scale_ssim,
+        #'FID':piq.FID(),
+        'FVD':tools.loss.FVD()
+    }
     for ngif in range(args.n_gifs):
-        if args.dataset == "hudsons":
-            frames, gt_frames = next(iter(vis_loader))
-        elif args.dataset == "mmnist":  # Potentially redudant
-            frames, gt_frames = next(iter(vis_loader))
-            frames = frames
-            gt_frames = gt_frames
-        else:
-            raise Exception(f"{args.dataset} is not implemented.")
-
-        frames = frames.float().to(args.device)
-        gt_frames = gt_frames.float().to(args.device)
-        out = model_fwd(model, frames, args)
+        start_frames, gt_frames, vid_name = next(iter(vis_loader))
+        start_frames = start_frames.float().to(args.device)
+        #gt_frames = gt_frames.float().to(args.device)
+        out = model_fwd(model, start_frames, args)
         gif_frames = []
-        for itr in range(args.self_output_n):
-            frames = torch.cat([ frames[:,args.out_no:args.in_no] , out ], 1)
-            out = model_fwd(model, frames, args)
+        if args.self_output_n == -1:
+            self_output_n = gt_frames.shape[1]
+        else:
+            self_output_n = args.self_output_n
+        for itr in range(self_output_n):
+            start_frames = torch.cat([ start_frames[:,args.out_no:args.in_no] , out ], 1)
+            out = model_fwd(model, start_frames, args)
             for n in range(args.out_no):
                 gif_frames.append(out[0][n].cpu().detach().byte())
-        gif_save_path = os.path.join(args.results_dir, "%d.gif" % ngif) 
+            # Add the ground truth frame side by side to generated frame
+        gif_metrics = get_gif_metrics(gif_frames, gt_frames, metrics)
+        gif_frames = [ torch.cat( [torch.stack(gif_frames)[n_frm], gt_frames[0][n_frm]], 0) for n_frm in range(len(gif_frames)) ]
+        gif_save_path = os.path.join(args.results_dir, "%d.gif" % ngif)
         imageio.mimsave(gif_save_path, gif_frames)
         #args.plotter.gif_plot(args.jobname+" self_output"+str(ngif), gif_save_path)
-        wandb_save.append(wandb.Video(gif_save_path))
-    wandb.log({"self_output_gifs": wandb_save}, commit=False)
+        wandb_frames.append(wandb.Video(gif_save_path))
+        gif_metrics['name'] = vid_name[0]
+        wandb_metric_n_names.append(gif_metrics)
+    wandb.log({"self_output_gifs": wandb_frames, "metrics":wandb_metric_n_names}, commit=False)
     print("self output finished!")  
 
 
-def validate(args, valid_loader, model, criterion):
+def validate(args, dset, model, criterion):
+    set_modes(dset, model, "valid", args)
+    valid_loader = DataLoader(dset, batch_size=args.val_bsz, shuffle=args.shuffle)#, drop_last=True)
     print("Validating")
-    model.eval()
     valid_loss = []
     for batch_idx, batch in enumerate(valid_loader):
-        if args.dataset == "hudsons":
-            frames, gt_frames = batch
-        elif args.dataset == "mmnist": # potentially redudant is squeezing is not needed here in the future
-            frames, gt_frames = batch
-            frames = frames
-            gt_frames = gt_frames
-        else:
-            raise Exception(f"{args.dataset} is not implemented.")
-
+        frames, gt_frames = batch
         frames = frames.float().to(args.device)
         gt_frames = gt_frames.float().to(args.device)
         img = model_fwd(model, frames, args)
@@ -118,47 +136,52 @@ def validate(args, valid_loader, model, criterion):
     return sum(valid_loss)/len(valid_loss)
 
 
-
+def set_modes(dset, model, mode, args):
+    if mode == "train":
+        model.train()
+    elif mode == "valid":
+        model.eval()
+    elif mode == "self_out":
+        model.eval()
+    if  1 < len(args.dataset):
+        mixed_set_mode(dset, mode)
+    else:
+        dset.set_mode(mode)
 
 def mixed_set_mode(dset, mode):
     for dst in dset.datasets:
         dst.set_mode(mode)
 
 
-def arg_dset_assign(args, path):
-    args = copy.deepcopy(args)
-    args.dataset_path = path
-    return args
-
-
 if __name__ == "__main__":
     torch.manual_seed(2667)
     parser = argparse.ArgumentParser()
+    parser.add_argument_group("Run specific arguments")
     parser.add_argument("--epoch", type=int, default=10)
     parser.add_argument("--early_stopping", type=int, default=2, help="number of epochs after no improvement before stopping")
-    parser.add_argument("--train_ratio", type=float, default=0.8)
+    parser.add_argument("--split_condition", type=str, default="tv_ratio:4-1", help="Custom string deciding how to split datasets into train/test. Affiliated with a custom function in dataset")
+    """
+    Guide to split_condition:
+        'tv_ratio:4-1' : Simply split all videos into train:validation ratio of 4:1
+
+    """
     parser.add_argument("--device", type=int, default=-1, help="-1 for CPU, 0, 1 for appropriate device")
     parser.add_argument("--bsz", type=int, default=32)
     parser.add_argument("--val_bsz", type=int, default=100)
-    parser.add_argument("--dataset_path", type=str, nargs="+", default=os.path.expanduser("~/"), help="USE THIS AS MAIN DATASET PATH. INCLUDING FOR MMNIST")
-    parser.add_argument("--dataset", type=str, default="hudsons", choices=["hudsons","mmnist","mixed"])
-    parser.add_argument("--shuffle", action="store_true", help="shuffle dataset")
-    parser.add_argument("--visdom", action="store_true", help="use a visdom ploter")
-    parser.add_argument("--jobname", type=str, default="jobname", help="jobname")
-    """
-    Please note, in_no + out_no must equal the size your dataloader is returning. Default is batches of 6 frames, 5 forward and 1 for ground truth
-    """
-    # Dataset
     parser.add_argument("--in_no", type=int, default=5, help="number of frames to use for forward pass")
     parser.add_argument("--out_no", type=int, default=1, help="number of frames to use for ground_truth")
     parser.add_argument("--save", action="store_true", help="Save models/validation things to checkpoint location")
-    parser.add_argument("--extract_dset", action="store_true", help="activate this if you would like to extract your n_dset")
     parser.add_argument("--dset_sze", type=int, default=-1, help="Number of training samples from dataset")
-    parser.add_argument("--hudson_mmnist_mix", action="store_true", help="Concat 2 the bouncing ball hudson dataset and moving MMNIST dataset")
 
-    ####
-    ##
-    # Model Args
+    parser.add_argument_group("Dataset specific arguments")
+    ############# To combine multiple datasets together, align the dataset and dataset path arguments
+    parser.add_argument("--dataset", type=str, nargs="+", default="from_raw", choices=["mmnist", "from_raw"], help="Type of dataset")
+    parser.add_argument("--dataset_path", type=str, nargs="+", default=os.path.expanduser("~/"), help="Dataset paths")
+    #############
+    parser.add_argument("--shuffle", action="store_true", help="shuffle dataset")
+
+    parser.add_argument_group("Model specific arguments")
+    parser.add_argument("--model", type=str, default="UpDown2D", choices=["UpDown2D", "UpDown3D", "transformer"], help="Type of model to run")
     parser.add_argument("--img_type", type=str, default="binary", choices=["binary", "greyscale", "RGB"], help="Type of input image")
     parser.add_argument("--krnl_size", type=int, default=3, help="Height and width kernel size")
     parser.add_argument("--krnl_size_t", type=int, default=3, help="Temporal kernel size")
@@ -170,34 +193,30 @@ if __name__ == "__main__":
     parser.add_argument("--reduce", action="store_true", help="reduction of loss function toggled")
     parser.add_argument("--reduction", type=str, choices=["mean", "sum"], help="type of reduction to apply on loss")
 
-    # Self input
+    parser.add_argument_group("Logging arguments")
+    parser.add_argument("--visdom", action="store_true", help="use a visdom ploter")
+    parser.add_argument("--jobname", type=str, default="jobname", help="jobname")
     parser.add_argument("--self_output", action="store_true", help="Run self output on specified model")
-    parser.add_argument("--self_output_n", type=int, default=100, help="Number of frames to run self output on")
+    parser.add_argument("--self_output_n", type=int, default=-1, help="Number of frames to run self output on")
     parser.add_argument("--model_path", type=str, default=os.path.expanduser("~/cnn_visual_modelling/model.pth"), help="path of saved model")
     parser.add_argument("--gif_path", type=str, default=os.path.expanduser("~/cnn_visual_modelling/.results/self_out.gif"), help="path to save the gif")
     parser.add_argument("--n_gifs", type=int, default=10, help="number of gifs to save")
-    parser.add_argument("--model", type=str, default="UpDown2D", choices=["UpDown2D", "UpDown3D", "transformer"], help="Type of model to run")
     
     ####
     # Sorting arguements
     args = parser.parse_args()
     print(args)
-    if args.hudson_mmnist_mix:  # If we're mixing MMNIST and hudson dataset. total_dset object will be hudson dataset for now
+    assert len(args.dataset) == len(args.dataset_path), f"Number of specified dataset paths and dataset types should be equal"
+    dataset_swtich = {
+        "from_raw" : Dataset_from_raw,
+        "mmnist" : MMNIST
+    }
+    if len(args.dataset) > 1:  # If multiple dataset
         dataset_list = args.dataset_path
-        hudson_list = [ arg_dset_assign(args, i) for i in dataset_list if "hudson" in i ]
-        mmnist_list = [ arg_dset_assign(args, i) for i in dataset_list if "moving_mnist" in i ]
-        hudson_list = [VMDataset_v1(argz) for argz in hudson_list ]
-        mmnist_list = [MMNIST(argz) for argz in mmnist_list]
-        dset = hudson_list + mmnist_list
-        dset = torch.utils.data.ConcatDataset(dset)
-    elif args.dataset == "hudsons":
-        args.dataset_path = args.dataset_path[0]
-        dset = VMDataset_v1(args)
-    elif args.dataset == "mmnist":
-        args.dataset_path = args.dataset_path[0]
-        dset = MMNIST(args)
+        dataset_list = [dataset_swtich[args.dataset[i]](args.dataset_path[i], args) for i in range(len(args.dataset))]
+        dset = torch.utils.data.ConcatDataset(dataset_list)
     else:
-        raise Exception(f"{args.dataset} dataset not implemented")
+        dset = dataset_swtich[args.dataset[0]](args.dataset_path[0], args)
 
     if args.save:
         repo_rootdir = os.path.dirname(os.path.realpath(sys.argv[0]))
@@ -209,7 +228,6 @@ if __name__ == "__main__":
             os.makedirs(results_dir)
         args.results_dir = results_dir
         args.checkpoint_path = os.path.join(args.results_dir, "model.pth")
-
 
     # Model info
     if args.model == "UpDown3D":
@@ -224,9 +242,7 @@ if __name__ == "__main__":
     args.device = torch.device("cuda:%d" % args.device if args.device>=0 else "cpu")
     model.to(args.device)
     
-    optimizer = radam.RAdam([p for p in model.parameters() if p.requires_grad],
-                                    lr=3e-4, weight_decay=1e-5)
-    #criterion = loss.l1_loss
+    optimizer = radam.RAdam([p for p in model.parameters() if p.requires_grad], lr=3e-4, weight_decay=1e-5)
     # Losses
     if args.loss == "MSE":
         criterion = torch.nn.MSELoss(reduce=args.reduce, reduction=args.reduction).to(args.device)
@@ -263,19 +279,7 @@ if __name__ == "__main__":
                     #args.plotter.text_plot(args.jobname+" val", "Best %s val %.4f Iteration:%d" % (args.loss, best_loss, epoch))
                 if args.save:
                     torch.save(model.state_dict(), args.checkpoint_path)
-                    model.eval()
-                    if args.hudson_mmnist_mix:
-                        mixed_set_mode(dset, "val")
-                    else:
-                        dset.set_mode("val")
-                    vis_loader = DataLoader(dset, batch_size=1, shuffle=True)#, drop_last=True)
-                    if args.hudson_mmnist_mix:
-                        mixed_set_mode(dset, "train")
-                    else:
-                        dset.set_mode("train")
-                    #visualise_imgs(args, vis_loader, model, 5)
-                    if args.self_output:
-                        self_output(args, model, vis_loader)
+                    self_output(args, model, dset)
                     model.train()
 
             # Printing and logging either way

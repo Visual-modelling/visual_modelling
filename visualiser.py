@@ -6,9 +6,8 @@ from PIL import Image
 import torch
 from torchvision.transforms.functional import to_pil_image
 
-from dataset import VMDataset_v1
+#from dataset import VMDataset_v1
 from tools.visdom_plotter import VisdomLinePlotter
-from tools.loss import ssim, ms_ssim, PSNR
 import numpy as np
 import imageio
 
