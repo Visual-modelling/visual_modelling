@@ -1,10 +1,53 @@
 __author__ = "Jumperkables"
+import copy
+import os, sys
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 from tools.activations import sigmoid_256
+
+
+class FCUp_Down2D_2_MNIST(nn.Module):
+    """
+    __author__ = Jumperkables
+    Class that adapts the FCUp_Down2D model to an appropriate MNIST adaption
+    """
+    def __init__(self, args, load_path=""):
+        super().__init__()
+        full = FCUp_Down2D(args)
+        if load_path is not "":
+            full.load_state_dict(torch.load(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), load_path)), strict=False)
+        # Replace the first layer
+        full.UDChain.layers[0].maxpool_conv[1].double_conv[0]= nn.Conv2d(1,args.channel_factor, kernel_size=args.krnl_size, padding=args.padding)
+        # Remove the up layers
+        full.UDChain.layers = full.UDChain.layers[:int(len(full.UDChain.layers)/2)]
+
+        # The front half of the network intact
+        self.front = full
+
+
+        # Create the linear layers to classification
+        fc_0_len = full(torch.ones(1,1,64,64)).view(-1).shape[0]
+        self.fc_0 = nn.Sequential(
+            nn.Linear(fc_0_len,500),
+            nn.ReLU(inplace=True)
+        )
+        self.fc_1 = nn.Sequential(
+            nn.Linear(500,10),
+            nn.ReLU(inplace=True)
+        )
+
+    def forward(self, x):
+        x = self.front(x)
+        bsz = x.shape[0]
+        x = x.view(bsz, -1)
+        x = self.fc_0(x)
+        x = self.fc_1(x)
+        return x
+
+
 
 class FCUp_Down2D(nn.Module):
     """
@@ -61,6 +104,7 @@ class Up_Down_Chain(nn.Module):
         Residues will are saved to move forward into appropriate places on up chain
         """
         residues = []
+        #import ipdb; ipdb.set_trace()
         # Downward Pass
         x = self.layers[0](x)
         for layer in self.layers[1:self.half]:
@@ -70,7 +114,8 @@ class Up_Down_Chain(nn.Module):
         # Upward Pass
         for idx, layer in enumerate(self.layers[self.half:(len(self.layers)-1)]):
             x = layer(x, residues[idx])
-        x = self.layers[-1](x)
+        if self.half != len(self.layers):
+            x = self.layers[-1](x)
 
         return(x)
 

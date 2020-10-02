@@ -7,8 +7,8 @@
 
 source ../../../python_venvs/vm/bin/activate
 python ../../../main.py \
-    --dataset mmnist \
-    --dataset_path data/moving_mnist/various \
+    --dataset from_raw \
+    --dataset_path data/hudsons_og/2000 \
     --bsz 16 \
     --val_bsz 100 \
     --in_no 5 \
@@ -24,7 +24,8 @@ python ../../../main.py \
     --img_type greyscale \
     --model UpDown2D \
     --self_output \
-    --save \
     --reduce \
     --shuffle \
-    --visdom
+    --visdom \
+    --save \
+    --model_path .results/mmnist_2d-d3_MSE_mean/model.pth

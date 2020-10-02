@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 
 from dataset import MMNIST, Dataset_from_raw
-from models.UpDown2D import FCUp_Down2D
+from models.UpDown2D import FCUp_Down2D, FCUp_Down2D_2_MNIST
 from models.UpDown3D import FCUp_Down3D
 from models.transformer import VMTransformer, VMTransformer2 
 from visualiser import visualise_imgs 
@@ -16,6 +16,8 @@ from tools.utils import model_fwd
 import tools.radam as radam
 import tools.loss
 import torch.nn.functional as F
+import tqdm
+from tqdm import tqdm
 
 from tools.visdom_plotter import VisdomLinePlotter
 import wandb
@@ -29,18 +31,22 @@ def train(args, dset, model, optimizer, criterion, epoch, previous_best_loss):
     set_modes(dset, model, "train", args)
     train_loader = DataLoader(dset, batch_size=args.bsz, shuffle=args.shuffle)#, drop_last=True)
     train_loss = []
-    for batch_idx, batch in enumerate(train_loader):
-        frames, gt_frames = batch
-        frames = frames.float().to(args.device)
-        gt_frames = gt_frames.float().to(args.device)
-        out = model_fwd(model, frames, args)
-        loss = criterion(out, gt_frames)
-        if args.loss == "SSIM":
-            loss = 1 - loss
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-        train_loss.append(loss.item())
+    with tqdm(total=len(train_loader)) as pbar:
+        for batch_idx, batch in enumerate(train_loader):
+            pbar.update(1)
+            pbar.set_description(f"Training epoch {epoch}/{args.epoch}")
+            frames, gt_frames = batch
+            frames = frames.float().to(args.device)
+            gt_frames = gt_frames.float().to(args.device)
+            out = model_fwd(model, frames, args)
+            loss = criterion(out, gt_frames)
+            if args.loss == "SSIM":
+                loss = 1 - loss
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            train_loss.append(loss.item())
+        pbar.close()
 
     # Validate
     train_loss = sum(train_loss) / float(len(train_loss))#from train_corrects            
@@ -58,7 +64,7 @@ def get_gif_metrics(gif_frames, gt_frames, metrics):
         'MS_SSIM':-1. if (gif_frames.shape[2]<=161 and gif_frames.shape[3]<=161) else float(metrics['MS_SSIM'](gif_frames, gt_frames, data_range=255.)),
         #'FID':float(metrics['FID'](metrics['FID']._compute_feats(DataLoader(FID_dset(gif_frames.float()))), metrics['FID']._compute_feats(DataLoader(FID_dset(gt_frames.float()))))),
         #'FVD':metrics['FVD'](gif_frames[:utils.round_down(gif_frames.shape[0],16)], gt_frames[:utils.round_down(gt_frames.shape[0],16)] )
-        'FVD':metrics['FVD'](gif_frames, gt_frames)
+        #'FVD':metrics['FVD'](gif_frames, gt_frames)
     }
     return metric_vals
 
@@ -80,7 +86,6 @@ def self_output(args, model, dset):
     set_modes(dset, model, "self_out", args)
     vis_loader = DataLoader(dset, batch_size=1, shuffle=args.shuffle)#, drop_last=True)
     #visualise_imgs(args, vis_loader, model, 5)
-    print("self output commencing...")
     wandb_frames = []
     wandb_metric_n_names = []
     metrics = {
@@ -89,50 +94,57 @@ def self_output(args, model, dset):
         'SSIM':piq.ssim,
         'MS_SSIM':piq.multi_scale_ssim,
         #'FID':piq.FID(),
-        'FVD':tools.loss.FVD()
+        #'FVD':tools.loss.FVD()
     }
-    for ngif in range(args.n_gifs):
-        start_frames, gt_frames, vid_name = next(iter(vis_loader))
-        start_frames = start_frames.float().to(args.device)
-        #gt_frames = gt_frames.float().to(args.device)
-        out = model_fwd(model, start_frames, args)
-        gif_frames = []
-        if args.self_output_n == -1:
-            self_output_n = gt_frames.shape[1]
-        else:
-            self_output_n = args.self_output_n
-        for itr in range(self_output_n):
-            start_frames = torch.cat([ start_frames[:,args.out_no:args.in_no] , out ], 1)
+
+    with tqdm(total=args.n_gifs) as pbar:
+        for ngif in range(args.n_gifs):
+            pbar.update(1)
+            pbar.set_description(f"Self output: {ngif}/{args.n_gifs}")
+            start_frames, gt_frames, vid_name = next(iter(vis_loader))
+            start_frames = start_frames.float().to(args.device)
+            #gt_frames = gt_frames.float().to(args.device)
             out = model_fwd(model, start_frames, args)
-            for n in range(args.out_no):
-                gif_frames.append(out[0][n].cpu().detach().byte())
-            # Add the ground truth frame side by side to generated frame
-        gif_metrics = get_gif_metrics(gif_frames, gt_frames, metrics)
-        gif_frames = [ torch.cat( [torch.stack(gif_frames)[n_frm], gt_frames[0][n_frm]], 0) for n_frm in range(len(gif_frames)) ]
-        gif_save_path = os.path.join(args.results_dir, "%d.gif" % ngif)
-        imageio.mimsave(gif_save_path, gif_frames)
-        #args.plotter.gif_plot(args.jobname+" self_output"+str(ngif), gif_save_path)
-        wandb_frames.append(wandb.Video(gif_save_path))
-        gif_metrics['name'] = vid_name[0]
-        wandb_metric_n_names.append(gif_metrics)
+            gif_frames = []
+            if args.self_output_n == -1:
+                self_output_n = gt_frames.shape[1]
+            else:
+                self_output_n = args.self_output_n
+            for itr in range(self_output_n):
+                start_frames = torch.cat([ start_frames[:,args.out_no:args.in_no] , out ], 1)
+                out = model_fwd(model, start_frames, args)
+                for n in range(args.out_no):
+                    gif_frames.append(out[0][n].cpu().detach().byte())
+                # Add the ground truth frame side by side to generated frame
+            gif_metrics = get_gif_metrics(gif_frames, gt_frames, metrics)
+            gif_frames = [ torch.cat( [torch.stack(gif_frames)[n_frm], gt_frames[0][n_frm]], 0) for n_frm in range(len(gif_frames)) ]
+            gif_save_path = os.path.join(args.results_dir, "%d.gif" % ngif)
+            imageio.mimsave(gif_save_path, gif_frames)
+            #args.plotter.gif_plot(args.jobname+" self_output"+str(ngif), gif_save_path)
+            wandb_frames.append(wandb.Video(gif_save_path))
+            gif_metrics['name'] = vid_name[0]
+            wandb_metric_n_names.append(gif_metrics)
+        pbar.close()
     wandb.log({"self_output_gifs": wandb_frames, "metrics":wandb_metric_n_names}, commit=False)
-    print("self output finished!")  
 
 
 def validate(args, dset, model, criterion):
     set_modes(dset, model, "valid", args)
     valid_loader = DataLoader(dset, batch_size=args.val_bsz, shuffle=args.shuffle)#, drop_last=True)
-    print("Validating")
     valid_loss = []
-    for batch_idx, batch in enumerate(valid_loader):
-        frames, gt_frames = batch
-        frames = frames.float().to(args.device)
-        gt_frames = gt_frames.float().to(args.device)
-        img = model_fwd(model, frames, args)
-        loss = criterion(img, gt_frames)
-        if args.loss == "SSIM":
-            loss = 1 - loss
-        valid_loss.append(loss.item())
+    with tqdm(total=len(valid_loader)) as pbar:
+        for batch_idx, batch in enumerate(valid_loader):
+            pbar.update(1)
+            pbar.set_description(f"Validating...")
+            frames, gt_frames = batch
+            frames = frames.float().to(args.device)
+            gt_frames = gt_frames.float().to(args.device)
+            img = model_fwd(model, frames, args)
+            loss = criterion(img, gt_frames)
+            if args.loss == "SSIM":
+                loss = 1 - loss
+            valid_loss.append(loss.item())
+        pbar.close()
     return sum(valid_loss)/len(valid_loss)
 
 
@@ -283,7 +295,7 @@ if __name__ == "__main__":
                     model.train()
 
             # Printing and logging either way
-            print(f"Epoch {epoch}", f"Train Loss {train_loss:.3f} |", f"Val Loss {valid_loss:.3f} |", f"Early Stop Flag {early_stop_count}")
+            print(f"Epoch {epoch}/{args.epoch}", f"Train Loss {train_loss:.3f} |", f"Val Loss {valid_loss:.3f} |", f"Early Stop Flag {early_stop_count}/{args.early_stopping}\n")
             if args.visdom:
                 wandb.log({'val_loss' : best_loss})
                 #args.plotter.text_plot(args.jobname+" epoch", f"Train Loss {train_loss:.3f} | Val Loss {valid_loss:.3f} | Early Stop Count {early_stop_count}")
