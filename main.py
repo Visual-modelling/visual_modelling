@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 
 from dataset import MMNIST, Dataset_from_raw
-from models.UpDown2D import FCUp_Down2D, FCUp_Down2D_2_MNIST
+from models.UpDown2D import FCUp_Down2D, FCUp_Down2D_2_MNIST, FCUp_Down2D_2_Segmentation
 from models.UpDown3D import FCUp_Down3D
 from models.transformer import VMTransformer, VMTransformer2 
 from visualiser import visualise_imgs 
@@ -191,6 +191,7 @@ if __name__ == "__main__":
     parser.add_argument("--dataset_path", type=str, nargs="+", default=os.path.expanduser("~/"), help="Dataset paths")
     #############
     parser.add_argument("--shuffle", action="store_true", help="shuffle dataset")
+    parser.add_argument("--segmentation", action="store_true", help="Create a dataset for image segmentation. Segmentation masks for images in video clips should be named the same as the original image and stored in a subdirectory of the clip 'mask'")
 
     parser.add_argument_group("Model specific arguments")
     parser.add_argument("--model", type=str, default="UpDown2D", choices=["UpDown2D", "UpDown3D", "transformer"], help="Type of model to run")
@@ -218,6 +219,8 @@ if __name__ == "__main__":
     # Sorting arguements
     args = parser.parse_args()
     print(args)
+    if args.segmentation:
+        assert args.in_no == args.out_no == 1, f"Image segmentation is defined on 1 input and 1 output image. Not {args.in_no} and {args.out_no}"
     assert len(args.dataset) == len(args.dataset_path), f"Number of specified dataset paths and dataset types should be equal"
     dataset_swtich = {
         "from_raw" : Dataset_from_raw,
@@ -245,7 +248,10 @@ if __name__ == "__main__":
     if args.model == "UpDown3D":
         model = FCUp_Down3D(args)
     elif args.model == "UpDown2D":
-        model = FCUp_Down2D(args)#.depth, args.in_no, args.out_no, args)
+        if args.segmentation:
+            model = FCUp_Down2D_2_Segmentation(args, args.model_path)
+        else:    
+            model = FCUp_Down2D(args)#.depth, args.in_no, args.out_no, args)
     elif args.model == "transformer":
         model = VMTransformer()
     else:

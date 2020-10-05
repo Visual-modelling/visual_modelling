@@ -11,7 +11,7 @@ from torch.utils.data import DataLoader
 from torch.utils.data.dataset import Dataset
 from torchvision.transforms import ToTensor
 import cv2
-
+import pandas as pd
 from torchvision.utils import save_image
 
 import tools.utils as utils
@@ -293,6 +293,11 @@ class Dataset_from_raw(Dataset):
             positions = torch.stack([ pos['positions'] for pos in data.values() ])
             positions, gt_positions = positions[:self.args.in_no], positions[self.args.in_no:]
             frames = [ frm['frame_paths'] for frm in data.values() ]
+            if self.args.segmentation:
+                # If its a semgentation task, read the final ground_truth frame in its segmentation mask form instead
+                frames[-1] = frames[-1].split('/')
+                frames[-1] = frames[-1][:-1]+['mask']+frames[-1][-1:]
+                frames[-1] = '/'.join(frames[-1])
             frames = self.img_read_method(frames)
             frames = torch.stack(frames, dim=0)
             frames, gt_frames = frames[:self.args.in_no], frames[self.args.in_no:]
@@ -364,7 +369,7 @@ class Dataset_from_raw(Dataset):
             vids.remove('config.yml')
         except:
             pass
-        vids = [vid for vid in vids if not vid.endswith('.pickle')]
+        vids = [vid for vid in vids if not (vid.endswith('.pickle') or vid.endswith('.jsonl'))]
         vids.sort()
         ##########################
         
@@ -377,7 +382,8 @@ class Dataset_from_raw(Dataset):
                 positions = utils.read_csv(os.path.join(vid_path, 'positions.csv'))
             except FileNotFoundError:
                 print(f"{vid_path} not found.\nCreating dummy 'positions' information")
-                import pandas as pd
+                
+
                 frame_cnt = len(os.listdir(vid_path))
                 positions = {
                     'timestep': [i for i in range(frame_cnt)],
@@ -389,7 +395,7 @@ class Dataset_from_raw(Dataset):
             positions = torch.tensor(positions.values)[:,1:]    # Remove the useless frame index for now
             frames = os.listdir(vid_path)
             frames.sort()
-            exclude = ['config.yml','positions.csv','simulation.gif']
+            exclude = ['config.yml','positions.csv','simulation.gif','mask']
             frames = [ os.path.join(vid_path, frame) for frame in frames if frame not in exclude]
             frame_paths = frames
 

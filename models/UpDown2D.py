@@ -9,6 +9,34 @@ import torch.nn.functional as F
 from tools.activations import sigmoid_256
 
 
+class FCUp_Down2D_2_Segmentation(nn.Module):
+    """
+    __author__ = Jumperkables
+    Class that adapts the FCUp_Down2D model to an appropriate segmentation task
+    """
+    def __init__(self, args, load_path=""):
+        super().__init__()
+
+        assert args.out_no == 1, f"Segmentation adaption not implemented on pretrained models that output more than 1 image. Arguements imply the model outputs {args.out_no} images"
+        if load_path is not "":
+            # Pretrained model might have more than 1 input or output. We will have to replace the input and output layers with those of appropriate shape
+            model_weights = torch.load(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), load_path))
+            in_no = model_weights['UDChain.layers.0.maxpool_conv.1.double_conv.0.weight'].shape[1]
+            cargs = copy.deepcopy(args)
+            cargs.in_no = in_no
+            full = FCUp_Down2D(cargs)
+            full.load_state_dict(torch.load(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), load_path)), strict=False)
+        else:
+            full = FCUp_Down2D(args)
+        # Replace the first layer
+        full.UDChain.layers[0].maxpool_conv[1].double_conv[0]= nn.Conv2d(1,args.channel_factor, kernel_size=args.krnl_size, padding=args.padding)
+        self.full = full 
+
+    def forward(self, x):
+        x = self.full(x)
+        return x
+
+
 class FCUp_Down2D_2_MNIST(nn.Module):
     """
     __author__ = Jumperkables
