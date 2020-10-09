@@ -8,6 +8,8 @@ import torch.nn.functional as F
 import torch.nn as nn
 from models.UpDown2D import FCUp_Down2D_2_MNIST
 import tools.radam as radam
+import tools.loss
+
 import numpy as np
 import tqdm
 from tqdm import tqdm
@@ -23,9 +25,19 @@ def test_MNIST(model, args, bsz=1):
     for batch in test_loader:
         img, label = batch
         img = (255*img).long().float()
+        #if args.load_mode == "pad":
+        #    new_label = torch.ones(img.shape)
+        #    for x in range(label.shape[0]):
+        #        new_label[x] = new_label[x]*(label[x]*10) # Image of 0s is equal to class 0, image of 10s to class 1, 20s to class 2 etc..
+        #    label = new_label
         img, label = img.to(args.device), label.to(args.device)
         out = model(img)
-        _, predicted = torch.max(out.data, 1)
+        if args.load_mode == "pad":
+            predicted = torch.mean(out, [1,2,3])    # Average across all outputs and divide by 10 to determine predicted class
+            predicted = torch.round(predicted * 0.1).long()
+            
+        elif args.load_mode == "replace":  
+            _, predicted = torch.max(out.data, 1)
         total += label.size(0)
         correct += (predicted == label).sum().item()
     
@@ -41,7 +53,22 @@ def train_MNIST(model, args, epochs=30, bsz=16):
     dset = MNIST(train=True, transform=transforms.Compose([transforms.Pad(18,0), transforms.ToTensor()]), root=os.path.join(os.path.dirname(os.path.realpath(__file__)), "data"))
     train_loader = DataLoader(dset, batch_size=bsz)
     best_acc = 0
-    criterion = nn.CrossEntropyLoss()
+    if args.load_mode == "replace":
+        criterion = nn.CrossEntropyLoss()
+    elif args.load_mode == "pad":
+        # Losses
+        if args.loss == "MSE":
+            criterion = torch.nn.MSELoss(reduce=args.reduce, reduction=args.reduction).to(args.device)
+        elif args.loss == "focal":
+            criterion = tools.loss.FocalLoss(reduce=args.reduce, reduction=args.reduction).to(args.device) 
+        elif args.loss == "smooth_l1":
+            criterion = torch.nn.SmoothL1Loss(reduce=args.reduce, reduction=args.reduction).to(args.device)
+        elif args.loss == "SSIM":
+            criterion = tools.loss.ssim(data_range=255, size_average=True, channel=1).to(args.device)
+        else:
+            raise Exception("Loss not implemented")
+
+
     optimizer = radam.RAdam([p for p in model.parameters() if p.requires_grad], lr=3e-4, weight_decay=1e-5)
     early_stop_count = 0
     best_epoch = 0
@@ -54,6 +81,11 @@ def train_MNIST(model, args, epochs=30, bsz=16):
                 #sleep(0.001)
                 img, label = batch
                 img = (255*img).long().float()
+                if args.load_mode == "pad":
+                    new_label = torch.ones(img.shape)
+                    for x in range(label.shape[0]):
+                        new_label[x] = new_label[x]*(label[x]*10) # Image of 0s is equal to class 0, image of 10s to class 1, 20s to class 2 etc..
+                    label = new_label
                 img, label = img.to(args.device), label.to(args.device)
                 out = model(img)
     
@@ -106,10 +138,11 @@ if __name__ == "__main__":
     parser.add_argument("--padding", type=int, default=1, help="Height and width Padding")
     parser.add_argument("--padding_t", type=int, default=1, help="Temporal Padding")
     parser.add_argument("--depth", type=int, default=2, help="depth of the updown")
-    parser.add_argument("--channel_factor", type=int, default=64, help="channel scale factor for up down network")
-    #parser.add_argument("--loss", type=str, default="MSE", choices=["MSE", "smooth_l1", "focal", "SSIM"], help="Loss function for the network")
-    #parser.add_argument("--reduce", action="store_true", help="reduction of loss function toggled")
-    #parser.add_argument("--reduction", type=str, choices=["mean", "sum"], help="type of reduction to apply on loss")
+    parser.add_argument("--load_mode", type=str, default="pad", help="in what manner do we create a classification network")
+    parser.add_argument("--channel_factor", type=int, default=64, choices=["pad","replace"], help="channel scale factor for up down network")
+    parser.add_argument("--loss", type=str, default="MSE", choices=["MSE", "smooth_l1", "focal", "SSIM"], help="Loss function for the network")
+    parser.add_argument("--reduce", action="store_true", help="reduction of loss function toggled")
+    parser.add_argument("--reduction", type=str, choices=["mean", "sum"], help="type of reduction to apply on loss")
 
     parser.add_argument_group("Logging arguments")
     parser.add_argument("--visdom", action="store_true", help="use a visdom ploter")
@@ -123,9 +156,10 @@ if __name__ == "__main__":
         wandb.init(project="visual-modelling", entity="visual-modelling", name=args.jobname)
         wandb.config.update(args)
 
+
     # Training (includes validation after each epoch and early stopping)
     if args.epoch > 0:        
-        best_acc, return_string = train_MNIST(model, args, bsz=args.bsz, epochs=args.epochs)
+        best_acc, return_string = train_MNIST(model, args, bsz=args.bsz, epochs=args.epoch)
 
     # Only Testing
     if args.epoch == 0:

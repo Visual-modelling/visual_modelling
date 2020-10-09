@@ -18,4 +18,8 @@ python ../../../MNIST.py \
     --jobname toms_mnist_test \
     --img_type greyscale \
     --model UpDown2D \
-    --model_path .results/mmnist_2d-d3_MSE_mean/model.pth
+    --model_path .results/mmnist_2d-d3_MSE_mean/model.pth \
+    --load_mode pad \
+    --loss smooth_l1 \
+    --reduce \
+    --reduction mean 

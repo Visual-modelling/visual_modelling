@@ -2,11 +2,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
-from transformer_utils import PositionalEmbedding
-"""
-DEANS CODE
-"""
+from tools.activations import sigmoid_256
 
 def load_model(model_name, config):
     """ Model Loader for all the models contained within this file.
@@ -20,19 +16,14 @@ def load_model(model_name, config):
         model = VMTransformer(*config)
     if model_name == 'VMTransformer2':
         model = VMTransformer2(*config)
-    if model_name == 'VMDecoder':
-        model = VMDecoder(*config)
 
     return model
 
 
 class SelfAttention(nn.Module):
-    def __init__(self, k, heads=1, masked=False):
+    def __init__(self, k, heads=1):
         super().__init__()
         self.k, self.heads = k, heads
-        # set masked self-attention true/false
-        self.masked = masked
-
         # initialise query, key, and value layer for all heads (as single concatenated tensor)
         self.tokeys = nn.Linear(k, k * heads, bias=False)
         self.toqueries = nn.Linear(k, k * heads, bias=False)
@@ -61,10 +52,6 @@ class SelfAttention(nn.Module):
         dot = torch.bmm(queries, keys.transpose(1, 2))
         # dot has size (b*h, t, t) containing raw weights
 
-        if self.masked:
-            indices = torch.triu_indices(t, t, offset=1)
-            dot[:, indices[0], indices[1]] = float('-inf')
-
         dot = F.softmax(dot, dim=2)
         # dot now contains row-wise normalized weights
 
@@ -78,13 +65,13 @@ class SelfAttention(nn.Module):
 
 
 class TransformerBlock(nn.Module):
-  def __init__(self, k, heads, ff=True, residual=False, norm=False, masked=False):
+  def __init__(self, k, heads, ff=False, residual=False, norm=True):
     super().__init__()
 
     self.ff, self.residual, self.norm = ff, residual, norm
 
     # initialise attenion layer
-    self.attention = SelfAttention(k, heads=heads, masked=masked)
+    self.attention = SelfAttention(k, heads=heads)
 
     self.norm1 = nn.LayerNorm(k)
     self.norm2 = nn.LayerNorm(k)
@@ -105,7 +92,7 @@ class TransformerBlock(nn.Module):
     if self.norm:
         x = self.norm1(x)
 
-    if self.ff:
+    if self.ff is True:
         if self.residual:
             x = x + self.ff1(x)
         else:
@@ -123,11 +110,8 @@ class VMTransformer(nn.Module):
     of each image in time is implicitly inferred using the last image representation query as input
     to the classification layer.
     """
-    def __init__(self, args, k=4096, heads=1, depth=1, ff=True, residual=True, norm=False):
+    def __init__(self, k=4096, heads=1, depth=1, ff=True, residual=True, norm=True):
         super().__init__()
-        self.args = args
-        import ipdb; ipdb.set_trace()
-        # self.pos_emb = PositionalEmbedding(k, 5)
 
         # self attention layers
         self.tblocks = []
@@ -140,16 +124,14 @@ class VMTransformer(nn.Module):
         self.to_pixels = nn.Sequential(
             nn.Linear(k, k),
             nn.Linear(k, k),
-
+            nn.Linear(k, k)#,
             # rectify output to between 0 and 1
+            #nn.Hardtanh(0, 1)
         )
 
     def forward(self, x):
         # get input batch dimensions
         b, t, k = x.size()
-
-        # pos = self.pos_emb(5).repeat_interleave(b, dim=0)
-        # x += pos
 
         # send input to transformer block
         x = self.tblocks(x)
@@ -159,7 +141,22 @@ class VMTransformer(nn.Module):
         # send last image representation to pixel regression block
         x = self.to_pixels(x)
 
+        #######
+        # To work with grayscale images
+        x = sigmoid_256(x) 
+        #x = 255*x
+        #######
+
         return x
+
+
+
+
+
+
+
+
+
 
 
 class VMTransformer2(nn.Module):
@@ -167,11 +164,11 @@ class VMTransformer2(nn.Module):
     Includes encoding of image to higher dimensional representation.
 
     """
-    def __init__(self, args, k=4096, emb_dim=8192, heads=1, depth=1, ff=True, residual=True, norm=True):
+    def __init__(self, k=4096, seq_len=5, heads=1, depth=1, ff=True, residual=True, norm=True):
         super().__init__()
-        self.args = args
-        import ipdb; ipdb.set_trace()
-        self.emb_dim = emb_dim
+
+        self.seq_len = seq_len
+        self.emb_dim = 8192
 
         self.img_emb = nn.Sequential(
             # trial with non-linearity
@@ -187,10 +184,11 @@ class VMTransformer2(nn.Module):
 
         # classification / pixel regression layer
         self.to_pixels = nn.Sequential(
-            nn.Linear(self.emb_dim, self.emb_dim),
-            nn.ReLU(),
-            nn.Linear(self.emb_dim, self.emb_dim),
-            nn.Linear(self.emb_dim, k)
+            nn.Linear(self.emb_dim, k),
+            nn.Linear(k, k),
+            nn.Linear(k, k),
+            # rectify output to between 0 and 1
+            nn.Hardtanh(0, 1)
         )
 
     def forward(self, x):
@@ -204,50 +202,6 @@ class VMTransformer2(nn.Module):
         x = self.tblocks(x)
         # use image representation from last image query
         x = x[:, -1, :]
-
-        # send last image representation to pixel regression block
-        x = self.to_pixels(x)
-
-        return x
-
-
-class VMDecoder(nn.Module):
-    """
-    Simplest transformer decoder model for next image prediction. Positional encoding is inferred from masked self-attention, rather than an explicit positional embedding.
-    """
-    def __init__(self, k=4096, heads=1, depth=1, ff=True, residual=True, norm=False):
-        super().__init__()
-
-        # self.pos_emb = PositionalEmbedding(k, 5)
-        # self attention layers
-        self.tblocks = []
-        for _ in range(depth):
-            self.tblocks.append(TransformerBlock(k=k, heads=heads, ff=ff,
-                                                 residual=residual, norm=norm, masked=True))
-        self.tblocks = nn.Sequential(*self.tblocks)
-
-        # classification / pixel regression block
-        self.to_pixels = nn.Sequential(
-
-            nn.Linear(k, k * 4),
-            nn.Linear(k * 4, k)
-
-        )
-
-    def forward(self, x):
-        # get input batch dimensions
-        b, t, k = x.size()
-
-        # pos = self.pos_emb(5).repeat_interleave(b, dim=0)
-        # x += (1 * pos)
-        # x = torch.cat((x, pos), dim=2)
-
-        # send input to transformer block
-        x = self.tblocks(x)
-        x = x[:, 1:, :]
-
-        # stack image representations on batch dimension
-        x = x.reshape(-1, k)
 
         # send last image representation to pixel regression block
         x = self.to_pixels(x)

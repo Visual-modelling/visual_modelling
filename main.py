@@ -10,6 +10,7 @@ from dataset import MMNIST, Dataset_from_raw
 from models.UpDown2D import FCUp_Down2D, FCUp_Down2D_2_MNIST, FCUp_Down2D_2_Segmentation
 from models.UpDown3D import FCUp_Down3D
 from models.transformer import VMTransformer, VMTransformer2 
+#from models.OLD_transformer import VMTransformer, VMTransformer2 
 from visualiser import visualise_imgs 
 import tools.utils as utils
 from tools.utils import model_fwd
@@ -193,7 +194,7 @@ if __name__ == "__main__":
     parser.add_argument("--shuffle", action="store_true", help="shuffle dataset")
     parser.add_argument("--segmentation", action="store_true", help="Create a dataset for image segmentation. Segmentation masks for images in video clips should be named the same as the original image and stored in a subdirectory of the clip 'mask'")
 
-    parser.add_argument_group("Model specific arguments")
+    parser.add_argument_group("2D and 3D CNN specific arguments")
     parser.add_argument("--model", type=str, default="UpDown2D", choices=["UpDown2D", "UpDown3D", "transformer"], help="Type of model to run")
     parser.add_argument("--img_type", type=str, default="binary", choices=["binary", "greyscale", "RGB"], help="Type of input image")
     parser.add_argument("--krnl_size", type=int, default=3, help="Height and width kernel size")
@@ -205,6 +206,12 @@ if __name__ == "__main__":
     parser.add_argument("--loss", type=str, default="MSE", choices=["MSE", "smooth_l1", "focal", "SSIM"], help="Loss function for the network")
     parser.add_argument("--reduce", action="store_true", help="reduction of loss function toggled")
     parser.add_argument("--reduction", type=str, choices=["mean", "sum"], help="type of reduction to apply on loss")
+
+    #####
+    ## TRANSFORMER ARGS CAN GO HERE
+    #####
+    parser.add_argument_group("Transformer arguments")
+    parser.add_argument("--transformer_example_arg", type=str, default="Start here", help="Feel free to start here")
 
     parser.add_argument_group("Logging arguments")
     parser.add_argument("--visdom", action="store_true", help="use a visdom ploter")
@@ -249,11 +256,19 @@ if __name__ == "__main__":
         model = FCUp_Down3D(args)
     elif args.model == "UpDown2D":
         if args.segmentation:
-            model = FCUp_Down2D_2_Segmentation(args, args.model_path)
+            model = FCUp_Down2D_2_Segmentation(args, args.model_path, load_mode="pad")
         else:    
             model = FCUp_Down2D(args)#.depth, args.in_no, args.out_no, args)
     elif args.model == "transformer":
-        model = VMTransformer()
+        import ipdb; ipdb.set_trace()
+        print("Its all up to you from here <3 ")
+        print("I'm not intimately familiar with Deans code. Its changed since I've used it and hes said he'll push extra changes.")
+        print("You will have to go into transformer.py and intimately understand and change it. I dont know how correct his implementation is or anything.")
+        print("I have given you the tools and explanations to get started with all this. Keep an eye on my master branche's readme for details on extra functionality, like how to concatenate multiple datasets etc...")
+        print("The only change I've made to either transformer object is passing my 'args' into it and binding. Up to you how you choose to use them")
+        print("Ask me if anything too unclear. Good luck friends <3")
+        model = VMTransformer2(args) 
+        import sys; sys.exit()
     else:
         raise Exception("Model: %s not implemented" % (args.model))
 
