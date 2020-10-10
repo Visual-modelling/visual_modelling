@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from transformer_utils import PositionalEmbedding
+from .transformer_utils import PositionalEmbedding
 """
 DEANS CODE
 """

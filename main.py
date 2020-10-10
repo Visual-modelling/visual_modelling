@@ -11,7 +11,6 @@ from models.UpDown2D import FCUp_Down2D, FCUp_Down2D_2_MNIST, FCUp_Down2D_2_Segm
 from models.UpDown3D import FCUp_Down3D
 from models.transformer import VMTransformer, VMTransformer2 
 #from models.OLD_transformer import VMTransformer, VMTransformer2 
-from visualiser import visualise_imgs 
 import tools.utils as utils
 from tools.utils import model_fwd
 import tools.radam as radam
