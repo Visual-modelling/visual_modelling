@@ -86,7 +86,6 @@ class FID_dset(torch.utils.data.Dataset):
 def self_output(args, model, dset):
     set_modes(dset, model, "self_out", args)
     vis_loader = DataLoader(dset, batch_size=1, shuffle=args.shuffle)#, drop_last=True)
-    #visualise_imgs(args, vis_loader, model, 5)
     wandb_frames = []
     wandb_metric_n_names = []
     metrics = {
