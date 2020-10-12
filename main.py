@@ -124,7 +124,8 @@ def self_output(args, model, dset):
             gif_metrics['name'] = vid_name[0]
             wandb_metric_n_names.append(gif_metrics)
         pbar.close()
-    wandb.log({"self_output_gifs": wandb_frames, "metrics":wandb_metric_n_names}, commit=False)
+    wandb.log({"self_output_gifs": wandb_frames}, commit=False)
+    wandb.log({"metrics":wandb_metric_n_names}, commit=False)
 
 
 def validate(args, dset, model, criterion):
