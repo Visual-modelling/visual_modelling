@@ -6,7 +6,7 @@
 #SBATCH -o ../../../.results/toms_mocap_sl1-mean.out
 
 source ../../../python_venvs/vm/bin/activate
-python ../../../main.py \
+python ../../../VM_train.py \
     --dataset_path data/mocap/grey_128x80_frames/6_dset.pickle \
     --bsz 16 \
     --val_bsz 100 \

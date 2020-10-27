@@ -6,7 +6,7 @@
 #SBATCH -o /home/jumperkables/kable_management/projects/Visual-modelling/cnn_visual_modelling/.results/mmnist_2d-d3_focal-mean.out
 
 source /home/jumperkables/kable_management/python_venvs/vm/bin/activate
-python ../../../../../main.py \
+python ../../../../../VM_train.py \
     --dataset mmnist \
     --dataset_path data/moving_mnist/mnist_test_seq.npy \
     --bsz 16 \

@@ -6,7 +6,7 @@
 #SBATCH -o /home/jumperkables/kable_management/projects/Visual-modelling/cnn_visual_modelling/.results/multi_500g_2d-d3_sl1-mean.out
 
 source /home/jumperkables/kable_management/python_venvs/vm/bin/activate
-python ../../../../../main.py \
+python ../../../../../VM_train.py \
     --dataset_path data/hudsons_multi_ygrav/500/6_dset.pickle \
     --bsz 16 \
     --val_bsz 100 \

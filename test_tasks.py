@@ -14,6 +14,7 @@ import numpy as np
 import tqdm
 from tqdm import tqdm
 from time import sleep
+import pandas as pd
 
 import wandb
 
@@ -120,6 +121,7 @@ if __name__ == "__main__":
     torch.manual_seed(2667)
     parser = argparse.ArgumentParser()
     parser.add_argument_group("Run specific arguments")
+    parser.add_argument("--TASK", type=str, choices=["MNIST", "MOCAP"], help="Which task, classification or otherwise, to apply")
     parser.add_argument("--epoch", type=int, default=10)
     parser.add_argument("--early_stopping", type=int, default=2, help="number of epochs after no improvement before stopping")
     parser.add_argument("--device", type=int, default=-1, help="-1 for CPU, 0, 1 for appropriate device")
@@ -149,22 +151,45 @@ if __name__ == "__main__":
     parser.add_argument("--jobname", type=str, default="jobname", help="jobname")
     args = parser.parse_args()
     print(args)
-    model = FCUp_Down2D_2_MNIST(args, load_path=args.model_path)
-    model.to(args.device)
-    if args.visdom:
-        #args.plotter = VisdomLinePlotter(env_name=args.jobname)
-        wandb.init(project="visual-modelling", entity="visual-modelling", name=args.jobname)
-        wandb.config.update(args)
+    ################################
+    # MMNIST
+    ################################
+    if args.TASK == "MNIST":
+        model = FCUp_Down2D_2_MNIST(args, load_path=args.model_path)
+        model.to(args.device)
+        if args.visdom:
+            #args.plotter = VisdomLinePlotter(env_name=args.jobname)
+            wandb.init(project="visual-modelling", entity="visual-modelling", name=args.jobname)
+            wandb.config.update(args)
+        # Training (includes validation after each epoch and early stopping)
+        if args.epoch > 0:        
+            best_acc, return_string = train_MNIST(model, args, bsz=args.bsz, epochs=args.epoch)
+        # Only Testing
+        if args.epoch == 0:
+            best_acc, _ = test_MNIST(model, args, epochs=args.epoch, bsz=args.val_bsz)
+            return_string = f"Validation Only: Accuracy: {best_acc:.2f}%"
 
+    ################################
+    # MOCAP
+    ################################
+    if args.TASK == "MOCAP":
+        MOCAP_labels_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "data/mocap/labels.txt")
+        pandas_mocap = pd.read_csv(MOCAP_labels_path, sep="\t")
+        label_dict = {}
+        for key, row in pandas_mocap.iterrows():
+            subj, descr = row["Nested_ID"], row["class/description"]
+            if subj[0]=="#":
+                descr = descr.replace("(","").replace(")","")
+                sub_dict = {"class/description": descr}
+                subj_counter = f"{int(subj[1:]):02}"
+                print(int(subj[1:]))
+                label_dict[subj_counter] = sub_dict
+            else:
+                label_dict[subj_counter][f"{int(subj):02}"] = descr
+        import ipdb; ipdb.set_trace()
+        print(label_dict)
 
-    # Training (includes validation after each epoch and early stopping)
-    if args.epoch > 0:        
-        best_acc, return_string = train_MNIST(model, args, bsz=args.bsz, epochs=args.epoch)
-
-    # Only Testing
-    if args.epoch == 0:
-        best_acc, _ = test_MNIST(model, args, epochs=args.epoch, bsz=args.val_bsz)
-        return_string = f"Validation Only: Accuracy: {best_acc:.2f}%"
+    # Print/Logging
     print(return_string) 
     if args.visdom:
         wandb.log({"Run Info" : return_string})

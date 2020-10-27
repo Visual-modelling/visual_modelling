@@ -6,7 +6,8 @@
 #SBATCH -o ../../../.results/toms_mnist_test.out
 
 source ../../../python_venvs/vm/bin/activate
-python ../../../MNIST.py \
+python ../../../test_tasks.py \
+    --TASK MNIST \
     --bsz 16 \
     --val_bsz 1 \
     --in_no 5 \

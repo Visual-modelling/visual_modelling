@@ -6,7 +6,7 @@
 #SBATCH -o /home/jumperkables/kable_management/projects/Visual-modelling/cnn_visual_modelling/.results/mmnist_2d-d3_MSE-mean.out
 
 source /home/jumperkables/kable_management/python_venvs/vm/bin/activate
-python ../../../../../main.py \
+python ../../../../../VM_train.py \
     --dataset mmnist \
     --dataset_path data/moving_mnist/6_400000.npz \
     --bsz 16 \

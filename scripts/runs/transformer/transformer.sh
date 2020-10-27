@@ -1,7 +1,7 @@
 #!/bin/bash
 """
 Descriptions of each of the arguments. (LEAVE) implies you can leave this arg alone. (CHANGE) implies the opposite.
-You of course can find full descriptions in argparse of main, I imagine this is more useful though.
+You of course can find full descriptions in argparse of VM_train, I imagine this is more useful though.
 
 --dataset (LEAVE):
     The kind of dataset to expect when loading. 'from_raw' means it will expect to be pointed to the root directory of videos. 
@@ -40,7 +40,7 @@ You of course can find full descriptions in argparse of main, I imagine this is 
     The jobname that wandb will use. Best to change
 
 --loss (CHANGE):
-    Which loss to use. See main.py's argparse for all details
+    Which loss to use. See VM_train.py's argparse for all details
 
 --reduction (CHANGE):
     Calculating a loss over output images. Do you want to sum the output pixels or average them?
@@ -49,7 +49,7 @@ You of course can find full descriptions in argparse of main, I imagine this is 
     Read images in greyscale
 
 --model (CHANGE):
-    The type of model. Use main.py to handle loading your transformer
+    The type of model. Use VM_train.py to handle loading your transformer
 
 --self_output (LEAVE):
     Trigger self_output and metric gathering. After each validation call.
@@ -77,7 +77,7 @@ You of course can find full descriptions in argparse of main, I imagine this is 
 """
 
 source ../../../python_venvs/vm/bin/activate
-python ../../../main.py \
+python ../../../VM_train.py \
     --dataset from_raw \
     --dataset_path data/hudsons_og/2000 \
     --bsz 16 \

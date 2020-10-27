@@ -10,7 +10,7 @@
 #SBATCH -o /home2/crhf63/kable_management/projects/Visual-modelling/cnn_visual_modelling/.results/transformer_SSIM-mean.out
 
 source /home2/crhf63/kable_management/python_venvs/vm/bin/activate
-python ../../../../../main.py \
+python ../../../../../VM_train.py \
     --dataset_path data/hudsons_og/2000/6_dset.pickle \
     --bsz 16 \
     --val_bsz 100 \

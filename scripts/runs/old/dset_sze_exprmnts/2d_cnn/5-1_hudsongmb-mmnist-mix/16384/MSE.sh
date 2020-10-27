@@ -6,7 +6,7 @@
 #SBATCH -o /home/jumperkables/kable_management/projects/Visual-modelling/cnn_visual_modelling/.results/varysize-16384_mixed_2d-d3_MSE-mean.out
 
 source /home/jumperkables/kable_management/python_venvs/vm/bin/activate
-python ../../../../../../main.py \
+python ../../../../../../VM_train.py \
     --dataset_path data/hudsons_multi_ygrav/10000_masked_blurred/6_dset.pickle \
     --hudson_mmnist_mix \
     --MMNIST_path /home/jumperkables/kable_management/data/visual_modelling/moving_mnist/6_400000.npz \

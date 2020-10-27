@@ -6,7 +6,7 @@
 #SBATCH -o ../../.results/toms_segmentation_test.out
 
 source ../../python_venvs/vm/bin/activate
-python ../../main.py \
+python ../../VM_train.py \
     --dataset from_raw \
     --dataset_path data/hudson_true_3d_default \
     --bsz 16 \
