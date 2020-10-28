@@ -17,7 +17,7 @@
 * ~~Collect and implement wanted metrics~~Late September - Early October
 * ~~Generate improved dataset~~ - Early October
 * ~~Upgrade and generalise repo~~ - Early October
-* ~~MMNIST and Segmentation implementation~ - Mid October
+* ~~MMNIST and Segmentation implementation~~ - Mid October
 * ~~Clean for Zheming and Tom~~ - Mid October
 * HALFWAY Create MOCAP classification task (its a little complicated) - Last week
 * VM experiment on new 3D dataset
