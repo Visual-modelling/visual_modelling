@@ -11,3 +11,24 @@
 7. I've left a extended docstring of each arg used in the run script. Please pay attention to the `(CHANGE)` marked ones.
 8. `--jobname` will be the name wandb plots it as, please change it appropriately, or remove the `--visdom` flag to prevent logging.
 9. I'll add extra instructions for functionality like mixed dataset and running MNIST. For now, please ignore all running scripts outside of `transformer`. Some may not work but I'm keeping them around.
+
+## Plan
+...Recent history
+* ~~Collect and implement wanted metrics~~Late September - Early October
+* ~~Generate improved dataset~~ - Early October
+* ~~Upgrade and generalise repo~~ - Early October
+* ~~MMNIST and Segmentation implementation~ - Mid October
+* ~~Clean for Zheming and Tom~~ - Mid October
+* HALFWAY Create MOCAP classification task (its a little complicated) - Last week
+* VM experiment on new 3D dataset
+* Table in paper for results of metrics to go
+* No pretrain results CNN:
+    - MNIST(1,2,3)
+    - Hudson Segmentation(1,2,3)
+    - MOCAP task(1,2,3)
+* Pretrain results CNN:
+    - MNIST(1,2,3)
+    - Hudson Segmentation(1,2,3)
+    - MOCAP task(1,2,3)
+* **HERE** by Sunday
+* November 2-9 week off
