@@ -14,7 +14,7 @@
 
 ## Plan
 ...Recent history
-* ~~Collect and implement wanted metrics~~Late September - Early October
+* ~~Collect and implement wanted metrics~~ - Late September - Early October
 * ~~Generate improved dataset~~ - Early October
 * ~~Upgrade and generalise repo~~ - Early October
 * ~~MMNIST and Segmentation implementation~~ - Mid October
