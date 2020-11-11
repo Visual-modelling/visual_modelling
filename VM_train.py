@@ -171,7 +171,6 @@ if __name__ == "__main__":
     parser.add_argument_group("Run specific arguments")
     parser.add_argument("--epoch", type=int, default=10)
     parser.add_argument("--early_stopping", type=int, default=2, help="number of epochs after no improvement before stopping")
-    parser.add_argument("--split_condition", type=str, default="tv_ratio:4-1", help="Custom string deciding how to split datasets into train/test. Affiliated with a custom function in dataset")
     """
     Guide to split_condition:
         'tv_ratio:4-1' : Simply split all videos into train:validation ratio of 4:1
@@ -190,6 +189,7 @@ if __name__ == "__main__":
     parser.add_argument("--dataset", type=str, nargs="+", default="from_raw", choices=["mmnist", "from_raw"], help="Type of dataset")
     parser.add_argument("--dataset_path", type=str, nargs="+", default=os.path.expanduser("~/"), help="Dataset paths")
     #############
+    parser.add_argument("--split_condition", type=str, default="tv_ratio:4-1", help="Custom string deciding how to split datasets into train/test. Affiliated with a custom function in dataset")
     parser.add_argument("--shuffle", action="store_true", help="shuffle dataset")
     parser.add_argument("--segmentation", action="store_true", help="Create a dataset for image segmentation. Segmentation masks for images in video clips should be named the same as the original image and stored in a subdirectory of the clip 'mask'")
 

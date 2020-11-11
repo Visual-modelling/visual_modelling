@@ -96,7 +96,7 @@ class MMNIST(Dataset):
 
     def prepare_dicts(self):
         # Training
-        import ipdb; ipdb.set_trace()
+        #import ipdb; ipdb.set_trace()
         iter_len = self.args.in_no + self.args.out_no
         new_train = {}
         counter = 0
@@ -340,6 +340,7 @@ class Dataset_from_raw(Dataset):
         """
         Return train and validation data dictionaries
         """
+        #data.keys = ['vid', 'vid_path', 'frame_idxs', 'frame_paths', 'positions']
         if self.args.dset_sze != -1:
             data = dict( list( data.items()[self.args.dset_sze:] ) )
         # See the argparse in main for a description of splitting functions
@@ -347,6 +348,12 @@ class Dataset_from_raw(Dataset):
             tv_ratio = condition[9:].split('-')
             tv_ratio = float(tv_ratio[0])/( float(tv_ratio[0]) + float(tv_ratio[1]) )
             train_dict, valid_dict = utils.split_dict_ratio(data, tv_ratio)
+            return train_dict, valid_dict
+        elif condition == "HDMB":
+            import ipdb; ipdb.set_trace()
+            train_labs, class2id, id2class = utils.load_pickle( os.path.join( os.path.dirname(__file__), "data/HDMB-51/train_labels.pickle" ) )
+            test_labs, _, _ = utils.load_pickle( os.path.join( os.path.dirname(__file__), "data/HDMB-51/test_labels.pickle" ) )
+            train_dict = {  }
             return train_dict, valid_dict
         else:
             raise ValueError(f"Condition: {condition} not recognised")
