@@ -19,16 +19,13 @@
 * ~~Upgrade and generalise repo~~ - Early October
 * ~~MMNIST and Segmentation implementation~~ - Mid October
 * ~~Clean for Zheming and Tom~~ - Mid October
-* HALFWAY Create MOCAP classification task (its a little complicated) - Last week
 * VM experiment on new 3D dataset
-* Table in paper for results of metrics to go
-* No pretrain results CNN:
+* ~~Table in paper for results of metrics to go~~
+* RUNNING No pretrain results CNN:
     - MNIST(1,2,3)
     - Hudson Segmentation(1,2,3)
     - MOCAP task(1,2,3)
-* Pretrain results CNN:
+* RUNNING Pretrain results CNN:
     - MNIST(1,2,3)
     - Hudson Segmentation(1,2,3)
     - MOCAP task(1,2,3)
-* **HERE** by Sunday
-* November 2-9 week off

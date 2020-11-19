@@ -126,6 +126,7 @@ def self_output(args, model, dset):
         pbar.close()
     wandb.log({"self_output_gifs": wandb_frames}, commit=False)
     wandb.log({"metrics":wandb_metric_n_names}, commit=False)
+    return wandb_metric_n_names
 
 
 def validate(args, dset, model, criterion):
@@ -217,7 +218,7 @@ if __name__ == "__main__":
     parser.add_argument("--jobname", type=str, default="jobname", help="jobname")
     parser.add_argument("--self_output", action="store_true", help="Run self output on specified model")
     parser.add_argument("--self_output_n", type=int, default=-1, help="Number of frames to run self output on")
-    parser.add_argument("--model_path", type=str, default=os.path.expanduser("~/cnn_visual_modelling/model.pth"), help="path of saved model")
+    parser.add_argument("--model_path", type=str, default="", help="path of saved model")
     parser.add_argument("--gif_path", type=str, default=os.path.expanduser("~/cnn_visual_modelling/.results/self_out.gif"), help="path to save the gif")
     parser.add_argument("--n_gifs", type=int, default=10, help="number of gifs to save")
     
@@ -311,12 +312,23 @@ if __name__ == "__main__":
                     #args.plotter.text_plot(args.jobname+" val", "Best %s val %.4f Iteration:%d" % (args.loss, best_loss, epoch))
                 if args.save:
                     torch.save(model.state_dict(), args.checkpoint_path)
-                    self_output(args, model, dset)
+                    metrics = self_output(args, model, dset)
+                    psnr_metric = utils.avg_list([ empl["PSNR"] for empl in metrics ])
+                    ssim_metric = utils.avg_list([ empl["SSIM"] for empl in metrics ])
+                    msssim_metric = utils.avg_list([ empl["MS_SSIM"] for empl in metrics ])
+                    lpips_metric = utils.avg_list([ empl["LPIPS"] for empl in metrics ])
+                    # Printing and logging either way
+                    print(f"Epoch {epoch}/{args.epoch}", f"Train Loss {train_loss:.3f} |", f"Val Loss {valid_loss:.3f} |", f"Early Stop Flag {early_stop_count}/{args.early_stopping}", f"PSNR {psnr_metric:.3f}", f"SSIM {ssim_metric:.3f}", f"MS-SSIM {msssim_metric:.3f}", f"LPIPS {lpips_metric:.3f}\n")
                     model.train()
-
-            # Printing and logging either way
-            print(f"Epoch {epoch}/{args.epoch}", f"Train Loss {train_loss:.3f} |", f"Val Loss {valid_loss:.3f} |", f"Early Stop Flag {early_stop_count}/{args.early_stopping}\n")
+                else:
+                    # Printing and logging either way
+                    print(f"Epoch {epoch}/{args.epoch}", f"Train Loss {train_loss:.3f} |", f"Val Loss {valid_loss:.3f} |", f"Early Stop Flag {early_stop_count}/{args.early_stopping}\n")
             if args.visdom:
+                if args.save:
+                    wandb.log({'PSNR' : psnr_metric}, commit=False)
+                    wandb.log({'SSIM' : ssim_metric}, commit=False)
+                    wandb.log({'MS-SSIM' : msssim_metric}, commit=False)
+                    wandb.log({'LPIPS' : lpips_metric}, commit=False)
                 wandb.log({'val_loss' : best_loss})
                 #args.plotter.text_plot(args.jobname+" epoch", f"Train Loss {train_loss:.3f} | Val Loss {valid_loss:.3f} | Early Stop Count {early_stop_count}")
                 #args.plotter.plot(args.loss, "val", "val "+args.jobname, epoch, valid_loss)

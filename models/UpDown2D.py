@@ -44,7 +44,7 @@ class FCUp_Down2D_2_Segmentation(nn.Module):
 
     def forward(self, x):
         if self.load_mode == "pad":
-            x = torch.repeat(1, self.in_no, 1, 1)
+            x = x.repeat(1, self.in_no, 1, 1)
         x = self.full(x)
         return x
 
@@ -63,9 +63,9 @@ class FCUp_Down2D_2_MNIST(nn.Module):
         """
         self.load_mode = load_mode
         assert load_mode in ["replace", "pad"], f"Invalid load_mode:{load_mode}"
-        model_weights = torch.load(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), load_path))
-        in_no = model_weights['UDChain.layers.0.maxpool_conv.1.double_conv.0.weight'].shape[1]
-        self.in_no = in_no
+        #model_weights = torch.load(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), load_path))
+        #in_no = model_weights['UDChain.layers.0.maxpool_conv.1.double_conv.0.weight'].shape[1]
+        self.in_no = args.in_no
         full = FCUp_Down2D(args)
         if load_path is not "":
             full.load_state_dict(torch.load(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), load_path)), strict=False)

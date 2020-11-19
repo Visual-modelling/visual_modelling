@@ -201,10 +201,10 @@ def train_HDMB_51(model, args, epochs=30, bsz=16):
     """
     Train on HDMB-51
     """
-    import ipdb; ipdb.set_trace()
+    #import ipdb; ipdb.set_trace()
     model.train()
     args.dset_sze = -1
-    dset = Dataset_from_raw(args.dataset_path[0], args) 
+    dset = Dataset_from_raw(args.dataset_path[0], args)
     train_loader = DataLoader(dset, batch_size=bsz)
     best_acc = 0
     if args.load_mode == "replace":
@@ -284,6 +284,7 @@ if __name__ == "__main__":
     parser.add_argument("--in_no", type=int, default=5, help="number of frames to use for forward pass")
     parser.add_argument("--out_no", type=int, default=1, help="number of frames to use for ground_truth")
     parser.add_argument("--save", action="store_true", help="Save models/validation things to checkpoint location")
+    parser.add_argument("--segmentation", action="store_true", help="Create a dataset for image segmentation. Segmentation masks for images in video clips should be named the same as the original image and stored in a subdirectory of the clip 'mask'")
 
     parser.add_argument_group("Dataset specific arguments")
     parser.add_argument("--split_condition", type=str, default="tv_ratio:4-1", help="Custom string deciding how to split datasets into train/test. Affiliated with a custom function in dataset")
@@ -291,7 +292,7 @@ if __name__ == "__main__":
 
     parser.add_argument_group("Model specific arguments")
     parser.add_argument("--model", type=str, default="UpDown2D", choices=["UpDown2D", "UpDown3D", "transformer"], help="Type of model to run")
-    parser.add_argument("--model_path", type=str, default=os.path.expanduser("~/cnn_visual_modelling/model.pth"), help="path of saved model")
+    parser.add_argument("--model_path", type=str, default="", help="path of saved model")
     parser.add_argument("--img_type", type=str, default="binary", choices=["binary", "greyscale", "RGB"], help="Type of input image")
     parser.add_argument("--krnl_size", type=int, default=3, help="Height and width kernel size")
     parser.add_argument("--krnl_size_t", type=int, default=3, help="Temporal kernel size")

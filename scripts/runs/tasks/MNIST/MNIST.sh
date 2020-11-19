@@ -3,10 +3,10 @@
 #SBATCH --job-name toms_mnist_test 
 #SBATCH --ntasks 6
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../.results/toms_mnist_test.out
+#SBATCH -o ../../../../.results/toms_mnist_test.out
 
-source ../../../python_venvs/vm/bin/activate
-python ../../../test_tasks.py \
+source ../../../../python_venvs/vm/bin/activate
+python ../../../../test_tasks.py \
     --TASK MNIST \
     --bsz 16 \
     --val_bsz 1 \

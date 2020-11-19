@@ -1,13 +1,17 @@
 #!/bin/bash
 #SBATCH -p part0
-#SBATCH --job-name toms_segmentation_test 
+#SBATCH --job-name hudsonseg_no_pretrain_sl1 
 #SBATCH --ntasks 6
 #SBATCH --gres gpu:1
-#SBATCH -o ../../.results/toms_segmentation_test.out
+#SBATCH -o ../../../../.results/wntrbtm_hudsonseg_no_pretrain_sl1.out
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+cd ../../../..
+source python_venvs/vm/bin/activate
 
-source ../../python_venvs/vm/bin/activate
-python ../../VM_train.py \
+# Segmentation task
+python VM_train.py \
     --dataset from_raw \
+    --segmentation \
     --dataset_path data/hudson_true_3d_default \
     --bsz 16 \
     --val_bsz 100 \
@@ -18,12 +22,11 @@ python ../../VM_train.py \
     --device 0 \
     --epoch 300 \
     --early_stopping 100 \
-    --jobname toms_segmentation_test \
+    --jobname wntrbtm_hudsonseg_no_pretrain_sl1 \
     --loss smooth_l1 \
     --reduction mean \
     --img_type greyscale \
     --model UpDown2D \
     --reduce \
     --shuffle \
-    --segmentation \
-    --model_path .results/mmnist_2d-d3_MSE_mean/model.pth
+    --visdom

@@ -9,6 +9,11 @@ import shutil
 def read_csv(file_path):
     return pd.read_csv(file_path)
     
+def avg_list(lyst):
+    if lyst == []:
+        return None
+    else:
+        return sum(lyst)/len(lyst)
 
 def read_json_lines(file_path):
     with open(file_path, "r") as f:
