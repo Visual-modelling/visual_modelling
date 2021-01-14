@@ -22,19 +22,25 @@ class FCUp_Down2D_2_Segmentation(nn.Module):
             'pad'       : Keep original 'in_no' input channels and pad the inputs by copying the input 'in_no' times
         """
         self.load_mode = load_mode
+        self.duplicate = False
         assert load_mode in ["replace", "pad"], f"Invalid load_mode:{load_mode}"
         assert args.out_no == 1, f"Segmentation adaption not implemented on pretrained models that output more than 1 image. Arguements imply the model outputs {args.out_no} images"
+        cargs = copy.deepcopy(args)
+        if args.model_in_no != False:
+            cargs.in_no = args.model_in_no
+            self.duplicate = cargs.in_no
         if load_path is not "":
             # Pretrained model might have more than 1 input or output. We will have to replace the input and output layers with those of appropriate shape
             model_weights = torch.load(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), load_path))
-            in_no = model_weights['UDChain.layers.0.maxpool_conv.1.double_conv.0.weight'].shape[1]
-            cargs = copy.deepcopy(args)
-            cargs.in_no = in_no
-            self.in_no = in_no
+            #in_no = model_weights['UDChain.layers.0.maxpool_conv.1.double_conv.0.weight'].shape[1]
+            #cargs = copy.deepcopy(args)
+            #cargs.in_no = in_no
+            #self.in_no = in_no
+
             full = FCUp_Down2D(cargs)
             full.load_state_dict(torch.load(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), load_path)), strict=False)
         else:
-            full = FCUp_Down2D(args)
+            full = FCUp_Down2D(cargs)
         # Replace the first layer
         if load_mode == "replace":
             full.UDChain.layers[0].maxpool_conv[1].double_conv[0]= nn.Conv2d(1,args.channel_factor, kernel_size=args.krnl_size, padding=args.padding)
@@ -44,7 +50,9 @@ class FCUp_Down2D_2_Segmentation(nn.Module):
 
     def forward(self, x):
         if self.load_mode == "pad":
-            x = x.repeat(1, self.in_no, 1, 1)
+            if self.duplicate != False:
+                x = x.repeat(1, self.duplicate, 1, 1)
+            pass
         x = self.full(x)
         return x
 
@@ -62,11 +70,16 @@ class FCUp_Down2D_2_MNIST(nn.Module):
             'pad'       : Keep original 'in_no' input channels and pad the inputs by copying the input 'in_no' times
         """
         self.load_mode = load_mode
+        self.duplicate = False
         assert load_mode in ["replace", "pad"], f"Invalid load_mode:{load_mode}"
         #model_weights = torch.load(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), load_path))
         #in_no = model_weights['UDChain.layers.0.maxpool_conv.1.double_conv.0.weight'].shape[1]
-        self.in_no = args.in_no
-        full = FCUp_Down2D(args)
+        cargs = copy.deepcopy(args)
+        if args.model_in_no != False:
+            cargs.in_no = args.model_in_no
+            self.duplicate = cargs.in_no
+
+        full = FCUp_Down2D(cargs)
         if load_path is not "":
             full.load_state_dict(torch.load(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), load_path)), strict=False)
         # Replace the first layer
@@ -92,6 +105,7 @@ class FCUp_Down2D_2_MNIST(nn.Module):
             self.full = full
 
     def forward(self, x):
+        #import ipdb; ipdb.set_trace()
         if self.load_mode == "replace":
             x = self.front(x)
             bsz = x.shape[0]
@@ -99,7 +113,8 @@ class FCUp_Down2D_2_MNIST(nn.Module):
             x = self.fc_0(x)
             x = self.fc_1(x)
         elif self.load_mode == "pad":
-            x = x.repeat(1,self.in_no,1,1)
+            if self.duplicate != False:
+                x = x.repeat(1, self.duplicate, 1, 1)
             x = self.full(x)
         return x
 
@@ -142,6 +157,8 @@ class Up_Down_Chain(nn.Module):
         # Get the first and last elements of the up and down chains
         down_chain = []
         up_chain = []
+        if args.model_in_no != False:
+            args.in_no = args.model_in_no
         down_chain.append( Down(args.in_no, args.channel_factor, args) )
         up_chain.append( OutConv(args.channel_factor, args.out_no, args) )
 

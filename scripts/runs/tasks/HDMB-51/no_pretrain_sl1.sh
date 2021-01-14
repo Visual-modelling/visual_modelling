@@ -11,10 +11,11 @@ source ../../../../python_venvs/vm/bin/activate
 python ../../../../test_tasks.py \
     --TASK HDMB-51 \
     --bsz 16 \
-    --split_condition HDMB \
+    --split_condition tv_ratio:4-1 \
     --val_bsz 1 \
-    --in_no 5 \
+    --in_no 1 \
     --out_no 1 \
+    --model_in_no 5 \
     --depth 3 \
     --device 0 \
     --epoch 100 \

@@ -21,6 +21,7 @@ python test_tasks.py \
     --jobname toms_HDMB-51_test \
     --img_type greyscale \
     --model UpDown2D \
+    --dataset from_raw \
     --dataset_path data/HDMB-51/grey_64x64_frames \
     --model_path .results/mmnist_2d-d3_MSE_mean/model.pth \
     --load_mode pad \

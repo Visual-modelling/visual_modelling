@@ -181,6 +181,7 @@ if __name__ == "__main__":
     parser.add_argument("--bsz", type=int, default=32)
     parser.add_argument("--val_bsz", type=int, default=100)
     parser.add_argument("--in_no", type=int, default=5, help="number of frames to use for forward pass")
+    parser.add_argument("--model_in_no", type=int, default=False, help="Use to assert model in_no regardless of dataset in_no")
     parser.add_argument("--out_no", type=int, default=1, help="number of frames to use for ground_truth")
     parser.add_argument("--save", action="store_true", help="Save models/validation things to checkpoint location")
     parser.add_argument("--dset_sze", type=int, default=-1, help="Number of training samples from dataset")

@@ -183,6 +183,7 @@ def test_HDMB_51(model, args, bsz=1):
         #    label = new_label
         img, label = img.to(args.device), label.to(args.device)
         out = model(img)
+        #import ipdb; ipdb.set_trace()
         if args.load_mode == "pad":
             predicted = torch.mean(out, [1,2,3])    # Average across all outputs and divide by 10 to determine predicted class
             predicted = torch.round(predicted * 0.1).long()
@@ -233,6 +234,7 @@ def train_HDMB_51(model, args, epochs=30, bsz=16):
                 pbar.update(1)
                 #sleep(0.001)
                 img, label = batch
+                #import ipdb; ipdb.set_trace()
                 img = (255*img).long().float()
                 if args.load_mode == "pad":
                     new_label = torch.ones(img.shape)
@@ -282,6 +284,7 @@ if __name__ == "__main__":
     parser.add_argument("--bsz", type=int, default=32)
     parser.add_argument("--val_bsz", type=int, default=100)
     parser.add_argument("--in_no", type=int, default=5, help="number of frames to use for forward pass")
+    parser.add_argument("--model_in_no", type=int, default=False, help="Use to assert model in_no regardless of dataset in_no")
     parser.add_argument("--out_no", type=int, default=1, help="number of frames to use for ground_truth")
     parser.add_argument("--save", action="store_true", help="Save models/validation things to checkpoint location")
     parser.add_argument("--segmentation", action="store_true", help="Create a dataset for image segmentation. Segmentation masks for images in video clips should be named the same as the original image and stored in a subdirectory of the clip 'mask'")
@@ -359,6 +362,7 @@ if __name__ == "__main__":
         test_labels, _, _ = utils.load_pickle(os.path.join(os.path.dirname(os.path.realpath(__file__)), "data/HDMB-51/train_labels.pickle"))
 
         # Models
+        #import ipdb; ipdb.set_trace()
         model = FCUp_Down2D_2_MNIST(args, load_path=args.model_path)
         model.to(args.device)
 

@@ -15,7 +15,7 @@ python VM_train.py \
     --dataset_path data/moving_mnist/various \
     --bsz 16 \
     --val_bsz 100 \
-    --in_no 1 \
+    --in_no 5 \
     --out_no 1 \
     --depth 3 \
     --split_condition tv_ratio:4-1 \
@@ -37,7 +37,8 @@ python test_tasks.py \
     --TASK MNIST \
     --bsz 16 \
     --val_bsz 1 \
-    --in_no 5 \
+    --in_no 1 \
+    --model_in_no 5 \
     --out_no 1 \
     --depth 3 \
     --device 0 \

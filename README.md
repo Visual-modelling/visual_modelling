@@ -29,3 +29,4 @@
     - MNIST(1,2,3)
     - Hudson Segmentation(1,2,3)
     - MOCAP task(1,2,3)
+* YOLO bounding box extraction for targeted loss. Boxes unsuccessful at smaller resolutions. Preserved scaling could fix

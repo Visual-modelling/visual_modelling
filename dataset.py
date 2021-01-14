@@ -28,6 +28,7 @@ def read_ims_binary(frames):
 
 def read_ims_greyscale(frames):
     home_dir = os.path.expanduser("~").split("/")[1]
+    #import ipdb; ipdb.set_trace()
     frames = [ torch.from_numpy(cv2.imread(frame.replace('jumperkables', getpass.getuser()).replace("/home/", f"/{home_dir}/" ), cv2.IMREAD_GRAYSCALE)) for frame in frames]
     #old pillow version frames = [ (ToTensor()(Image.open(frame.replace('jumperkables', getpass.getuser()) ))>0).float() for frame in frames ]
     return frames
@@ -78,15 +79,15 @@ class Dataset_from_raw(Dataset):
 
     def __getitem__(self, idx): # Indexs must count from 0
         if self.mode is not "self_out":
+            #import ipdb; ipdb.set_trace()
             data = self.current_data_dict[idx]  #data.keys = ['vid', 'vid_path', 'frame_idxs', 'frame_paths', 'positions']
             positions = torch.stack([ pos['positions'] for pos in data.values() ])
             positions, gt_positions = positions[:self.args.in_no], positions[self.args.in_no:]
             frames = [ frm['frame_paths'] for frm in data.values() ]
             if self.args.segmentation:
                 # If its a semgentation task, read the final ground_truth frame in its segmentation mask form instead
-                frames[-1] = frames[-1].split('/')
-                frames[-1] = frames[-1][:-1]+['mask']+frames[-1][-1:]
-                frames[-1] = '/'.join(frames[-1])
+                #import ipdb; ipdb.set_trace()
+                frames[-1] = frames[-2].replace("hudson_true_3d_default", "hudson_true_3d_default_mask")
             frames = self.img_read_method(frames)
             frames = torch.stack(frames, dim=0)
             frames, gt_frames = frames[:self.args.in_no], frames[self.args.in_no:]
