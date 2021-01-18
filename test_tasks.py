@@ -74,7 +74,7 @@ def test_MNIST(model, args, bsz=1):
     dset = MNIST(train=False, transform=transforms.Compose([transforms.Pad(18,0), transforms.ToTensor()]), root=os.path.join(os.path.dirname(os.path.realpath(__file__)), "data"))
     test_loader = DataLoader(dset, batch_size=bsz)
     correct, total = 0, 0
-    for batch in test_loader:
+    for batch in tqdm(test_loader, total=len(test_loader)):
         img, label = batch
         img = (255*img).long().float()
         #if args.load_mode == "pad":
@@ -170,10 +170,11 @@ def train_MNIST(model, args, epochs=30, bsz=16):
 # HDMB
 def test_HDMB_51(model, args, bsz=1):
     model.eval()
-    dset = MNIST(train=False, transform=transforms.Compose([transforms.Pad(18,0), transforms.ToTensor()]), root=os.path.join(os.path.dirname(os.path.realpath(__file__)), "data"))
+    args.dset_sze = -1
+    #dset = MNIST(train=False, transform=transforms.Compose([transforms.Pad(18,0), transforms.ToTensor()]), root=os.path.join(os.path.dirname(os.path.realpath(__file__)), "data"))
     test_loader = DataLoader(dset, batch_size=bsz)
     correct, total = 0, 0
-    for batch in test_loader:
+    for batch in tqdm(test_loader, total=len(test_loader)):
         img, label = batch
         img = (255*img).long().float()
         #if args.load_mode == "pad":
@@ -252,7 +253,7 @@ def train_HDMB_51(model, args, epochs=30, bsz=16):
             pbar.close()
         print("Validating...")
         train_loss = sum(train_loss)/len(train_loss)
-        val_acc, _ = test_MNIST(model, args)
+        val_acc, _ = test_HDMB_51(model, args)
         model.train()
         if val_acc > best_acc:
             best_acc = val_acc
@@ -328,7 +329,7 @@ if __name__ == "__main__":
             best_acc, return_string = train_MNIST(model, args, bsz=args.bsz, epochs=args.epoch)
         # Only Testing
         if args.epoch == 0:
-            best_acc, _ = test_MNIST(model, args, epochs=args.epoch, bsz=args.val_bsz)
+            best_acc, _ = test_MNIST(model, args, bsz=args.val_bsz)
             return_string = f"Validation Only: Accuracy: {best_acc:.2f}%"
 
     ################################
@@ -376,7 +377,7 @@ if __name__ == "__main__":
             best_acc, return_string = train_HDMB_51(model, args, bsz=args.bsz, epochs=args.epoch)
         # Only Testing
         if args.epoch == 0:
-            best_acc, _ = test_HDMB_51(model, args, epochs=args.epoch, bsz=args.val_bsz)
+            best_acc, _ = test_HDMB_51(model, args, bsz=args.val_bsz)
             return_string = f"Validation Only: Accuracy: {best_acc:.2f}%"
 
 

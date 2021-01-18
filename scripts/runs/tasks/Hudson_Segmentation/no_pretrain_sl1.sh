@@ -14,7 +14,7 @@ python VM_train.py \
     --segmentation \
     --dataset_path data/hudson_true_3d_default \
     --bsz 16 \
-    --val_bsz 100 \
+    --val_bsz 0 \
     --in_no 1 \
     --model_in_no 5 \
     --out_no 1 \

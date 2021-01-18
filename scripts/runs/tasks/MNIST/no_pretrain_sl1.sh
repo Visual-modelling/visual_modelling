@@ -14,12 +14,13 @@ python test_tasks.py \
     --TASK MNIST \
     --bsz 16 \
     --val_bsz 1 \
+    --dataset_path data/moving_mnist/various \
     --in_no 1 \
     --model_in_no 5 \
     --out_no 1 \
     --depth 3 \
     --device 0 \
-    --epoch 100 \
+    --epoch 0 \
     --early_stopping 20 \
     --jobname wntrbtm_mnist_no_pretrain_sl1 \
     --img_type greyscale \
