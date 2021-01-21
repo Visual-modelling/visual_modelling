@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH -p part0
-#SBATCH --job-name hudsonseg_pretrain_sl1 
+#SBATCH --job-name p_hudsonseg_pretrain_sl1 
 #SBATCH --ntasks 6
 #SBATCH --gres gpu:1
 #SBATCH -o ../../../../.results/wntrbtm_hudsonseg_pretrain_sl1.out

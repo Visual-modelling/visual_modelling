@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH -p part0
-#SBATCH --job-name hdmb51_no_pretrain_sl1 
+#SBATCH --job-name np_hdmb51_no_pretrain_sl1 
 #SBATCH --ntasks 6
 #SBATCH --gres gpu:1
 #SBATCH -o ../../../../.results/wntrbtm_hdmb51_no_pretrain.out
