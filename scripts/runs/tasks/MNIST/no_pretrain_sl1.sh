@@ -20,7 +20,7 @@ python test_tasks.py \
     --out_no 1 \
     --depth 3 \
     --device 0 \
-    --epoch 0 \
+    --epoch 100 \
     --early_stopping 20 \
     --jobname wntrbtm_mnist_no_pretrain_sl1 \
     --img_type greyscale \

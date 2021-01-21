@@ -297,7 +297,10 @@ if __name__ == "__main__":
     early_stop_count = 0
     early_stop_flag = False
     best_loss = 10**20    # Mean average precision
-    print("Training Start")
+    if args.epoch == 0:
+        validate(args, dset, model, criterion)
+    else:
+        print("Training Start")
     for epoch in range(args.epoch):
         if not early_stop_flag:
             train_loss, valid_loss = train(args, dset, model, optimizer, criterion, epoch, best_loss)

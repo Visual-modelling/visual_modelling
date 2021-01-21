@@ -18,7 +18,7 @@ python ../../../../test_tasks.py \
     --model_in_no 5 \
     --depth 3 \
     --device 0 \
-    --epoch 0 \
+    --epoch 100 \
     --early_stopping 20 \
     --jobname wntrbtm_hdmb51_no_pretrain_sl1 \
     --img_type greyscale \
