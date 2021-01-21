@@ -322,7 +322,7 @@ if __name__ == "__main__":
         model.to(args.device)
         if args.visdom:
             #args.plotter = VisdomLinePlotter(env_name=args.jobname)
-            wandb.init(project="visual-modelling", entity="visual-modelling", name=args.jobname)
+            wandb.init(project="visual-modelling", entity="visual-modelling", name=args.jobname, resume="allow")
             wandb.config.update(args)
         # Training (includes validation after each epoch and early stopping)
         if args.epoch > 0:        

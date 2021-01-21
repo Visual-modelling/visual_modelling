@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH -p part0
-#SBATCH --job-name np_mnist_no_pretrain_sl1  
+#SBATCH --job-name no_10_mnist_sl1  
 #SBATCH --ntasks 6
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../.results/wntrbtm_mnist_no_pretrain_sl1.out
+#SBATCH -o ../../../../.results/no_10_mnist_sl1.out
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd ../../../..
 
@@ -20,9 +20,9 @@ python test_tasks.py \
     --out_no 1 \
     --depth 3 \
     --device 0 \
-    --epoch 100 \
+    --epoch 10 \
     --early_stopping 20 \
-    --jobname wntrbtm_mnist_no_pretrain_sl1 \
+    --jobname no_10_mnist_sl1 \
     --img_type greyscale \
     --model UpDown2D \
     --load_mode pad \

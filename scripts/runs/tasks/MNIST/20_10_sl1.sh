@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH -p part0
-#SBATCH --job-name p_mnist_pretrain_sl1  
+#SBATCH --job-name 20_10_hseg_sl1  
 #SBATCH --ntasks 6
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../.results/wntrbtm_mnist_pretrain_sl1.out
+#SBATCH -o ../../../../.results/20_10_hseg_sl1.out
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd ../../../..
 
@@ -20,9 +20,9 @@ python VM_train.py \
     --depth 3 \
     --split_condition tv_ratio:4-1 \
     --device 0 \
-    --epoch 300 \
+    --epoch 20 \
     --early_stopping 100 \
-    --jobname wntrbtm_mnist_pretrain_sl1 \
+    --jobname 20_10_hseg_sl1 \
     --loss smooth_l1 \
     --reduction mean \
     --img_type greyscale \
@@ -42,12 +42,12 @@ python test_tasks.py \
     --out_no 1 \
     --depth 3 \
     --device 0 \
-    --epoch 100 \
+    --epoch 10 \
     --early_stopping 20 \
-    --jobname wntrbtm_mnist_pretrain_sl1 \
+    --jobname 20_10_hseg_sl1 \
     --img_type greyscale \
     --model UpDown2D \
-    --model_path .results/wntrbtm_mnist_pretrain_sl1/model.pth \
+    --model_path .results/20_10_hseg_sl1/model.pth \
     --load_mode pad \
     --loss smooth_l1 \
     --reduce \

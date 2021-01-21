@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH -p part0
-#SBATCH --job-name p_hudsonseg_pretrain_sl1 
+#SBATCH --job-name 10_10_hseg_sl1 
 #SBATCH --ntasks 6
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../.results/wntrbtm_hudsonseg_pretrain_sl1.out
+#SBATCH -o ../../../../.results/10_10_hseg_sl1.out
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd ../../../..
 source python_venvs/vm/bin/activate
@@ -19,9 +19,9 @@ python VM_train.py \
     --depth 3 \
     --split_condition tv_ratio:4-1 \
     --device 0 \
-    --epoch 1 \
+    --epoch 10 \
     --early_stopping 100 \
-    --jobname wntrbtm_hudsonseg_pretrain_sl1 \
+    --jobname 10_10_hseg_sl1 \
     --loss smooth_l1 \
     --reduction mean \
     --img_type greyscale \
@@ -44,9 +44,9 @@ python VM_train.py \
     --depth 3 \
     --split_condition tv_ratio:4-1 \
     --device 0 \
-    --epoch 300 \
+    --epoch 10 \
     --early_stopping 100 \
-    --jobname wntrbtm_hudsonseg_pretrain_sl1 \
+    --jobname 10_10_hseg_sl1 \
     --loss smooth_l1 \
     --reduction mean \
     --img_type greyscale \
@@ -55,6 +55,6 @@ python VM_train.py \
     --shuffle \
     --visdom \
     --save \
-    --model_path .results/wntrbtm_hudsonseg_pretrain_sl1/model.pth
+    --model_path .results/10_10_hseg_sl1/model.pth
 
 
