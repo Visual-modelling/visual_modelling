@@ -6,9 +6,9 @@
 #SBATCH -x gpu[0-3]
 #SBATCH --mem 12G
 #SBATCH -p res-gpu-small
-#SBATCH --job-name no_10_hseg_sl1 
+#SBATCH --job-name no_30_hseg_sl1 
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../.results/no_10_hseg_sl1.out
+#SBATCH -o ../../../../.results/no_30_hseg_sl1.out
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd ../../../..
 source python_venvs/vm/bin/activate
@@ -26,9 +26,9 @@ python VM_train.py \
     --depth 3 \
     --split_condition tv_ratio:4-1 \
     --device 0 \
-    --epoch 10 \
+    --epoch 30 \
     --early_stopping 100 \
-    --jobname no_10_hseg_sl1 \
+    --jobname no_30_hseg_sl1 \
     --loss smooth_l1 \
     --reduction mean \
     --img_type greyscale \

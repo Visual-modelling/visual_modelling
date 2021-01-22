@@ -297,7 +297,7 @@ if __name__ == "__main__":
         raise Exception("Loss not implemented")
     if args.visdom:
         #args.plotter = VisdomLinePlotter(env_name=args.jobname)
-        wandb.init(project="visual-modelling", entity="visual-modelling", name=args.jobname, resume="allow")
+        wandb.init(project="visual-modelling", entity="visual-modelling", name=args.jobname, resume=True)
         wandb.config.update(args)
 
     # Training loop
