@@ -323,7 +323,7 @@ if __name__ == "__main__":
         if args.visdom:
             #args.plotter = VisdomLinePlotter(env_name=args.jobname)
             wandb.init(project="visual-modelling", entity="visual-modelling", name=args.jobname, resume=True)
-            wandb.config.update(args)
+            wandb.config.update(args, allow_val_change=True)
         # Training (includes validation after each epoch and early stopping)
         if args.epoch > 0:        
             best_acc, return_string = train_MNIST(model, args, bsz=args.bsz, epochs=args.epoch)

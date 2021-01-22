@@ -298,7 +298,7 @@ if __name__ == "__main__":
     if args.visdom:
         #args.plotter = VisdomLinePlotter(env_name=args.jobname)
         wandb.init(project="visual-modelling", entity="visual-modelling", name=args.jobname, resume=True)
-        wandb.config.update(args)
+        wandb.config.update(args, allow_val_change=True)
 
     # Training loop
     early_stop_count = 0
