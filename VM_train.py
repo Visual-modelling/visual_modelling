@@ -245,14 +245,14 @@ if __name__ == "__main__":
         repo_rootdir = os.path.dirname(os.path.realpath(sys.argv[0]))
         results_dir = os.path.join(repo_rootdir, ".results", args.jobname )
         if (os.path.isdir(results_dir)):
-            if args.load_path == "": #i.e. IF LOAD PATH IS DEFAULT/UNSET
+            if args.model_path == "": #i.e. IF LOAD PATH IS DEFAULT/UNSET
                 raise FileExistsError(f"Before you can re-run, please manually delete {results_dir}")
             else:
                 pass
                 #shutil.rmtree(results_dir)
                 #os.makedirs(results_dir)
         else:
-            if args.load_path == "":
+            if args.model_path == "":
                 os.makedirs(results_dir)
             else:
                 raise FileNotFoundError(f"You want to load a model, but {results_dir} does not exist")
