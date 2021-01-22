@@ -244,11 +244,18 @@ if __name__ == "__main__":
     if args.save:
         repo_rootdir = os.path.dirname(os.path.realpath(sys.argv[0]))
         results_dir = os.path.join(repo_rootdir, ".results", args.jobname )
-        if(os.path.isdir(results_dir)):
-            shutil.rmtree(results_dir)
-            os.makedirs(results_dir)
+        if (os.path.isdir(results_dir)):
+            if args.load_path == "": #i.e. IF LOAD PATH IS DEFAULT/UNSET
+                raise FileExistsError(f"Before you can re-run, please manually delete {results_dir}")
+            else:
+                pass
+                #shutil.rmtree(results_dir)
+                #os.makedirs(results_dir)
         else:
-            os.makedirs(results_dir)
+            if args.load_path == "":
+                os.makedirs(results_dir)
+            else:
+                raise FileNotFoundError(f"You want to load a model, but {results_dir} does not exist")
         args.results_dir = results_dir
         args.checkpoint_path = os.path.join(args.results_dir, "model.pth")
 
@@ -316,23 +323,25 @@ if __name__ == "__main__":
                     #args.plotter.text_plot(args.jobname+" val", "Best %s val %.4f Iteration:%d" % (args.loss, best_loss, epoch))
                 if args.save:
                     torch.save(model.state_dict(), args.checkpoint_path)
-                    metrics = self_output(args, model, dset)
-                    psnr_metric = utils.avg_list([ empl["PSNR"] for empl in metrics ])
-                    ssim_metric = utils.avg_list([ empl["SSIM"] for empl in metrics ])
-                    msssim_metric = utils.avg_list([ empl["MS_SSIM"] for empl in metrics ])
-                    lpips_metric = utils.avg_list([ empl["LPIPS"] for empl in metrics ])
-                    # Printing and logging either way
-                    print(f"Epoch {epoch}/{args.epoch}", f"Train Loss {train_loss:.3f} |", f"Val Loss {valid_loss:.3f} |", f"Early Stop Flag {early_stop_count}/{args.early_stopping}", f"PSNR {psnr_metric:.3f}", f"SSIM {ssim_metric:.3f}", f"MS-SSIM {msssim_metric:.3f}", f"LPIPS {lpips_metric:.3f}\n")
+                    if not args.segmentation:
+                        metrics = self_output(args, model, dset)
+                        psnr_metric = utils.avg_list([ empl["PSNR"] for empl in metrics ])
+                        ssim_metric = utils.avg_list([ empl["SSIM"] for empl in metrics ])
+                        msssim_metric = utils.avg_list([ empl["MS_SSIM"] for empl in metrics ])
+                        lpips_metric = utils.avg_list([ empl["LPIPS"] for empl in metrics ])
+                        # Printing and logging either way
+                        print(f"Epoch {epoch}/{args.epoch}", f"Train Loss {train_loss:.3f} |", f"Val Loss {valid_loss:.3f} |", f"Early Stop Flag {early_stop_count}/{args.early_stopping}", f"PSNR {psnr_metric:.3f}", f"SSIM {ssim_metric:.3f}", f"MS-SSIM {msssim_metric:.3f}", f"LPIPS {lpips_metric:.3f}\n")
                     model.train()
                 else:
                     # Printing and logging either way
                     print(f"Epoch {epoch}/{args.epoch}", f"Train Loss {train_loss:.3f} |", f"Val Loss {valid_loss:.3f} |", f"Early Stop Flag {early_stop_count}/{args.early_stopping}\n")
             if args.visdom:
                 if args.save:
-                    wandb.log({'PSNR' : psnr_metric}, commit=False)
-                    wandb.log({'SSIM' : ssim_metric}, commit=False)
-                    wandb.log({'MS-SSIM' : msssim_metric}, commit=False)
-                    wandb.log({'LPIPS' : lpips_metric}, commit=False)
+                    if not args.segmentation:
+                        wandb.log({'PSNR' : psnr_metric}, commit=False)
+                        wandb.log({'SSIM' : ssim_metric}, commit=False)
+                        wandb.log({'MS-SSIM' : msssim_metric}, commit=False)
+                        wandb.log({'LPIPS' : lpips_metric}, commit=False)
                 wandb.log({'val_loss' : best_loss})
                 #args.plotter.text_plot(args.jobname+" epoch", f"Train Loss {train_loss:.3f} | Val Loss {valid_loss:.3f} | Early Stop Count {early_stop_count}")
                 #args.plotter.plot(args.loss, "val", "val "+args.jobname, epoch, valid_loss)
