@@ -1,7 +1,12 @@
 #!/bin/bash
-#SBATCH -p part0
+#SBATCH --qos short
+#SBATCH -N 1
+#SBATCH -c 4
+#SBATCH -t 2-00:00
+#SBATCH -x gpu[0-3]
+#SBATCH --mem 12G
+#SBATCH -p res-gpu-small
 #SBATCH --job-name no_10_hseg_sl1 
-#SBATCH --ntasks 6
 #SBATCH --gres gpu:1
 #SBATCH -o ../../../../.results/no_10_hseg_sl1.out
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
