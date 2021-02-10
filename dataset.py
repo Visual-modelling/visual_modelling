@@ -16,7 +16,6 @@ from torchvision.utils import save_image
 
 import tools.utils as utils
 
-
 ###########################################################################################
 # Utility methods
 ###########################################################################################
@@ -61,6 +60,9 @@ class Dataset_from_raw(Dataset):
         if args.img_type == "RGB":
             raise Exception("RGB image reading not implemented")
         self.img_read_method = img_read_method_switch[args.img_type]
+        if args.grav_pred:
+            self.grav = utils.load_pickle(os.path.join(os.path.dirname(__file__),"data/hudson_true_3d_default/grav_dict.pickle"))
+            print("The sopranos is good")
 
     def set_mode(self, mode):
         """
@@ -93,7 +95,15 @@ class Dataset_from_raw(Dataset):
             frames = self.img_read_method(frames)
             frames = torch.stack(frames, dim=0)
             frames, gt_frames = frames[:self.args.in_no], frames[self.args.in_no:]
+            if self.args.grav_pred:
+                path = [ frm['vid_path'] for frm in data.values() ][0]
+                vid_id = path.split("/")[-1] #Get the video ID from the path
+                gravs = self.grav[vid_id]
+                x_grav, y_grav, z_grav = gravs['dx'][0], gravs['dy'][0], gravs['dz'][0]
+                gravs = torch.Tensor([x_grav, y_grav, z_grav])
+                return (frames, gravs)
             return (frames, gt_frames)
+
         else:
             data = self.current_data_dict[idx]  #data.keys = ['vid', 'vid_path', 'frame_idxs', 'frame_paths', 'positions']
             frames = [ frm['frame_paths'] for frm in data.values() ]
@@ -197,7 +207,7 @@ class Dataset_from_raw(Dataset):
             positions = torch.tensor(positions.values)[:,1:]    # Remove the useless frame index for now
             frames = os.listdir(vid_path)
             frames.sort()
-            exclude = ['config.yml','config2.yml','positions.csv','simulation.gif','mask']
+            exclude = ['config.yml','config2.yml','positions.csv','simulation.gif','mask',"bounces_dict.pickle","grav_dict.pickle"]
             frames = [ os.path.join(vid_path, frame) for frame in frames if frame not in exclude]
             frame_paths = frames
 
@@ -529,7 +539,7 @@ class MMNIST(Dataset):
         num_sz:         int         Cant remember
         nums_per_images [int,int..] e.g. [2,3] = some videos with 2 MMNIST digits, and some with 3      
         """
-        root_dir = "data/moving_mnist/various"
+        root_dir = "data/moving_mnist/variousTEMP"
         root_dir = os.path.join(os.path.dirname(__file__), root_dir)
         #root_dir = self.args.dataset_path
         mnist = self.load_dataset()
@@ -543,6 +553,7 @@ class MMNIST(Dataset):
             prcnt = round(seqs/100)
             prcnt_cnt = 0
             for seq_idx in range(seqs):
+                bounce_dict = {}    # TODO SORT OUT THE BOUNCE COUNTING
                 if seq_idx%prcnt == 0:
                     print(f"{prcnt_cnt}% done!")
                     prcnt_cnt += 1

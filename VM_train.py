@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 
 from dataset import MMNIST, Dataset_from_raw
-from models.UpDown2D import FCUp_Down2D, FCUp_Down2D_2_MNIST, FCUp_Down2D_2_Segmentation
+from models.UpDown2D import FCUp_Down2D, FCUp_Down2D_2_MNIST, FCUp_Down2D_2_Segmentation, FCUp_Down2D_2_Grav_Pred
 from models.UpDown3D import FCUp_Down3D
 from models.transformer import VMTransformer, VMTransformer2 
 #from models.OLD_transformer import VMTransformer, VMTransformer2 
@@ -35,13 +35,20 @@ def train(args, dset, model, optimizer, criterion, epoch, previous_best_loss):
         for batch_idx, batch in enumerate(train_loader):
             pbar.update(1)
             pbar.set_description(f"Training epoch {epoch}/{args.epoch}")
-            frames, gt_frames = batch
-            frames = frames.float().to(args.device)
-            gt_frames = gt_frames.float().to(args.device)
-            out = model_fwd(model, frames, args)
-            loss = criterion(out, gt_frames)
-            if args.loss == "SSIM":
-                loss = 1 - loss
+            if args.grav_pred:
+                frames, gravs = batch # gravs = torch.Tensor([x_grav, y_grav, z_grav])
+                frames, gravs = frames.float().to(args.device), gravs.to(args.device)
+                #import ipdb; ipdb.set_trace()
+                out = model_fwd(model, frames, args, mode="grav_pred")
+                loss = criterion(out, gravs)
+            else:
+                frames, gt_frames = batch
+                frames = frames.float().to(args.device)
+                gt_frames = gt_frames.float().to(args.device)
+                out = model_fwd(model, frames, args)
+                loss = criterion(out, gt_frames)
+                if args.loss == "SSIM":
+                    loss = 1 - loss
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -137,13 +144,19 @@ def validate(args, dset, model, criterion):
         for batch_idx, batch in enumerate(valid_loader):
             pbar.update(1)
             pbar.set_description(f"Validating...")
-            frames, gt_frames = batch
-            frames = frames.float().to(args.device)
-            gt_frames = gt_frames.float().to(args.device)
-            img = model_fwd(model, frames, args)
-            loss = criterion(img, gt_frames)
-            if args.loss == "SSIM":
-                loss = 1 - loss
+            if args.grav_pred:
+                frames, gravs = batch
+                frames, gravs = frames.float().to(args.device), gravs.to(args.device)
+                img = model_fwd(model, frames, args)
+                loss = criterion(img, gravs) # This is MSELoss
+            else:
+                frames, gt_frames = batch
+                frames = frames.float().to(args.device)
+                gt_frames = gt_frames.float().to(args.device)
+                img = model_fwd(model, frames, args)
+                loss = criterion(img, gt_frames)
+                if args.loss == "SSIM":
+                    loss = 1 - loss
             valid_loss.append(loss.item())
         pbar.close()
     return sum(valid_loss)/len(valid_loss)
@@ -194,6 +207,8 @@ if __name__ == "__main__":
     parser.add_argument("--split_condition", type=str, default="tv_ratio:4-1", help="Custom string deciding how to split datasets into train/test. Affiliated with a custom function in dataset")
     parser.add_argument("--shuffle", action="store_true", help="shuffle dataset")
     parser.add_argument("--segmentation", action="store_true", help="Create a dataset for image segmentation. Segmentation masks for images in video clips should be named the same as the original image and stored in a subdirectory of the clip 'mask'")
+    parser.add_argument("--grav_pred", action="store_true", help="Gravity prediction task")
+    parser.add_argument("--bounces_pred", action="store_true", help="Bounce counting task")
 
     parser.add_argument_group("2D and 3D CNN specific arguments")
     parser.add_argument("--model", type=str, default="UpDown2D", choices=["UpDown2D", "UpDown3D", "transformer"], help="Type of model to run")
@@ -227,8 +242,14 @@ if __name__ == "__main__":
     # Sorting arguements
     args = parser.parse_args()
     print(args)
+
+    # If this is a classification task, make sure its only one of them
+    task_count = (args.segmentation)+(args.grav_pred)+(args.bounces_pred)
+    assert task_count<=1, f"You can only run one of gravity prediction, segmentation, or bounce prediction"
+
     if args.segmentation:
         assert args.in_no == args.out_no == 1, f"Image segmentation is defined on 1 input and 1 output image. Not {args.in_no} and {args.out_no}"
+
     assert len(args.dataset) == len(args.dataset_path), f"Number of specified dataset paths and dataset types should be equal"
     dataset_swtich = {
         "from_raw" : Dataset_from_raw,
@@ -265,7 +286,9 @@ if __name__ == "__main__":
     elif args.model == "UpDown2D":
         if args.segmentation:
             model = FCUp_Down2D_2_Segmentation(args, args.model_path, load_mode="pad")
-        else:    
+        elif args.grav_pred:
+            model = FCUp_Down2D_2_Grav_Pred(args, args.model_path)
+        else:
             model = FCUp_Down2D(args)#.depth, args.in_no, args.out_no, args)
     elif args.model == "transformer":
         import ipdb; ipdb.set_trace()
@@ -295,6 +318,9 @@ if __name__ == "__main__":
         criterion = tools.loss.ssim(data_range=255, size_average=True, channel=1).to(args.device)
     else:
         raise Exception("Loss not implemented")
+    # TODO make this overwrite of criterion more elegant
+    if args.grav_pred:
+        criterion = torch.nn.MSELoss().to(args.device)
     if args.visdom:
         #args.plotter = VisdomLinePlotter(env_name=args.jobname)
         wandb.init(project="visual-modelling", entity="visual-modelling", name=args.jobname, resume="allow")
@@ -323,7 +349,7 @@ if __name__ == "__main__":
                     #args.plotter.text_plot(args.jobname+" val", "Best %s val %.4f Iteration:%d" % (args.loss, best_loss, epoch))
                 if args.save:
                     torch.save(model.state_dict(), args.checkpoint_path)
-                    if not args.segmentation:
+                    if task_count == 0: # If this isnt segmentation/gravity prediction etc..
                         metrics = self_output(args, model, dset)
                         psnr_metric = utils.avg_list([ empl["PSNR"] for empl in metrics ])
                         ssim_metric = utils.avg_list([ empl["SSIM"] for empl in metrics ])
@@ -337,7 +363,7 @@ if __name__ == "__main__":
                     print(f"Epoch {epoch}/{args.epoch}", f"Train Loss {train_loss:.3f} |", f"Val Loss {valid_loss:.3f} |", f"Early Stop Flag {early_stop_count}/{args.early_stopping}\n")
             if args.visdom:
                 if args.save:
-                    if not args.segmentation:
+                    if task_count == 0: # If this isnt segmentation/gravity prediction etc..
                         wandb.log({'PSNR' : psnr_metric}, commit=False)
                         wandb.log({'SSIM' : ssim_metric}, commit=False)
                         wandb.log({'MS-SSIM' : msssim_metric}, commit=False)

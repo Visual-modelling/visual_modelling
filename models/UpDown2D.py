@@ -9,6 +9,63 @@ import torch.nn.functional as F
 from tools.activations import sigmoid_256
 
 
+class FCUp_Down2D_2_Grav_Pred(nn.Module):
+    """
+    __author__ = Jumperkables
+    Class that adapts the FCUp_Down2D model to the gravity prediction task. Damn i wish pytorch lightning was around when i started coding this
+    """
+    def __init__(self, args, load_path="", load_mode="append_classification"):
+        super().__init__()
+        """
+        load_mode:
+            'append_classification' : Add an extra classification layer at the end
+        """
+        self.load_mode = load_mode
+        self.duplicate = False
+        assert load_mode in ["append_classification"], f"Invalid load_mode:{load_mode}"
+        assert args.out_no == 1, f"Gravity prediction requires a single output image to turn into classification"
+        cargs = copy.deepcopy(args)
+        if args.model_in_no != False:
+            cargs.in_no = args.model_in_no
+            self.duplicate = cargs.in_no
+        if load_path is not "":
+            # Pretrained model might have more than 1 input or output. We will have to replace the input and output layers with those of appropriate shape
+            model_weights = torch.load(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), load_path))
+            #in_no = model_weights['UDChain.layers.0.maxpool_conv.1.double_conv.0.weight'].shape[1]
+            #cargs = copy.deepcopy(args)
+            #cargs.in_no = in_no
+            #self.in_no = in_no
+
+            full = FCUp_Down2D(cargs)
+            full.load_state_dict(torch.load(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), load_path)), strict=False)
+        else:
+            full = FCUp_Down2D(cargs)
+        # Replace the first layer
+        if load_mode == "append_classification":
+            self.classifier_fc = nn.Sequential(
+                nn.Dropout(0.3),
+                nn.Linear(64*64, 500),
+                nn.BatchNorm1d(500),
+                nn.GELU(),
+                nn.Dropout(0.3),
+                nn.Linear(500, 3)   # For predicting x,y,z gravity
+            )
+        self.full = full 
+
+    def forward(self, x):
+        bsz = x.shape[0]
+        if self.load_mode == "pad":
+            if self.duplicate != False:
+                x = x.repeat(1, self.duplicate, 1, 1)
+            pass
+        x = self.full(x)
+        #import ipdb; ipdb.set_trace()#TODO Finish handling this grav_pred
+        x = x.view(bsz, -1)
+        x = self.classifier_fc(x)
+        return x
+
+
+
 class FCUp_Down2D_2_Segmentation(nn.Module):
     """
     __author__ = Jumperkables
