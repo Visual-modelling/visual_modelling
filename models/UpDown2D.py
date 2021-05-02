@@ -9,19 +9,22 @@ import torch.nn.functional as F
 from tools.activations import sigmoid_256
 
 
-class FCUp_Down2D_2_Grav_Pred(nn.Module):
+class FCUp_Down2D_2_FCPred(nn.Module):
     """
     __author__ = Jumperkables
     Class that adapts the FCUp_Down2D model to the gravity prediction task. Damn i wish pytorch lightning was around when i started coding this
     """
-    def __init__(self, args, load_path="", load_mode="append_classification"):
+    def __init__(self, args, load_path="", load_mode="append_classification", mode="grav_pred"):
         super().__init__()
         """
         load_mode:
             'append_classification' : Add an extra classification layer at the end
+        mode:
+            'grav_pred' or 'bounces_pred', decides if the FC output at the end has 3 or 1 output dim respectively
         """
         self.load_mode = load_mode
         self.duplicate = False
+        self.args = args
         assert load_mode in ["append_classification"], f"Invalid load_mode:{load_mode}"
         assert args.out_no == 1, f"Gravity prediction requires a single output image to turn into classification"
         cargs = copy.deepcopy(args)
@@ -41,6 +44,10 @@ class FCUp_Down2D_2_Grav_Pred(nn.Module):
         else:
             full = FCUp_Down2D(cargs)
         # Replace the first layer
+        if mode == "grav_pred":
+            pred_out_dim = 3    # gx, gy, gz
+        elif mode == "bounces_pred":
+            pred_out_dim = 1    # n bounces
         if load_mode == "append_classification":
             self.classifier_fc = nn.Sequential(
                 nn.Dropout(0.3),
@@ -48,7 +55,7 @@ class FCUp_Down2D_2_Grav_Pred(nn.Module):
                 nn.BatchNorm1d(500),
                 nn.GELU(),
                 nn.Dropout(0.3),
-                nn.Linear(500, 3)   # For predicting x,y,z gravity
+                nn.Linear(500, pred_out_dim)   # For predicting x,y,z gravity
             )
         self.full = full 
 
@@ -62,6 +69,10 @@ class FCUp_Down2D_2_Grav_Pred(nn.Module):
         #import ipdb; ipdb.set_trace()#TODO Finish handling this grav_pred
         x = x.view(bsz, -1)
         x = self.classifier_fc(x)
+        if self.args.grav_pred:
+            x = x.tanh()
+        if self.args.bounces_pred:
+            x = F.relu(x)
         return x
 
 
@@ -214,8 +225,9 @@ class Up_Down_Chain(nn.Module):
         # Get the first and last elements of the up and down chains
         down_chain = []
         up_chain = []
-        if args.model_in_no != False:
-            args.in_no = args.model_in_no
+        # TODO Deprecated with removal of model_in_no???
+        #if args.model_in_no != False:
+        #    args.in_no = args.model_in_no
         down_chain.append( Down(args.in_no, args.channel_factor, args) )
         up_chain.append( OutConv(args.channel_factor, args.out_no, args) )
 

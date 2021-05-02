@@ -6,35 +6,37 @@
 #SBATCH -x gpu[0-3]
 #SBATCH --mem 12G
 #SBATCH -p res-gpu-small
-#SBATCH --job-name 60_30_hgrav_sl1 
+#SBATCH --job-name 30_30_hgrav_sl1 
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../.results/60_30_hgrav_sl1.out
+#SBATCH -o ../../../../.results/30_30_hgrav_sl1.out
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd ../../../..
 source python_venvs/vm/bin/activate
-
+export PYTHONBREAKPOINT=ipdb.set_trace
 # Pretrain
 python VM_train.py \
-    --dataset from_raw \
-    --dataset_path data/hudson_true_3d_default \
-    --bsz 2 \
+    --dataset bouncing bouncing \
+    --dataset_path data/hudsons_og/2000 data/hudsons_og/2000_masked \
+    --split_condition tv_ratio:4-1 \
+    --bsz 128 \
     --val_bsz 100 \
+    --num_workers 8 \
     --in_no 5 \
     --out_no 1 \
     --depth 3 \
-    --split_condition tv_ratio:4-1 \
     --device 1 \
-    --epoch 60 \
+    --epoch 30 \
     --early_stopping 100 \
-    --jobname 60_30_hgrav_sl1 \
+    --n_gifs 10 \
+    --jobname 30_30_hgrav_sl1 \
     --loss smooth_l1 \
     --reduction mean \
     --img_type greyscale \
     --model UpDown2D \
-    --reduce \
     --shuffle \
-    --visdom \
-    --save
+    --wandb
+
+exit
 
 # Gravity prediction task
 python VM_train.py \
@@ -51,13 +53,11 @@ python VM_train.py \
     --device 1 \
     --epoch 30 \
     --early_stopping 100 \
-    --jobname 60_30_hgrav_sl1 \
+    --jobname 30_30_hgrav_sl1 \
     --img_type greyscale \
     --model UpDown2D \
-    --reduce \
     --shuffle \
     --visdom \
-    --save \
-    --model_path .results/60_30_hgrav_sl1/model.pth
+    --model_path .results/30_30_hgrav_sl1/model.pth
 
 

@@ -15,15 +15,15 @@ source python_venvs/vm/bin/activate
 
 # Pretrain
 python VM_train.py \
-    --dataset from_raw \
+    --dataset bouncing \
     --dataset_path data/hudson_true_3d_default \
-    --bsz 16 \
+    --split_condition tv_ratio:4-1 \
+    --bsz 2 \
     --val_bsz 100 \
     --in_no 5 \
     --out_no 1 \
     --depth 3 \
-    --split_condition tv_ratio:4-1 \
-    --device 0 \
+    --device 1 \
     --epoch 30 \
     --early_stopping 100 \
     --jobname 30_30_hgrav_sl1 \
@@ -33,22 +33,24 @@ python VM_train.py \
     --model UpDown2D \
     --reduce \
     --shuffle \
-    --visdom \
-    --save
+    #--visdom \
+    #--save
+
+exit
 
 # Gravity prediction task
 python VM_train.py \
     --dataset from_raw \
     --grav_pred \
     --dataset_path data/hudson_true_3d_default \
-    --bsz 16 \
+    --bsz 2 \
     --val_bsz 100 \
     --in_no 5 \
     --model_in_no 5 \
     --out_no 1 \
     --depth 3 \
     --split_condition tv_ratio:4-1 \
-    --device 0 \
+    --device 1 \
     --epoch 30 \
     --early_stopping 100 \
     --jobname 30_30_hgrav_sl1 \

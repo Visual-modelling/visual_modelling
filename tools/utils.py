@@ -101,7 +101,7 @@ def img_merge(imgs, mode, direction):
         raise Exception("Not implemented %s mode" % (mode))
 
 
-def model_fwd(model, frames, args, mode="default"):
+def model_fwd(model, frames, args):
     """
     Wrapper function to handle forward pass
     Transformer modesl need flat inputs and CNNs dont, this avoids clutter

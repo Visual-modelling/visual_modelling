@@ -12,7 +12,6 @@ from torch.utils.data.dataset import Dataset
 from torchvision.transforms import ToTensor
 import cv2
 import pandas as pd
-import yaml
 from torchvision.utils import save_image
 
 import tools.utils as utils
@@ -39,16 +38,19 @@ def read_ims_greyscale(frames):
 ###########################################################################################
 # Dataset Classes
 ###########################################################################################
-class Simulations(Dataset):
+class Dataset_from_raw(Dataset):
     """
-    root_dir -> clip_0,...clip_999 -> frame_00.png-frame_99.png AND positions.csv AND simulation.gif AND config.yml
+    Dataset object that processes from raw frames:
+    Designed to work with dataset of depth 3.
+    root_dir -> clip_0,...clip_999 -> frame_000.png, frame_001.png
     """
     def __init__(self, dataset_path, args):
-        self.mode = "unset"
+        self.mode = "train"
         self.args = args
         data = self.read_frames(dataset_path)
         self.train_dict, self.valid_dict = self.train_val_split(data, args.split_condition)
         self.train_dict, self.valid_dict, self.self_out_dict = self.prepare_dicts(self.train_dict, self.valid_dict)
+        self.set_mode("train")
         # Sort Image reading method
         img_read_method_switch = {
             'binary'    : read_ims_binary,
@@ -56,47 +58,81 @@ class Simulations(Dataset):
             'RGB'       : None
         }
         if args.img_type == "RGB":
-            raise NotImplementedError("RGB image reading not implemented")
+            raise Exception("RGB image reading not implemented")
         self.img_read_method = img_read_method_switch[args.img_type]
+        if args.grav_pred:
+            grav_path = os.path.join(os.path.dirname(__file__),"data/hudson_true_3d_default/grav_dict.pickle")
+            if not os.path.exists(grav_path):
+                raise FileNotFoundError(f"Grav dict doesnt exist. Create it")
+                # TODO FINISH THIS
+            self.grav = utils.load_pickle(grav_path)
+        if args.bounces_pred:
+            bounces_path = os.path.join(os.path.dirname(__file__),"data/hudson_true_3d_default/bounces_dict.pickle")
+            if not os.path.exists(bounces_path):
+                raise FileNotFoundError(f"Bounces dict doesnt exist. Create it")
+                # TODO FINISH THIS
+            self.bounces = utils.load_pickle(bounces_path)
 
     def set_mode(self, mode):
         """
-        Pick between training/validation/self_output mode
+        Jump between training/validation mode
         """
         self.mode = mode
         if self.mode == 'train':
             self.current_data_dict = self.train_dict
-            del self.valid_dict
-            del self.self_out_dict
         elif self.mode == 'valid':
             self.current_data_dict = self.valid_dict
-            del self.train_dict
-            del self.self_out_dict
         elif self.mode == "self_out":
             self.current_data_dict = self.self_out_dict
-            del self.train_dict
-            del self.valid_dict
         else:
             raise ValueError(f"Mode {mode} invalid")
 
     def __len__(self):
-        if self.mode == "unset":
-            print("Set the mode of this dataset. Train/Val/Self_out")
-        else:
-            return(len(self.current_data_dict))
+        return(len(self.current_data_dict))
 
     def __getitem__(self, idx): # Indexs must count from 0
-        data = self.current_data_dict[idx] 
-        frames = [ frm['frame_paths'] for frm in data.values() ]
-        frames = self.img_read_method(frames)
-        frames = torch.stack(frames, dim=0)
-        if self.mode == "self_out":
-            start_frames, gt_frames = frames[:self.args.in_no], frames[self.args.in_no:]
+        if self.mode is not "self_out":
+            #import ipdb; ipdb.set_trace()
+            data = self.current_data_dict[idx]  #data.keys = ['vid', 'vid_path', 'frame_idxs', 'frame_paths', 'positions']
+            positions = torch.stack([ pos['positions'] for pos in data.values() ])
+            positions, gt_positions = positions[:self.args.in_no], positions[self.args.in_no:]
+            frames = [ frm['frame_paths'] for frm in data.values() ]
+            if self.args.segmentation:
+                # If its a semgentation task, read the final ground_truth frame in its segmentation mask form instead
+                #import ipdb; ipdb.set_trace()
+                frames[-1] = frames[-2].replace("hudson_true_3d_default", "hudson_true_3d_default_mask")
+            frames = self.img_read_method(frames)
+            frames = torch.stack(frames, dim=0)
+            frames, gt_frames = frames[:self.args.in_no], frames[self.args.in_no:]
+            if self.args.grav_pred:
+                path = [ frm['vid_path'] for frm in data.values() ][0]
+                vid_id = path.split("/")[-1] #Get the video ID from the path
+                gravs = self.grav[vid_id]
+                x_grav, y_grav, z_grav = gravs['dx'][0], gravs['dy'][0], gravs['dz'][0]
+                gravs = torch.Tensor([x_grav, y_grav, z_grav])
+                return (frames, gravs)
+            if self.args.bounces_pred:
+                path = [ frm['vid_path'] for frm in data.values() ][0]
+                vid_id = path.split("/")[-1] #Get the video ID from the path
+                bounces = self.bounces[vid_id]  # bounces = {"num_balls", "wall", "ball"}
+                #import ipdb; ipdb.set_trace()   # num_balls in the clip, the number of wall bounces, number of ball-to-ball bounces respectively
+                bounces = bounces['wall'] + bounces['ball'] # Start by calculating the total number of any bounce
+                # TODO Errorenous building for some images leaves the example unrendered.
+                # Leading to very high bounce counts. If this is the case, then discount the example
+                if bounces > 150:
+                    bounces = 0
+                bounces = torch.Tensor([bounces])
+                return (frames, bounces)
+            return (frames, gt_frames)
 
         else:
-            start_frames, gt_frames = frames[:self.args.in_no], frames[self.args.in_no:self.args.in_no+self.args.out_no]
-        vid_name = [ frm['vid'] for frm in data.values() ][0] 
-        return (start_frames, gt_frames, vid_name)           
+            data = self.current_data_dict[idx]  #data.keys = ['vid', 'vid_path', 'frame_idxs', 'frame_paths', 'positions']
+            frames = [ frm['frame_paths'] for frm in data.values() ]
+            frames = self.img_read_method(frames)
+            frames = torch.stack(frames, dim=0)
+            start_frames, gt_frames = frames[:self.args.in_no], frames[self.args.in_no:]
+            vid_name = [ frm['vid'] for frm in data.values() ][0] 
+            return (start_frames, gt_frames, vid_name)           
 
     def prepare_dicts(self, train_dict, valid_dict):
         # Training
@@ -127,7 +163,8 @@ class Simulations(Dataset):
         Return train and validation data dictionaries
         """
         #data.keys = ['vid', 'vid_path', 'frame_idxs', 'frame_paths', 'positions']
-        #data = dict( list( data.items()[self.args.dset_sze:] ) )
+        if self.args.dset_sze != -1:
+            data = dict( list( data.items()[self.args.dset_sze:] ) )
         # See the argparse in main for a description of splitting functions
         if condition[:8] == "tv_ratio":
             tv_ratio = condition[9:].split('-')
@@ -157,26 +194,51 @@ class Simulations(Dataset):
                 if any( (fyle.startswith("frame") and (fyle.endswith(".png") or fyle.endswith(".jpg")) ) for fyle in depth_test):
                     vids.append( os.path.join(root, dyr) )
 
-       
+        ###########################
+        ## SHOULD be outdated
+        ## Remove all excess files
+        #try:
+        #    vids.remove('config.yml')
+        #    vids.remove('config2.yml')
+        #except:
+        #    pass
+        #vids = [vid for vid in vids if not (vid.endswith('.pickle') or vid.endswith('.jsonl'))]
+        #vids.sort()
+        ###########################
+        
         total_data = { vid:os.path.join(frame_path, vid) for vid in vids }
         return_dataset = {}
         for vidx, vid_path in total_data.items():
+            print(vidx)
             vid_name = vid_path.split('/')[-1]
+            try:
+                positions = utils.read_csv(os.path.join(vid_path, 'positions.csv'))
+            except FileNotFoundError:
+                print(f"{vid_path} not found.\nCreating dummy 'positions' information")
+                
+
+                frame_cnt = len(os.listdir(vid_path))
+                positions = {
+                    'timestep': [i for i in range(frame_cnt)],
+                    'x': [0]*frame_cnt,
+                    'y': [0]*frame_cnt
+                }
+                positions = pd.DataFrame(data=positions)
+            indexs = torch.tensor(positions.values)[:,:1].long()
+            positions = torch.tensor(positions.values)[:,1:]    # Remove the useless frame index for now
             frames = os.listdir(vid_path)
             frames.sort()
-            exclude = ['config.yml','config2.yml','positions.csv','simulation.gif',"mask"]
+            exclude = ['config.yml','config2.yml','positions.csv','simulation.gif','mask',"bounces_dict.pickle","grav_dict.pickle"]
             frames = [ os.path.join(vid_path, frame) for frame in frames if frame not in exclude]
             frame_paths = frames
-            config_path = os.path.join(vid_path, "config.yml")
-            with open(config_path, 'r') as file:
-                config = yaml.load(file, Loader=yaml.FullLoader)
+
             return_dataset[vidx] = {x:{
                             "vid":vid_name,
                             "vid_path":vid_path,
-                            "frame_idx":x,
+                            "frame_idx":indexs[x],
                             "frame_paths":frame_paths[x],
-                            "frame":frames[x],
-                            "config":config} 
+                            "positions":positions[x],
+                            "frame":frames[x]} 
                         for x in range(len(frames))}
         return return_dataset
  
@@ -192,10 +254,12 @@ class HDMB_classification(Dataset):
     root_dir -> clip_0,...clip_999 -> frame_000.png, frame_001.png
     """
     def __init__(self, dataset_path, args):
+        self.mode = "train"
         self.args = args
         data = self.read_frames(dataset_path)
         self.train_dict, self.valid_dict = self.train_val_split(data, args.split_condition)
         self.train_dict, self.valid_dict, self.self_out_dict = self.prepare_dicts(self.train_dict, self.valid_dict)
+        self.set_mode("train")
         # Sort Image reading method
         img_read_method_switch = {
             'binary'    : read_ims_binary,
@@ -207,7 +271,6 @@ class HDMB_classification(Dataset):
         self.img_read_method = img_read_method_switch[args.img_type]
 
     def set_mode(self, mode):
-        # MODE MUST BE SET BEFORE USE
         """
         Jump between training/validation mode
         """
@@ -573,3 +636,159 @@ class MMNIST(Dataset):
             for i in range(dat.shape[0]):
                 Image.fromarray(self.get_picture_array(dat, i, shift=0)).save(os.path.join(dest, '{}.jpg'.format(i)))
     #############################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#class VMDataset_v1(Dataset):
+#    def __init__(self, args):
+#        self.mode = "train"
+#        self.args = args
+#        if args.extract_dset:
+#            return None
+#        total_dset = utils.load_pickle( os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), args.dataset_path))
+#
+#        if args.shuffle:
+#            random.shuffle(total_dset)
+#        if args.dset_sze == -1: # If no specific dataset size is specified, use all of it
+#            self.train_dict = { idx:data for idx, data in enumerate(total_dset[:round(len(total_dset)*args.train_ratio)]) }
+#            self.valid_dict = { idx:data for idx, data in enumerate(total_dset[round(len(total_dset)*args.train_ratio):]) }
+#        else:
+#            val_size = round(args.dset_sze / args.train_ratio) - args.dset_sze  # Account for validation size too
+#            if len(total_dset) < (val_size + args.dset_sze):
+#                raise Exception(f"{val_size + args.dset_sze} needed samples for training ({args.dset_sze}) and validating ({val_size}) with specified train ratio of {args.train_ratio}. Exceeds available sample count: {len(total_dset)}")
+#            else:
+#                self.train_dict = { idx:data for idx, data in enumerate(total_dset[:args.dset_sze]) }
+#                self.valid_dict = { idx:data for idx, data in enumerate(total_dset[args.dset_sze:(args.dset_sze+val_size)]) }
+#        self.current_data_dict = self.train_dict
+#        assert(args.in_no+args.out_no == len(self.current_data_dict[0]['frame_paths']),
+#            "In frames + Ground truth frames do not equal the frame sample size of the dataset")
+#        
+#        # Sort Image reading method
+#        img_read_method_switch = {
+#            'binary'    : read_ims_binary,
+#            'greyscale' : read_ims_greyscale,
+#            'RGB'       : None
+#        }
+#        if args.img_type == "RGB":
+#            raise Exception("RGB image reading not implemented")
+#        self.img_read_method = img_read_method_switch[args.img_type]
+#
+#    def __len__(self):
+#        return(len(self.current_data_dict))
+#
+#    def __getitem__(self, idx): # Indexs must count from 0
+#        data = self.current_data_dict[idx]  #data.keys = ['vid', 'vid_path', 'frame_idxs', 'frame_paths', 'positions']
+#        positions, gt_positions = data['positions'][:self.args.in_no], data['positions'][self.args.in_no:]
+#        frames = data['frame_paths']
+#        frames = self.img_read_method(frames)
+#        frames = torch.stack(frames, dim=0)
+#        frames, gt_frames = frames[:self.args.in_no], frames[self.args.in_no:]
+#        return (frames, gt_frames)
+#        #return (frames, positions, gt_frames, gt_positions) # Variably sized not solved yet
+#
+#    def set_mode(self, mode):
+#        """
+#        Jump between training/validation mode
+#        """
+#        self.mode = mode
+#        if self.mode == 'train':
+#            self.current_data_dict = self.train_dict
+#        elif self.mode == 'valid':
+#            self.current_data_dict = self.valid_dict
+#
+#    def save_dataset(self, in_no, out_no, save_path):
+#        """
+#        Save the dataset as preprocessed json
+#        in_no = number of images for input
+#        out_no = number of images for ground truth
+#        """
+#        self.frame_path = os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), self.args.raw_frame_rootdir)
+#        vids = os.listdir(self.frame_path)
+#        try:
+#            vids.remove('config.yml')
+#        except:
+#            pass
+#        vids = [vid for vid in vids if not vid.endswith('.pickle')]
+#        self.current_data_dict = [ os.path.join(self.frame_path, vid) for vid in vids ]
+#        self.total_data ={ idx:path for idx, path in enumerate(self.current_data_dict) }
+#        dataset_save = []
+#        for vidx, vid_path in enumerate(self.total_data.values()):
+#            print(vidx)
+#            vid_name = vid_path.split('/')[-1]
+#            try:
+#                positions = utils.read_csv(os.path.join(vid_path, 'positions.csv'))
+#            except FileNotFoundError:
+#                print(f"{vid_path} not found.\nCreating dummy 'positions' information")
+#                import pandas as pd
+#                frame_cnt = len(os.listdir(vid_path))
+#                positions = {
+#                    'timestep': [i for i in range(frame_cnt)],
+#                    'x': [0]*frame_cnt,
+#                    'y': [0]*frame_cnt
+#                }
+#                positions = pd.DataFrame(data=positions)
+#            indexs = torch.tensor(positions.values)[:,:1].long()
+#            positions = torch.tensor(positions.values)[:,1:]    # Remove the useless frame index for now
+#            frames = os.listdir(vid_path)
+#            frames.sort()
+#            try:
+#                frames.remove('config.yml')
+#            except:
+#                pass
+#            try: 
+#                frames.remove('positions.csv')
+#            except:
+#                pass
+#            try:    
+#                frames.remove('simulation.gif')
+#            except: pass
+#            frames = [ os.path.join(vid_path, frame) for frame in frames ]
+#            frame_paths = frames
+#
+#            for x in range(0, len(frames), in_no+out_no):
+#                if(x+in_no+out_no<=len(frames)):    # Drop the remaining frames
+#                    dataset_save.append(
+#                        {
+#                            "vid":vid_name,
+#                            "vid_path":vid_path,
+#                            "frame_idxs":indexs[x:x+in_no+out_no],
+#                            "frame_paths":frame_paths[x:x+in_no+out_no],
+#                            "positions":positions[x:x+in_no+out_no]
+#                            #"frames":frames[x:x+in_no+out_no]
+#                        }
+#                    )
+#        utils.save_pickle(dataset_save, os.path.join(save_path, str(in_no+out_no)+"_dset.pickle"))
+#        # Frames, positions and indexs stacked, save a list of these

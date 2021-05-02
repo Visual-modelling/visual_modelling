@@ -13,9 +13,90 @@ from .pytorch_i3d import InceptionI3d
 import numpy as np
 import tensorflow.compat.v1 as tf
 from . import frechet_video_distance as fvd
+from pytorch_lightning.metrics import Metric
 
+
+# This is for FVD metrics
 tf.compat.v1.enable_eager_execution() 
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+
+
+######################################
+######################################
+# Pytorch Lightning Metrics
+######################################
+######################################
+class Smooth_L1_pl(Metric):
+    def __init__(self, compute_on_step=True, dist_sync_on_step=False, reduction="mean"):
+        super().__init__(dist_sync_on_step=dist_sync_on_step, compute_on_step=compute_on_step)
+        self.reduction = reduction
+        self.add_state("sl1", default=torch.tensor(0.), dist_reduce_fx="sum")
+        self.add_state("total", default=torch.tensor(0), dist_reduce_fx="sum")
+
+    def update(self, preds: torch.Tensor, target: torch.Tensor):
+        preds, target = self._input_format(preds, target)
+        if self.reduction == "mean":
+            self.sl1 += F.smooth_l1_loss(preds, target, reduction="none").mean(dim=(1,2,3)).sum(dim=0)  # Written verbosely on purpose so you know exactly what i mean by mean and sum
+            self.total += target.shape[0]
+        if self.reduction == "sum":
+            self.sl1 += F.smooth_l1_loss(preds, target, reduction="none").sum(dim=(1,2,3)).sum(dim=0)
+            self.total += target.shape[0]
+
+    def compute(self):
+        return self.sl1.float() / self.total
+
+    def _input_format(self, preds, target):
+        assert preds.shape == target.shape
+        assert len(preds.shape) == 4, f"Predictions should be of dimension 4 (bsz, args.out_no, dim1, dim2)"
+        assert len(preds.shape) == 4, f"Target should be of dimension 4 (bsz, args.out_no, dim1, dim2)"
+        return preds, target
+
+
+class LPIPS_Metric_pl(Metric):
+    def __init__(self, compute_on_step=True, dist_sync_on_step=False):
+        super().__init__(dist_sync_on_step=dist_sync_on_step, compute_on_step=compute_on_step)
+        self.add_state("lpips", default=torch.tensor(0.), dist_reduce_fx="sum")
+        self.add_state("total", default=torch.tensor(0), dist_reduce_fx="sum")
+
+    def update(self, preds: torch.Tensor, target: torch.Tensor):
+        breakpoint()
+        preds, target = self._input_format(preds, target)
+        self.lpips += torch.sum(piq.LPIPS(preds, target))
+        self.total += target.numel()
+        raise NotImplementedError(f"Sorting reduction for custom metrics")
+
+    def compute(self):
+        return self.lpips.float() / self.total
+
+    def _input_format(self, preds, target):
+        assert preds.shape == target.shape
+        assert len(preds.shape) == 4, f"Predictions should be of dimension 4 (bsz, args.out_no, dim1, dim2)"
+        assert len(preds.shape) == 4, f"Target should be of dimension 4 (bsz, args.out_no, dim1, dim2)"
+        return preds, target
+
+
+class MS_SSIM_Metric_pl(Metric):
+    def __init__(self, compute_on_step=True, dist_sync_on_step=False):
+        super().__init__(dist_sync_on_step=dist_sync_on_step, compute_on_step=compute_on_step)
+        self.add_state("ms_ssim", default=torch.tensor(0.), dist_reduce_fx="sum")
+        self.add_state("total", default=torch.tensor(0), dist_reduce_fx="sum")
+
+    def update(self, preds: torch.Tensor, target: torch.Tensor):
+        breakpoint()
+        preds, target = self._input_format(preds, target)
+        self.ms_ssim += torch.sum(pytorch_msssim.ms_ssim( preds, target, data_range=255, size_average=False))
+        self.total += target.numel()
+        raise NotImplementedError(f"Sorting reduction for custom metrics")
+
+    def compute(self):
+        return self.ms_ssim.float() / self.total
+
+    def _input_format(self, preds, target):
+        assert preds.shape == target.shape
+        assert len(preds.shape) == 4, f"Predictions should be of dimension 4 (bsz, args.out_no, dim1, dim2)"
+        assert len(preds.shape) == 4, f"Target should be of dimension 4 (bsz, args.out_no, dim1, dim2)"
+        return preds, target
+
 
 
 ######################################
@@ -88,6 +169,8 @@ class FVD():
                     sess.run(tf.global_variables_initializer())
                     sess.run(tf.tables_initializer())
                     return float(sess.run(result))
+
+
 
 
 ######################################
