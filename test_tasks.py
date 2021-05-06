@@ -278,7 +278,7 @@ if __name__ == "__main__":
     torch.manual_seed(2667)
     parser = argparse.ArgumentParser()
     parser.add_argument_group("Run specific arguments")
-    parser.add_argument("--TASK", type=str, choices=["MNIST", "MOCAP", "HDMB-51"], help="Which task, classification or otherwise, to apply")
+    parser.add_argument("--TASK", type=str, choices=["mnist", "mocap", "hdmb51", "grav", ], help="Which task, classification or otherwise, to apply")
     parser.add_argument("--epoch", type=int, default=10)
     parser.add_argument("--early_stopping", type=int, default=2, help="number of epochs after no improvement before stopping")
     parser.add_argument("--device", type=int, default=-1, help="-1 for CPU, 0, 1 for appropriate device")
