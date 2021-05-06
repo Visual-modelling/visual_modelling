@@ -1,12 +1,12 @@
-!/bin/bash
+#!/bin/bash
 #SBATCH -p part0
 #SBATCH --job-name toms_mnist_test 
 #SBATCH --ntasks 6
 #SBATCH --gres gpu:1
 #SBATCH -o ../../../.results/toms_mnist_test.out
-
-source ../../../python_venvs/vm/bin/activate
-python ../../../test_tasks.py \
+cd ../../..
+source python_venvs/vm/bin/activate
+python test_tasks.py \
     --TASK MOCAP \
     --bsz 16 \
     --val_bsz 1 \

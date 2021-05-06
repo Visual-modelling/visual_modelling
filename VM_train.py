@@ -34,14 +34,16 @@ import imageio
 ################################################################################
 def plot_self_out(pl_system):
     args = pl_system.args
+    # Remove all previous gifs
+    [ os.remove(os.path.join(args.results_dir, file)) for file in os.listdir(args.results_dir) if file.endswith('.gif') ]
     self_out_loader = pl_system.self_out_loader
     wandb_frames = []
     wandb_metric_n_names = []
     metrics = {
-        'PSNR':torchmetrics.functional.psnr,
-        'SL1':F.smooth_l1_loss,
+        'psnr':torchmetrics.functional.psnr,
+        'sl1':F.smooth_l1_loss,
         #'LPIPS':piq.LPIPS(), # TODO Re-add this, it is very slow, maybe not worth it
-        'SSIM':torchmetrics.functional.ssim,
+        'ssim':torchmetrics.functional.ssim,
         'MS_SSIM':piq.multi_scale_ssim,
         #'FID':piq.FID(),
         #'FVD':tools.loss.FVD()
@@ -68,13 +70,16 @@ def plot_self_out(pl_system):
             # plot these over time and add to gifs
 
             # PSNR plot
-            plt.plot(gif_metrics['PSNR'])
+            img_h = start_frames.shape[2]
+            # TODO Be sure that this dimension is height, not width
+            plt.plot(gif_metrics["psnr"])
             canvas = plt.gcf()
             dpi = plt.gcf().get_dpi()
-            canvas.set_size_inches(128/dpi, 128/dpi)
-            canvas.suptitle("PSNR", fontsize=6)
-            plt.xticks(fontsize=6)
-            plt.yticks(fontsize=6)
+            canvas.set_size_inches(2*img_h/dpi, 2*img_h/dpi)
+            canvas.suptitle(f"PSNR: {vid_name[0]}", fontsize=6)
+            plt.xticks(fontsize=5)
+            plt.yticks(fontsize=5)
+            canvas.tight_layout()
             canvas = plt.gca().figure.canvas
             canvas.draw()
             data = np.frombuffer(canvas.tostring_rgb(), dtype=np.uint8)
@@ -84,13 +89,14 @@ def plot_self_out(pl_system):
             psnr_image = psnr_image.float().mean(0).byte()
 
             # SSIM plot
-            plt.plot(gif_metrics['SSIM'])
+            plt.plot(gif_metrics['ssim'])
             canvas = plt.gcf()
             dpi = plt.gcf().get_dpi()
-            canvas.set_size_inches(128/dpi, 128/dpi)
+            canvas.set_size_inches(2*img_h/dpi, 2*img_h/dpi)
             canvas.suptitle("SSIM", fontsize=6)
-            plt.xticks(fontsize=6)
-            plt.yticks(fontsize=6)
+            plt.xticks(fontsize=5)
+            plt.yticks(fontsize=5)
+            canvas.tight_layout()
             canvas = plt.gca().figure.canvas
             canvas.draw()
             data = np.frombuffer(canvas.tostring_rgb(), dtype=np.uint8)
@@ -100,13 +106,14 @@ def plot_self_out(pl_system):
             ssim_image = ssim_image.float().mean(0).byte()
 
             # SL1 plot
-            plt.plot(gif_metrics['SL1'])
+            plt.plot(gif_metrics['sl1'])
             canvas = plt.gcf()
             dpi = plt.gcf().get_dpi()
-            canvas.set_size_inches(128/dpi, 128/dpi)
+            canvas.set_size_inches(2*img_h/dpi, 2*img_h/dpi)
             canvas.suptitle("SL1", fontsize=6)
-            plt.xticks(fontsize=6)
-            plt.yticks(fontsize=6)
+            plt.xticks(fontsize=5)
+            plt.yticks(fontsize=5)
+            canvas.tight_layout()
             canvas = plt.gca().figure.canvas
             canvas.draw()
             data = np.frombuffer(canvas.tostring_rgb(), dtype=np.uint8)
@@ -117,7 +124,7 @@ def plot_self_out(pl_system):
 
             # Gif
             gif_frames = [ torch.cat( [torch.cat( [torch.stack(gif_frames)[n_frm], gt_frames[0][n_frm]], dim=0), psnr_image, ssim_image, sl1_image], dim=1)for n_frm in range(len(gif_frames)) ]
-            gif_save_path = os.path.join(args.results_dir, f"{vid_name[0]}.gif") 
+            gif_save_path = os.path.join(args.results_dir, f"{ngif}-{vid_name[0]}.gif") 
             # TODO gifs from different datasets with the same name will overwrite eachother. this is niche and not worth the time right now
             imageio.mimsave(gif_save_path, gif_frames)
             wandb_frames.append(wandb.Video(gif_save_path))
@@ -134,10 +141,10 @@ def get_gif_metrics(gif_frames, gt_frames, metrics):
     gif_frames, gt_frames = torch.stack(gif_frames).unsqueeze(1), gt_frames[0].unsqueeze(1)
     # TODO Can use this if i want the old metrics
     #metric_vals = {
-    #    'PSNR':float(metrics['PSNR'](gif_frames, gt_frames)),
+    #    'psnr':float(metrics['psnr'](gif_frames, gt_frames)),
     #    #'LPIPS':float(metrics['LPIPS'](gif_frames.float(), gt_frames.float())), #TODO re-include this later if we want
-    #    'SSIM':float(metrics['SSIM'](gif_frames.float(), gt_frames.float())),
-    #    'SL1':float(metrics['SL1'](gif_frames.float(), gt_frames.float())),
+    #    'ssim':float(metrics['ssim'](gif_frames.float(), gt_frames.float())),
+    #    'sl1':float(metrics['sl1'](gif_frames.float(), gt_frames.float())),
     #    'MS_SSIM':-1. if (gif_frames.shape[2]<=161 and gif_frames.shape[3]<=161) else float(metrics['MS_SSIM'](gif_frames, gt_frames, data_range=255.)),
     #    #'FID':float(metrics['FID'](metrics['FID']._compute_feats(DataLoader(FID_dset(gif_frames.float()))), metrics['FID']._compute_feats(DataLoader(FID_dset(gt_frames.float()))))),
     #    #'FVD':metrics['FVD'](gif_frames[:utils.round_down(gif_frames.shape[0],16)], gt_frames[:utils.round_down(gt_frames.shape[0],16)] )
@@ -147,14 +154,15 @@ def get_gif_metrics(gif_frames, gt_frames, metrics):
     running_ssim = []
     running_sl1 = []
     for frame_idx in range(gif_frames.shape[0]):
-        running_psnr.append( float(metrics['PSNR']( gif_frames[frame_idx].float(), gt_frames[frame_idx].float())) )
-        running_ssim.append( float(metrics['SSIM']( gif_frames[frame_idx].unsqueeze(0).float(), gt_frames[frame_idx].unsqueeze(0).float())) )
-        running_sl1.append( float(metrics['SL1']( gif_frames[frame_idx].float(), gt_frames[frame_idx].float())) )
+        running_psnr.append( float(metrics['psnr']( gif_frames[frame_idx].float(), gt_frames[frame_idx].float())) )
+        running_ssim.append( float(metrics['ssim']( gif_frames[frame_idx].unsqueeze(0).float(), gt_frames[frame_idx].unsqueeze(0).float())) )
+        running_sl1.append( float(metrics['sl1']( gif_frames[frame_idx].float(), gt_frames[frame_idx].float())) )
     metric_vals = {
-        'PSNR':running_psnr,
-        'SSIM':running_ssim,
-        'SL1':running_sl1
+        'psnr':running_psnr,
+        'ssim':running_ssim,
+        'sl1':running_sl1
     }
+    #raise NotImplementedError("Make sure that these diverging metrics are calculated correctly")
     return metric_vals
 
 
@@ -193,41 +201,39 @@ class Bouncing_CNN(pl.LightningModule):
         self.self_out_loader = self_out_loader
 
         # Validation metrics
-        self.valid_PSNR = torchmetrics.PSNR()
-        self.valid_SSIM = torchmetrics.SSIM()
+        self.valid_PSNR = torchmetrics.functional.psnr
+        self.valid_SSIM = torchmetrics.functional.ssim #torchmetrics.SSIM() # TODO reintroduce when memory leak is solved https://github.com/PyTorchLightning/pytorch-lightning/issues/5733
         self.valid_LPIPS = tools.loss.LPIPS_Metric_pl()
         self.valid_MS_SSIM = tools.loss.MS_SSIM_Metric_pl()
         # TODO Remove this workaround when 'on_best_epoch' is implemented in lightning
         self.best_loss = float('inf')
 
         # Training metrics
-        self.train_PSNR = torchmetrics.PSNR()
-        self.train_SSIM = torchmetrics.SSIM()
+        self.train_PSNR = torchmetrics.functional.psnr
+        self.train_SSIM = torchmetrics.functional.ssim
         self.train_LPIPS = tools.loss.LPIPS_Metric_pl()
         self.train_MS_SSIM = tools.loss.MS_SSIM_Metric_pl()
 
         # Criterion and plotting loss
         ## TODO Get pytorch lightning compatible metrics when they become of available for all below
-        if args.loss == "MSE":  # Only compatible with mean reduction https://torchmetrics.readthedocs.io/en/latest/references/modules.html#meansquarederror
-            self.valid_loss = torchmetrics.MeanSquaredError()
-            self.train_loss = torchmetrics.MeanSquaredError()
-            self.criterion =  torchmetrics.MeanSquaredError()
+        if args.loss == "mse":  # Only compatible with mean reduction https://torchmetrics.readthedocs.io/en/latest/references/modules.html#meansquarederror
+            self.valid_loss = torchmetrics.functional.mean_squared_error
+            self.train_loss = torchmetrics.functional.mean_squared_error
+            self.criterion =  torchmetrics.functional.mean_squared_error
         elif args.loss == "focal":
             raise NotImplementedError("Need to implement this for focal loss")
             self.valid_loss = None
             self.train_loss = None
             #self.criterion = tools.loss.FocalLoss(reduce=args.reduce, reduction=args.reduction).to(args.device) # TODO Get torchmetrics focal loss when it exists
-        elif args.loss == "smooth_l1":
+        elif args.loss == "sl1":
             self.valid_loss = tools.loss.Smooth_L1_pl(reduction=args.reduction)
             self.train_loss = tools.loss.Smooth_L1_pl(reduction=args.reduction)
             self.criterion = tools.loss.Smooth_L1_pl(reduction=args.reduction)
-            #torch.nn.SmoothL1Loss(reduce=args.reduce, reduction=args.reduction).to(args.device)
-        elif args.loss == "SSIM":
-            self.valid_loss = torchmetrics.SSIM(reduction="elementwise_mean" if args.reduction == "mean" else args.reduction)
-            self.train_loss = torchmetrics.SSIM(reduction="elementwise_mean" if args.reduction == "mean" else args.reduction)
-            self.criterion = torchmetrics.SSIM(reduction="elementwise_mean" if args.reduction == "mean" else args.reduction)
+        elif args.loss == "ssim":
+            self.valid_loss = torchmetrics.functional.ssim#SSIM(reduction="elementwise_mean" if args.reduction == "mean" else args.reduction) # TODO when fixed, use torchmetrics
+            self.train_loss = torchmetrics.functional.ssim#(reduction="elementwise_mean" if args.reduction == "mean" else args.reduction)
+            self.criterion = torchmetrics.functional.ssim#SSIM(reduction="elementwise_mean" if args.reduction == "mean" else args.reduction)
             #tools.loss.ssim(data_range=255, size_average=True, channel=1).to(args.device)
-            raise NotImplementedError("Make SSIM work with reduction")
         else:
             raise Exception("Loss not implemented")
         
@@ -244,15 +250,18 @@ class Bouncing_CNN(pl.LightningModule):
         frames, gt_frames = frames.float(), gt_frames.float()
         out = self(frames)
         train_loss = self.criterion(out, gt_frames)
-        if self.args.loss == "SSIM":
-            raise NotImplementedError("Reverse the loss on SSIM")
+        if self.args.loss == "ssim":
+            train_loss = 1-((1+train_loss)/2)   # SSIM Range = (-1 -> 1) SSIM should be maximised => restructure as minimisation
         self.log("train_loss", train_loss, prog_bar=True, on_step=False, on_epoch=True)
+        return train_loss
 
     def validation_step(self, valid_batch, batch_idx):
         frames, gt_frames, vid_names = valid_batch
         frames, gt_frames = frames.float(), gt_frames.float()
         out = self(frames)
         valid_loss = self.criterion(out, gt_frames)
+        if self.args.loss == "ssim":
+            valid_loss = 1-((1+valid_loss)/2)   # SSIM Range = (-1 -> 1) SSIM should be maximised => restructure as minimisation
         self.log("valid_loss", valid_loss, prog_bar=True, on_step=False, on_epoch=True)
         return valid_loss
 
@@ -260,8 +269,9 @@ class Bouncing_CNN(pl.LightningModule):
         # TODO update this with 'on_best_epoch' functionality when it is supported
         # TODO compute_on_step functionality isn't working. update when it is
         valid_loss = float(sum(validation_step_outputs)/len(validation_step_outputs))
-        if valid_loss < self.best_loss:
-            self.best_loss = float(valid_loss)
+        if (valid_loss < self.best_loss):
+            if not self.trainer.running_sanity_check:  # Dont adjust loss for initial sanity check
+                self.best_loss = float(valid_loss)
             plot_self_out(self)  # Plot gifs and metrics
 
 
@@ -289,7 +299,7 @@ if __name__ == "__main__":
 
     parser.add_argument_group("Dataset specific arguments")
     ############# To combine multiple datasets together, align the dataset and dataset path arguments
-    parser.add_argument("--dataset", type=str, nargs="+", required=True, choices=["mmnist", "bouncing", "mocap", "hdmb51"], help="Type of dataset")
+    parser.add_argument("--dataset", type=str, nargs="+", required=True, choices=["mmnist", "simulations", "mocap", "hdmb51"], help="Type of dataset")
     parser.add_argument("--dataset_path", type=str, nargs="+", default=os.path.expanduser("~/"), help="Dataset paths")
     #############
     parser.add_argument("--split_condition", type=str, default="tv_ratio:4-1", help="Custom string deciding how to split datasets into train/test. Affiliated with a custom function in dataset")
@@ -307,7 +317,7 @@ if __name__ == "__main__":
     parser.add_argument("--padding_t", type=int, default=1, help="Temporal Padding")
     parser.add_argument("--depth", type=int, default=2, help="depth of the updown")
     parser.add_argument("--channel_factor", type=int, default=64, help="channel scale factor for up down network")
-    parser.add_argument("--loss", type=str, default="MSE", choices=["MSE", "smooth_l1", "focal", "SSIM"], help="Loss function for the network")
+    parser.add_argument("--loss", type=str, default="mse", choices=["mse", "sl1", "focal", "ssim"], help="Loss function for the network")
     parser.add_argument("--reduction", type=str, choices=["mean", "sum"], help="type of reduction to apply on loss")
 
     ####
@@ -328,18 +338,22 @@ if __name__ == "__main__":
     assert len(args.dataset) == len(args.dataset_path), f"Number of specified dataset paths and dataset types should be equal"
 
     # Mean squared error is naturally only ran with reduction of mean
-    if args.loss == "MSE":
+    if args.loss == "mse":
         assert args.reduction == "mean", f"MSE loss only works with reduction set to mean"
-
     if (not args.shuffle) and (len(args.dataset_path)>1):
         raise NotImplementedError("Shuffle because multiple self_out data examples from each dataset need to be represented")
     
+    # SSIM functional needs to be used. reduction cannot be specified
+    if args.loss == "ssim":
+        assert args.reduction == "mean", f"SSIM functional needs to be used. cant be bothered to rewrite to allow this for now as its irrelevant. instead default to mean reduction"
     ########
 
     #### Make sure the dataset object is configured properly
     dataset_switch = {
-        "bouncing" : Simulations,
-        "mmnist" : MMNIST
+        "simulations": Simulations,
+        "mmnist" : Simulations,  # This may change one day, but this works just fine
+        "mocap" : Simulations,
+        "hdmb51" : Simulations,
     }
     dataset_list = args.dataset_path
     train_list = []
@@ -407,11 +421,12 @@ if __name__ == "__main__":
         gpus = [args.device]  # TODO Implement multi GPU support
 
     # Checkpointing and running
-    if args.loss in ["MSE", "smooth_l1", "focal"]:  
-        max_or_min = "max"  # Minimise these validation losses
+    if args.loss in ["mse", "sl1", "focal"]:  
+        max_or_min = "min"  # Minimise these validation losses
         monitoring = "valid_loss"   # And monitor validation loss
-    elif args.loss == "SSIM":
-        raise NotImplementedError(f"Get metric from torchmetrics and make sure its maximise or minimised properly")
+    elif args.loss == "ssim":
+        max_or_min = "min"
+        monitoring = "valid_loss"
     else:
         raise NotImplementedError(f"Loss: {args.loss} not implemented.")
     checkpoint_callback = pl.callbacks.ModelCheckpoint(
