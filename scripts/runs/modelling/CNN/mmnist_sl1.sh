@@ -20,13 +20,13 @@ python VM_train.py \
     --split_condition tv_ratio:4-1 \
     --bsz 16 \
     --val_bsz 100 \
-    --num_workers 0 \
+    --num_workers 4 \
     --in_no 5 \
     --out_no 1 \
     --depth 3 \
     --device 0 \
     --epoch 1000 \
-    --n_gifs 50 \
+    --n_gifs 20 \
     --jobname mmnist_sl1 \
     --loss sl1 \
     --reduction mean \

@@ -22,6 +22,7 @@ python VM_train.py \
     --device 0 \
     --epoch 1000 \
     --n_gifs 50 \
+    --jobname mixed_ssim \
     --loss ssim \
     --reduction mean \
     --img_type greyscale \

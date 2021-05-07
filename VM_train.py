@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader
 from torchvision import transforms
 import numpy as np
+from cv2 import putText, FONT_HERSHEY_SIMPLEX
 
 from dataset import MMNIST, Simulations
 from models.UpDown2D import FCUp_Down2D, FCUp_Down2D_2_MNIST, FCUp_Down2D_2_Segmentation, FCUp_Down2D_2_FCPred
@@ -67,8 +68,9 @@ def plot_self_out(pl_system):
                     gif_frames.append(out[0][n].cpu().detach().byte())
                 # Add the ground truth frame side by side to generated frame
             gif_metrics = get_gif_metrics(gif_frames, gt_frames, metrics)
-            # plot these over time and add to gifs
-
+            colour_gradients = [255,240,225,210,195,180,165,150,135,120,120,135,150,165,180,195,210,225,240,255]   # Make sure that white/grey backgrounds dont hinder the frame count
+            # Number the frames to see which frame of the gif in output plut
+            gt_frames = [torch.from_numpy(putText(np.array(frame), f"{f_idx}", (0,frame.shape[1]), FONT_HERSHEY_SIMPLEX, fontScale = 0.55, color = (colour_gradients[f_idx%len(colour_gradients)]))) for f_idx, frame in enumerate(gt_frames[0])]
             # PSNR plot
             img_h = start_frames.shape[2]
             # TODO Be sure that this dimension is height, not width
@@ -76,7 +78,7 @@ def plot_self_out(pl_system):
             canvas = plt.gcf()
             dpi = plt.gcf().get_dpi()
             canvas.set_size_inches(2*img_h/dpi, 2*img_h/dpi)
-            canvas.suptitle(f"PSNR: {vid_name[0]}", fontsize=6)
+            canvas.suptitle(f"PSNR", fontsize=6)
             plt.xticks(fontsize=5)
             plt.yticks(fontsize=5)
             canvas.tight_layout()
@@ -93,7 +95,7 @@ def plot_self_out(pl_system):
             canvas = plt.gcf()
             dpi = plt.gcf().get_dpi()
             canvas.set_size_inches(2*img_h/dpi, 2*img_h/dpi)
-            canvas.suptitle("SSIM", fontsize=6)
+            canvas.suptitle(f"{vid_name[0]}:SSIM", fontsize=6)
             plt.xticks(fontsize=5)
             plt.yticks(fontsize=5)
             canvas.tight_layout()
@@ -123,7 +125,7 @@ def plot_self_out(pl_system):
             sl1_image = sl1_image.float().mean(0).byte()
 
             # Gif
-            gif_frames = [ torch.cat( [torch.cat( [torch.stack(gif_frames)[n_frm], gt_frames[0][n_frm]], dim=0), psnr_image, ssim_image, sl1_image], dim=1)for n_frm in range(len(gif_frames)) ]
+            gif_frames = [ torch.cat( [torch.cat( [torch.stack(gif_frames)[n_frm], gt_frames[n_frm]], dim=0), psnr_image, ssim_image, sl1_image], dim=1)for n_frm in range(len(gif_frames)) ]
             gif_save_path = os.path.join(args.results_dir, f"{ngif}-{vid_name[0]}.gif") 
             # TODO gifs from different datasets with the same name will overwrite eachother. this is niche and not worth the time right now
             imageio.mimsave(gif_save_path, gif_frames)
