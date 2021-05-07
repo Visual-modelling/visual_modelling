@@ -14,9 +14,8 @@ cd ../../../..
 source python_venvs/vm/bin/activate
 
 # Gravity prediction task
-python VM_train.py \
-    --dataset from_raw \
-    --grav_pred \
+python test_tasks.py \
+    --task grav \
     --dataset_path data/hudson_true_3d_default \
     --bsz 2 \
     --val_bsz 100 \

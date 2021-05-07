@@ -193,10 +193,10 @@ class FID_dset(torch.utils.data.Dataset):
 ################################################################################
 ################################################################################
 class Bouncing_CNN(pl.LightningModule):
-    """
-    self_out_loader:    A pytorch dataloader specialised for the self-output generation
-    """
     def __init__(self, args, self_out_loader):
+        """
+        self_out_loader:    A pytorch dataloader specialised for the self-output generation
+        """
         super().__init__()
         self.args = args
         self.model = FCUp_Down2D(args)
@@ -306,9 +306,6 @@ if __name__ == "__main__":
     #############
     parser.add_argument("--split_condition", type=str, default="tv_ratio:4-1", help="Custom string deciding how to split datasets into train/test. Affiliated with a custom function in dataset")
     parser.add_argument("--shuffle", action="store_true", help="shuffle dataset")
-    parser.add_argument("--segmentation", action="store_true", help="Create a dataset for image segmentation. Segmentation masks for images in video clips should be named the same as the original image and stored in a subdirectory of the clip 'mask'")
-    parser.add_argument("--grav_pred", action="store_true", help="Gravity prediction task")
-    parser.add_argument("--bounces_pred", action="store_true", help="Bounce counting task")
 
     parser.add_argument_group("2D and 3D CNN specific arguments")
     parser.add_argument("--model", type=str, default="UpDown2D", choices=["UpDown2D", "UpDown3D", "transformer"], help="Type of model to run")
@@ -328,14 +325,6 @@ if __name__ == "__main__":
     print(args)
 
     ######## ERROR CONDITIONS To make sure erroneous runs aren't accidentally executed
-    ## Only one task should be running
-    task_count = (args.segmentation)+(args.grav_pred)+(args.bounces_pred)
-    assert task_count<=1, f"You can only run one of gravity prediction, segmentation, or bounce prediction"
-
-    # Segmentation as a task is 1 image in and 1 out
-    if args.segmentation:
-        assert args.in_no == args.out_no == 1, f"Image segmentation is defined on 1 input and 1 output image. Not {args.in_no} and {args.out_no}"
-
     # This code allows multiple datasets to be combined, assert this has happened correctly
     assert len(args.dataset) == len(args.dataset_path), f"Number of specified dataset paths and dataset types should be equal"
 

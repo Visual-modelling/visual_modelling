@@ -6,33 +6,29 @@
 #SBATCH -x gpu[0-3]
 #SBATCH --mem 12G
 #SBATCH -p res-gpu-small
-#SBATCH --job-name no_30_mnist_sl1  
+#SBATCH --job-name no_30_mnist  
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../.results/no_30_mnist_sl1.out
+#SBATCH -o ../../../../.results/no_30_mnist.out
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd ../../../..
-
+export PYTHONBREAKPOINT=ipdb.set_trace
 source python_venvs/vm/bin/activate
 
 # MNIST Task
 python test_tasks.py \
-    --TASK MNIST \
+    --task mnist \
     --bsz 16 \
-    --val_bsz 1 \
-    --dataset_path data/moving_mnist/various \
-    --in_no 1 \
-    --model_in_no 5 \
+    --val_bsz 100 \
+    --in_no 5 \
     --out_no 1 \
     --depth 3 \
-    --device 0 \
+    --device 1 \
     --epoch 30 \
-    --early_stopping 20 \
-    --jobname no_30_mnist_sl1 \
+    --jobname no_30_mnist \
     --img_type greyscale \
     --model UpDown2D \
-    --load_mode pad \
-    --loss smooth_l1 \
-    --reduce \
+    --model_path '.results/mmnist_sl1-epoch=00-valid_loss=120.14.ckpt' \
+    --loss mnist \
     --reduction mean \
-    --visdom \
-    --save
+    --shuffle \
+    --wandb 
