@@ -48,9 +48,12 @@ class Simulations(Dataset):
     """
     root_dir -> clip_0,...clip_999 -> frame_00.png-frame_99.png AND positions.csv AND simulation.gif AND config.yml
     """
-    def __init__(self, dataset_path, args):
+    def __init__(self, dataset_path, args, segmentation_flag=False):
         self.mode = "unset"
         self.args = args
+        # Flags
+        self.segmentation_flag = segmentation_flag
+        # Data processing
         data = self.read_frames(dataset_path)
         self.train_dict, self.valid_dict = self.train_val_split(data, args.split_condition)
         self.train_dict, self.valid_dict, self.self_out_dict = self.prepare_dicts(self.train_dict, self.valid_dict)
@@ -92,12 +95,17 @@ class Simulations(Dataset):
 
     def __getitem__(self, idx): # Indexs must count from 0
         data = self.current_data_dict[idx] 
-        frames = [ frm['frame_paths'] for frm in data.values() ]
+        frames = []
+        for frm_idx, frm in enumerate(data.values()):
+            if (self.segmentation_flag) and (frm_idx > 0):  # Segmentation is in_no == out_no == 1
+                frms = frm['frame_paths'].split("/")
+                frames.append( f"{'/'.join(frms[:-1])}/mask/{frms[-1]}" )
+            else:
+                frames.append(frm['frame_paths'])
         frames = self.img_read_method(frames)
         frames = torch.stack(frames, dim=0)
         if self.mode == "self_out":
             start_frames, gt_frames = frames[:self.args.in_no], frames[self.args.in_no:]
-
         else:
             start_frames, gt_frames = frames[:self.args.in_no], frames[self.args.in_no:self.args.in_no+self.args.out_no]
         vid_name = [ frm['vid'] for frm in data.values() ][0] 
@@ -157,11 +165,14 @@ class Simulations(Dataset):
         vids = []
         path = os.path.normpath(frame_path)
         for root,dirs,files in os.walk(frame_path, topdown=True):
-            for dyr in dirs:
-                depth_test = os.listdir( os.path.join( root, dyr ) )
-                if any( (fyle.endswith(".png") or fyle.endswith(".jpg") ) for fyle in depth_test):
-                    # TODO if other jpegs or pngs are in directory we have a problem
-                    vids.append( os.path.join(root, dyr) )
+            if "mask" in dirs:
+                pass
+            else:
+                for dyr in dirs:
+                    depth_test = os.listdir( os.path.join( root, dyr ) )
+                    if any( (fyle.endswith(".png") or fyle.endswith(".jpg") ) for fyle in depth_test):
+                        # TODO if other jpegs or pngs are in directory we have a problem
+                        vids.append( os.path.join(root, dyr) )
 
        
         total_data = { vid:os.path.join(frame_path, vid) for vid in vids }

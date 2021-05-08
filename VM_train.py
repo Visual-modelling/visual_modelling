@@ -10,7 +10,7 @@ import numpy as np
 from cv2 import putText, FONT_HERSHEY_SIMPLEX
 
 from dataset import MMNIST, Simulations
-from models.UpDown2D import FCUp_Down2D, FCUp_Down2D_2_MNIST, FCUp_Down2D_2_Segmentation, FCUp_Down2D_2_FCPred
+from models.UpDown2D import FCUp_Down2D
 from models.UpDown3D import FCUp_Down3D
 from models.transformer import VMTransformer, VMTransformer2 
 #from models.OLD_transformer import VMTransformer, VMTransformer2 
@@ -176,11 +176,6 @@ class FID_dset(torch.utils.data.Dataset):
         return(self.frames.shape[0])
     def __getitem__(self, idx):
         return self.frames(idx)
-
-
-
-
-
 
 
 
@@ -389,14 +384,6 @@ if __name__ == "__main__":
         #pl_system = FCUp_Down3D(args)
     elif args.model == "UpDown2D":
         pl_system = Bouncing_CNN(args, self_out_loader)
-        #if args.segmentation:
-        #    model = FCUp_Down2D_2_Segmentation(args, args.model_path, load_mode="pad")
-        #elif args.grav_pred:
-        #    model = FCUp_Down2D_2_FCPred(args, args.model_path, mode="grav_pred")
-        #elif args.bounces_pred:
-        #    model = FCUp_Down2D_2_FCPred(args, args.model_path, mode="bounces_pred")
-        #else:
-        #    model = FCUp_Down2D(args)#.depth, args.in_no, args.out_no, args)
     elif args.model == "transformer":
         breakpoint()
         print("Your transformer model here")
@@ -429,219 +416,3 @@ if __name__ == "__main__":
     )
     trainer = pl.Trainer(callbacks=[checkpoint_callback], logger=wandb_logger, gpus=gpus)
     trainer.fit(pl_system, train_loader, valid_loader)
-
-
-
-
-
-
-
-    ######
-    ## IGNORE FROM HERE (WILL MAKE THIS MORE ELEGANT)
-    ######
-    ## TODO make this overwrite of criterion more elegant
-    #if args.grav_pred:
-    #    criterion = torch.nn.MSELoss().to(args.device)
-    #if args.bounces_pred:
-    #    criterion = torch.nn.MSELoss().to(args.device)
-
-    #    #wandb.config.update(args, allow_val_change=True)
-
-    ## Training loop
-    #early_stop_count = 0
-    #early_stop_flag = False
-    #best_loss = 10**20    # Mean average precision
-    #if args.epoch == 0:
-    #    validate(args, dset, model, criterion)
-    #else:
-    #    print("Training Start")
-    #for epoch in range(args.epoch):
-    #    if not early_stop_flag:
-    #        if args.bounces_pred or args.grav_pred:
-    #            train_loss, valid_loss, train_acc, valid_acc = train(args, dset, model, optimizer, criterion, epoch, best_loss)
-    #        else:
-    #            train_loss, valid_loss = train(args, dset, model, optimizer, criterion, epoch, best_loss)
-    #        if valid_loss > best_loss:  # No improvement
-    #            early_stop_count += 1
-    #            if early_stop_count >= args.early_stopping:
-    #                early_stop_flag = True
-    #        else:                       # New Best Epoch
-    #            early_stop_count  = 0
-    #            best_loss = valid_loss
-    #            if args.visdom:
-    #                pass
-    #                #args.plotter.text_plot(args.jobname+" val", "Best %s val %.4f Iteration:%d" % (args.loss, best_loss, epoch))
-    #            if args.save:
-    #                torch.save(model.state_dict(), args.checkpoint_path)
-    #                if task_count == 0: # If this isnt segmentation/gravity prediction etc..
-    #                    metrics = self_output(args, model, dset)
-    #                    psnr_metric = utils.avg_list([ empl["PSNR"] for empl in metrics ])
-    #                    ssim_metric = utils.avg_list([ empl["SSIM"] for empl in metrics ])
-    #                    msssim_metric = utils.avg_list([ empl["MS_SSIM"] for empl in metrics ])
-    #                    lpips_metric = utils.avg_list([ empl["LPIPS"] for empl in metrics ])
-    #                    # Printing and logging either way
-    #                    print(f"Epoch {epoch}/{args.epoch}", f"Train Loss {train_loss:.3f} |", f"Val Loss {valid_loss:.3f} |", f"Early Stop Flag {early_stop_count}/{args.early_stopping}", f"PSNR {psnr_metric:.3f}", f"SSIM {ssim_metric:.3f}", f"MS-SSIM {msssim_metric:.3f}", f"LPIPS {lpips_metric:.3f}\n")
-    #                model.train()
-    #            else:
-    #                # Printing and logging either way
-    #                print(f"Epoch {epoch}/{args.epoch}", f"Train Loss {train_loss:.3f} |", f"Val Loss {valid_loss:.3f} |", f"Early Stop Flag {early_stop_count}/{args.early_stopping}\n")
-    #        if args.visdom:
-    #            if args.save:
-    #                if task_count == 0: # If this isnt segmentation/gravity prediction etc..
-    #                    wandb.log({'PSNR' : psnr_metric}, commit=False)
-    #                    wandb.log({'SSIM' : ssim_metric}, commit=False)
-    #                    wandb.log({'MS-SSIM' : msssim_metric}, commit=False)
-    #                    wandb.log({'LPIPS' : lpips_metric}, commit=False)
-    #            wandb.log({'val_loss' : best_loss})
-    #            wandb.log({'train_loss':train_loss})
-    #            if args.bounces_pred or args.grav_pred:
-    #                wandb.log({'train_acc' : train_acc})
-    #                wandb.log({'valid_acc' : valid_acc})
-    #            #args.plotter.text_plot(args.jobname+" epoch", f"Train Loss {train_loss:.3f} | Val Loss {valid_loss:.3f} | Early Stop Count {early_stop_count}")
-    #            #args.plotter.plot(args.loss, "val", "val "+args.jobname, epoch, valid_loss)
-    #            #args.plotter.plot(args.loss, "train", "train "+args.jobname, epoch, train_loss)
-
-    #    else:
-    #        print_string = "Early stop on epoch %d/%d. Best %s %.3f at epoch %d" % (epoch+1, args.epoch, args.loss, best_loss, epoch+1-early_stop_count)
-    #        print(print_string)
-    #        #args.plotter.text_plot(args.jobname+" epoch", print_string)
-    #        sys.exit()
-
-#def train(args, dset, model, optimizer, criterion, epoch, previous_best_loss):
-#    # Prepare validation loader
-#    #(dset, model, mode, args)
-#    set_modes(dset, model, "train", args)
-#    train_loader = DataLoader(dset, batch_size=args.bsz, shuffle=args.shuffle)#, drop_last=True)
-#    train_loss = []
-#    train_acc = []
-#    with tqdm(total=len(train_loader)) as pbar:
-#        for batch_idx, batch in enumerate(train_loader):
-#            pbar.update(1)
-#            pbar.set_description(f"Training epoch {epoch}/{args.epoch}")
-#            if args.grav_pred or args.bounces_pred:
-#                frames, gravs_or_bounces = batch # gravs = torch.Tensor([x_grav, y_grav, z_grav]), bounces = torch.Tensor([n_bounces])
-#                frames, gravs_or_bounces = frames.float().to(args.device), gravs_or_bounces.to(args.device)
-#                #import ipdb; ipdb.set_trace()
-#                out = model_fwd(model, frames, args)
-#                loss = criterion(out, gravs_or_bounces)
-#                if args.bounces_pred:
-#                    rounded_out = torch.round(out)
-#                    gravs_or_bounces = torch.round(gravs_or_bounces)
-#                    train_acc.append(torch.sum( rounded_out == gravs_or_bounces )/float(len(rounded_out)))
-#                if args.grav_pred:
-#                    rounded_out = (out*10).round()/10       # Rounding to 1 decimal place
-#                    gravs_or_bounces = (gravs_or_bounces*10).round()/10# Same here
-#                    train_acc.append(torch.sum( rounded_out == gravs_or_bounces )/float(len(rounded_out)))
-#            else:
-#                frames, gt_frames = batch
-#                frames = frames.float().to(args.device)
-#                gt_frames = gt_frames.float().to(args.device)
-#                out = model_fwd(model, frames, args)
-#                loss = criterion(out, gt_frames)
-#                if args.loss == "SSIM":
-#                    loss = 1 - loss
-#            optimizer.zero_grad()
-#            loss.backward()
-#            optimizer.step()
-#            train_loss.append(loss.item())
-#        pbar.close()
-#
-#    # Validate
-#    train_loss = sum(train_loss) / float(len(train_loss))#from train_corrects 
-#    if args.bounces_pred or args.grav_pred:
-#        train_acc = sum(train_acc) / float(len(train_acc))
-#        valid_loss, valid_acc = validate(args, dset, model, criterion)
-#    else:
-#        valid_loss = validate(args, dset, model, criterion)
-#    if args.bounces_pred or args.grav_pred:
-#        return train_loss, valid_loss, train_acc, valid_acc # TODO Move to pytorch lightning, this is janky as hell
-#    else:
-#        return train_loss, valid_loss
-
-##########
-#def self_output(args, model, dset):
-#    set_modes(dset, model, "self_out", args)
-#    vis_loader = DataLoader(dset, batch_size=1, shuffle=args.shuffle)#, drop_last=True)
-#    wandb_frames = []
-#    wandb_metric_n_names = []
-#    metrics = {
-#        'PSNR':piq.psnr,
-#        'LPIPS':piq.LPIPS(),
-#        'SSIM':piq.ssim,
-#        'MS_SSIM':piq.multi_scale_ssim,
-#        'SL1':,
-#        #'FID':piq.FID(),
-#        #'FVD':tools.loss.FVD()
-#    }
-#
-#    with tqdm(total=args.n_gifs) as pbar:
-#        for ngif in range(args.n_gifs):
-#            pbar.update(1)
-#            pbar.set_description(f"Self output: {ngif}/{args.n_gifs}")
-#            start_frames, gt_frames, vid_name = next(iter(self_out_loader))
-#            start_frames = start_frames.float().to(args.device)
-#            #gt_frames = gt_frames.float().to(args.device)
-#            out = model_fwd(model, start_frames, args)
-#            gif_frames = []
-#            if args.self_output_n == -1:
-#                self_output_n = gt_frames.shape[1]
-#            else:
-#                self_output_n = args.self_output_n
-#            for itr in range(self_output_n):
-#                start_frames = torch.cat([ start_frames[:,args.out_no:args.in_no] , out ], 1)
-#                out = model_fwd(model, start_frames, args)
-#                for n in range(args.out_no):
-#                    gif_frames.append(out[0][n].cpu().detach().byte())
-#                # Add the ground truth frame side by side to generated frame
-#            gif_metrics = get_gif_metrics(gif_frames, gt_frames, metrics)
-#            gif_frames = [ torch.cat( [torch.stack(gif_frames)[n_frm], gt_frames[0][n_frm]], 0) for n_frm in range(len(gif_frames)) ]
-#            gif_save_path = os.path.join(args.results_dir, "%d.gif" % ngif)
-#            imageio.mimsave(gif_save_path, gif_frames)
-#            #args.plotter.gif_plot(args.jobname+" self_output"+str(ngif), gif_save_path)
-#            wandb_frames.append(wandb.Video(gif_save_path))
-#            gif_metrics['name'] = vid_name[0]
-#            wandb_metric_n_names.append(gif_metrics)
-#        pbar.close()
-#    wandb.log({"self_output_gifs": wandb_frames}, commit=False)
-#    wandb.log({"metrics":wandb_metric_n_names}, commit=False)
-#    return wandb_metric_n_names
-
-
-#def validate(args, dset, model, criterion):
-#    set_modes(dset, model, "valid", args)
-#    valid_loader = DataLoader(dset, batch_size=args.val_bsz, shuffle=args.shuffle)#, drop_last=True)
-#    valid_loss = []
-#    valid_acc = []
-#    with tqdm(total=len(valid_loader)) as pbar:
-#        for batch_idx, batch in enumerate(valid_loader):
-#            pbar.update(1)
-#            pbar.set_description(f"Validating...")
-#            if args.grav_pred or args.bounces_pred:
-#                frames, gravs_or_bounces = batch
-#                frames, gravs_or_bounces = frames.float().to(args.device), gravs_or_bounces.to(args.device)
-#                img = model_fwd(model, frames, args)
-#                loss = criterion(img, gravs_or_bounces) # This is MSELoss
-#                if args.bounces_pred:
-#                    rounded_out = torch.round(img)
-#                    gravs_or_bounces = torch.round(gravs_or_bounces)
-#                    valid_acc.append(torch.sum(rounded_out == gravs_or_bounces)/float(len(rounded_out)))
-#                if args.grav_pred:
-#                    rounded_out = (img*10).round()/10# Rounding to 1 decimal place
-#                    gravs_or_bounces = (gravs_or_bounces*10).round()/10
-#                    valid_acc.append(torch.sum( rounded_out == gravs_or_bounces )/float(len(rounded_out)))
-#            else:
-#                frames, gt_frames = batch
-#                frames = frames.float().to(args.device)
-#                gt_frames = gt_frames.float().to(args.device)
-#                img = model_fwd(model, frames, args)
-#                loss = criterion(img, gt_frames)
-#                if args.loss == "SSIM":
-#                    loss = 1 - loss
-#            valid_loss.append(loss.item())
-#        pbar.close()
-#    if args.bounces_pred or args.grav_pred:
-#        return sum(valid_loss)/float(len(valid_loss)), sum(valid_acc)/float(len(valid_acc))
-#    else:
-#        return sum(valid_loss)/len(valid_loss)
-
-

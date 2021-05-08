@@ -1,4 +1,4 @@
-import os, sys
+import os, sys, copy
 import argparse
 import shutil
 
@@ -112,11 +112,52 @@ class FCUp_Down2D_2_Scalars(pl.LightningModule):
         self.log("valid_acc", self.valid_acc(out, label), prog_bar=True, on_step=False, on_epoch=True)
 
 
+class FCUp_Down2D_2_Segmentation(pl.LightningModule):
+    def __init__(self, args):
+        super().__init__()
+        self.args = args
+        self.model = FCUp_Down2D(args)
+        # Checkpointing
+        if args.model_path != "":   # Empty string implies no loading
+            checkpoint = torch.load(args.model_path)
+            state_dict = checkpoint['state_dict']
+            # need to change the names of the state_dict keys from preloaded model
+            state_dict = {".".join(mod_name.split(".")[1:]):mod for mod_name, mod in state_dict.items()}
+            self.model.load_state_dict(state_dict)
+        self.criterion = tools.loss.Smooth_L1_pl(reduction="mean")
+
+    def configure_optimizers(self):
+        optimizer = radam.RAdam([p for p in self.parameters() if p.requires_grad], lr=3e-4, weight_decay=1e-5)
+        return optimizer
+
+    def forward(self, x):
+        # Through the encoder
+        out = self.model(x)
+        return out
+
+    def training_step(self, train_batch, batch_idx):
+        frame, gt_frame, vid_name = train_batch
+        frame, gt_frame = frame.float(), gt_frame.float()
+        frames = frame.repeat(1,self.args.in_no,1,1)
+        out = self.model(frames)
+        train_loss = self.criterion(out, gt_frame)
+        self.log("train_loss", train_loss, prog_bar=True, on_step=False, on_epoch=True)
+        return train_loss
+
+    def validation_step(self, valid_batch, batch_idx):
+        frame, gt_frame, vid_name = valid_batch
+        frame, gt_frame = frame.float(), gt_frame.float()
+        frames = frame.repeat(1,self.args.in_no,1,1)
+        out = self.model(frames)
+        valid_loss = self.criterion(out, gt_frame)
+        self.log("valid_loss", valid_loss, on_step=False, on_epoch=True)
+        return valid_loss
+
 if __name__ == "__main__":
     torch.manual_seed(2667)
     parser = argparse.ArgumentParser()
     parser.add_argument_group("Run specific arguments")
-    parser.add_argument("--task", type=str, choices=["mnist", "mocap", "hdmb51", "grav", "pendulum"], help="Which task, classification or otherwise, to apply")
+    parser.add_argument("--task", type=str, choices=["mnist", "mocap", "hdmb51", "grav", "pendulum", "segmentation"], help="Which task, classification or otherwise, to apply")
     parser.add_argument("--epoch", type=int, default=10)
     parser.add_argument("--device", type=int, default=-1, help="-1 for CPU, 0, 1 for appropriate device")
     parser.add_argument("--bsz", type=int, default=32)
@@ -141,7 +182,7 @@ if __name__ == "__main__":
     parser.add_argument("--padding", type=int, default=1, help="Height and width Padding")
     parser.add_argument("--padding_t", type=int, default=1, help="Temporal Padding")
     parser.add_argument("--depth", type=int, default=2, help="depth of the updown")
-    parser.add_argument("--channel_factor", type=int, default=64, choices=["pad","replace"], help="channel scale factor for up down network")
+    parser.add_argument("--channel_factor", type=int, default=64, help="channel scale factor for up down network")
     parser.add_argument("--loss", type=str, default="MSE", choices=["mse", "sl1", "focal", "ssim", "mnist"], help="Loss function for the network")
     parser.add_argument("--reduction", type=str, choices=["mean", "sum"], help="type of reduction to apply on loss")
 
@@ -153,21 +194,14 @@ if __name__ == "__main__":
     if not args.task == "mnist":
         assert len(args.dataset) == len(args.dataset_path), f"Number of specified dataset paths and dataset types should be equal"
 
-    # Mean squared error is naturally only ran with reduction of mean
-    if args.loss == "mse":
-        assert args.reduction == "mean", f"MSE loss only works with reduction set to mean"
-    if (not args.shuffle) and (len(args.dataset_path)>1):
-        raise NotImplementedError("Shuffle because multiple self_out data examples from each dataset need to be represented")
-    
-    # SSIM functional needs to be used. reduction cannot be specified
-    if args.loss == "ssim":
-        assert args.reduction == "mean", f"SSIM functional needs to be used. cant be bothered to rewrite to allow this for now as its irrelevant. instead default to mean reduction"
-
     if args.task in ["hdmb51","mocap"]:
         raise NotImplementedError("Haven't reimplemented this yet. May not be worth it in the end.")
 
     if args.task in ["grav","pendulum"]:
         raise NotImplementedError(f"{args.task} is next to implement")
+
+    if args.task == "segmentation":
+        assert args.out_no == 1, f"Segmentation is only well defined with out_no == 1. in_no is handled separately"
     ########################################################################################################################
     ########################################################################################################################
 
@@ -199,14 +233,28 @@ if __name__ == "__main__":
        """
         train_dset = MNIST(train=True, transform=transforms.Compose([transforms.Pad(18,0), transforms.ToTensor()]), root=os.path.join(os.path.dirname(os.path.realpath(__file__)), "data"))
         valid_dset = MNIST(train=False, transform=transforms.Compose([transforms.Pad(18,0), transforms.ToTensor()]), root=os.path.join(os.path.dirname(os.path.realpath(__file__)), "data"))
-        train_loader = DataLoader(train_dset, batch_size=args.bsz)
-        valid_loader = DataLoader(valid_dset, batch_size=args.val_bsz)
         pl_system = FCUp_Down2D_2_Scalars(args)
-               
+
+    ################################
+    # Segmentation
+    ################################
+    elif args.task == "segmentation":
+        """
+        Point the dataset to the root directory
+        """
+        copy_args = copy.deepcopy(args)
+        copy_args.in_no = 1
+        train_dset = Simulations(args.dataset_path[0], copy_args, segmentation_flag=True)
+        valid_dset = copy.deepcopy(train_dset)
+        train_dset.set_mode("train")
+        valid_dset.set_mode("valid")
+        pl_system = FCUp_Down2D_2_Segmentation(args)
+
     ################################
     # HDMB-51
     ################################
     elif args.task == "hdmb51":
+        raise NotImplementedError(f"HDMB-51 dataset not been handled yet")
         #HDMB_create_labels() # TODO officially allow this function below
         train_labels, class2id, id2class = utils.load_pickle(os.path.join(os.path.dirname(os.path.realpath(__file__)), "data/HDMB-51/train_labels.pickle"))
         test_labels, _, _ = utils.load_pickle(os.path.join(os.path.dirname(os.path.realpath(__file__)), "data/HDMB-51/train_labels.pickle"))
@@ -247,141 +295,40 @@ if __name__ == "__main__":
         #    else:
         #        label_dict[subj_counter][f"{int(subj):02}"] = descr
         #print(label_dict)
- 
 
+    train_loader = DataLoader(train_dset, batch_size=args.bsz)
+    valid_loader = DataLoader(valid_dset, batch_size=args.val_bsz)
 
     # Checkpointing and running
     if args.task in ["mnist", "mocap", "hdmb51"]:   # Accuracy tasks
         max_or_min = "max"
         monitoring = "valid_acc"
+        checkpoint_callback = pl.callbacks.ModelCheckpoint(
+            monitor=monitoring,
+            dirpath=os.path.join(os.path.dirname(os.path.realpath(__file__)), ".results"),
+            filename=f"{args.jobname}"+'-{epoch:02d}-{valid_acc:.2f}',
+            save_top_k=1,
+            mode=max_or_min,
+        )
+    elif args.task in ["segmentation"]:
+        max_or_min = "min"
+        monitoring = "valid_loss"
+        checkpoint_callback = pl.callbacks.ModelCheckpoint(
+            monitor=monitoring,
+            dirpath=os.path.join(os.path.dirname(os.path.realpath(__file__)), ".results"),
+            filename=f"{args.jobname}"+'-{epoch:02d}-{valid_loss:.3f}',
+            save_top_k=1,
+            mode=max_or_min,
+        )
     elif args.task in ["grav", "pendulum"]:
         raise NotImplementedError(f"Task: {args.task} has not got its optimisation and task definitions well defined")
         #max_or_min = "min"
         #monitoring = "valid_loss"
     else:
-        raise NotImplementedError(f"Task: {arg.task} is not handled")
-    checkpoint_callback = pl.callbacks.ModelCheckpoint(
-        monitor=monitoring,
-        dirpath=os.path.join(os.path.dirname(os.path.realpath(__file__)), ".results"),
-        filename=f"{args.jobname}"+'-{epoch:02d}-{valid_acc:.2f}',
-        save_top_k=1,
-        mode=max_or_min,
-    )
+        raise NotImplementedError(f"Task: {args.task} is not handled")
+
     trainer = pl.Trainer(callbacks=[checkpoint_callback], logger=wandb_logger, gpus=gpus)
     trainer.fit(pl_system, train_loader, valid_loader)
-
-
-
-
-
-
-
-################################################################################################
-# Deprecated Code, soon to be deleted
-################################################################################################
-## HDMB
-#def test_HDMB_51(model, args, bsz=1):
-#    model.eval()
-#    args.dset_sze = -1
-#    #dset = MNIST(train=False, transform=transforms.Compose([transforms.Pad(18,0), transforms.ToTensor()]), root=os.path.join(os.path.dirname(os.path.realpath(__file__)), "data"))
-#    test_loader = DataLoader(dset, batch_size=bsz)
-#    correct, total = 0, 0
-#    for batch in tqdm(test_loader, total=len(test_loader)):
-#        img, label = batch
-#        img = (255*img).long().float()
-#        #if args.load_mode == "pad":
-#        #    new_label = torch.ones(img.shape)
-#        #    for x in range(label.shape[0]):
-#        #        new_label[x] = new_label[x]*(label[x]*10) # Image of 0s is equal to class 0, image of 10s to class 1, 20s to class 2 etc..
-#        #    label = new_label
-#        img, label = img.to(args.device), label.to(args.device)
-#        out = model(img)
-#        #import ipdb; ipdb.set_trace()
-#        if args.load_mode == "pad":
-#            predicted = torch.mean(out, [1,2,3])    # Average across all outputs and divide by 10 to determine predicted class
-#            predicted = torch.round(predicted * 0.1).long()
-#            
-#        elif args.load_mode == "replace":  
-#            _, predicted = torch.max(out.data, 1)
-#        total += label.size(0)
-#        correct += (predicted == label).sum().item()
-#    
-#    acc = 100*correct/total 
-#    return acc, f"MNIST accuracy: {acc:.2f}%"
-#
-#
-#
-#def train_HDMB_51(model, args, epochs=30, bsz=16):
-#    """
-#    Train on HDMB-51
-#    """
-#    #import ipdb; ipdb.set_trace()
-#    model.train()
-#    args.dset_sze = -1
-#    dset = Dataset_from_raw(args.dataset_path[0], args)
-#    train_loader = DataLoader(dset, batch_size=bsz)
-#    best_acc = 0
-#    if args.load_mode == "replace":
-#        criterion = nn.CrossEntropyLoss()
-#    elif args.load_mode == "pad":
-#        # Losses
-#        if args.loss == "MSE":
-#            criterion = torch.nn.MSELoss(reduce=args.reduce, reduction=args.reduction).to(args.device)
-#        elif args.loss == "focal":
-#            criterion = tools.loss.FocalLoss(reduce=args.reduce, reduction=args.reduction).to(args.device) 
-#        elif args.loss == "smooth_l1":
-#            criterion = torch.nn.SmoothL1Loss(reduce=args.reduce, reduction=args.reduction).to(args.device)
-#        elif args.loss == "SSIM":
-#            criterion = tools.loss.ssim(data_range=255, size_average=True, channel=1).to(args.device)
-#        else:
-#            raise Exception("Loss not implemented")
-#
-#    optimizer = radam.RAdam([p for p in model.parameters() if p.requires_grad], lr=3e-4, weight_decay=1e-5)
-#    early_stop_count = 0
-#    best_epoch = 0
-#    for epoch in range(epochs):
-#        train_loss = []
-#        with tqdm(total=len(train_loader)) as pbar:
-#            for batch_idx, batch in enumerate(train_loader):
-#                pbar.set_description(f"Training epoch {epoch}/{epochs}")
-#                pbar.update(1)
-#                #sleep(0.001)
-#                img, label = batch
-#                #import ipdb; ipdb.set_trace()
-#                img = (255*img).long().float()
-#                if args.load_mode == "pad":
-#                    new_label = torch.ones(img.shape)
-#                    for x in range(label.shape[0]):
-#                        new_label[x] = new_label[x]*(label[x]*10) # Image of 0s is equal to class 0, image of 10s to class 1, 20s to class 2 etc..
-#                    label = new_label
-#                img, label = img.to(args.device), label.to(args.device)
-#                out = model(img)
-#    
-#                loss = criterion(out, label)
-#                optimizer.zero_grad()
-#                loss.backward()
-#                optimizer.step()
-#                train_loss.append(loss.item())
-#            pbar.close()
-#        print("Validating...")
-#        train_loss = sum(train_loss)/len(train_loss)
-#        val_acc, _ = test_HDMB_51(model, args)
-#        model.train()
-#        if val_acc > best_acc:
-#            best_acc = val_acc
-#            best_epoch = epoch
-#            early_stop_count = 0
-#        else:
-#            early_stop_count += 1
-#            if early_stop_count >= args.early_stopping:
-#                return best_acc, f"Early Stopping @ {epoch} epochs. Best accuracy: {best_acc:.3f}% was at epoch {best_epoch}"
-#
-#        print(f"Epoch:{epoch}/{epochs}, Loss:{train_loss:.5f}, Val Acc:{val_acc:.3f}%, Early Stop:{early_stop_count}/{args.early_stopping}")
-#        if args.visdom:
-#            wandb.log({'Train Loss' : train_loss})
-#            wandb.log({"Valid Accuracy": val_acc})
-#    return best_acc, f"{epochs} Epochs (full). Best Accuracy: {best_acc:.3f}% {'was at final epoch' if early_stop_count == 0 else 'was at epoch '+str(best_epoch)}"
-
 
 
 
@@ -422,8 +369,3 @@ if __name__ == "__main__":
 #    utils.save_pickle(train, os.path.join(os.path.dirname(os.path.realpath(__file__)), "data/HDMB-51/train_labels.pickle"))
 #    utils.save_pickle(test , os.path.join(os.path.dirname(os.path.realpath(__file__)), "data/HDMB-51/test_labels.pickle"))
 #    utils.save_pickle(other, os.path.join(os.path.dirname(os.path.realpath(__file__)), "data/HDMB-51/other_labels.pickle"))
-
-
-
-
-

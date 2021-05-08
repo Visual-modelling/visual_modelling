@@ -8,9 +8,9 @@
 #SBATCH -p res-gpu-small
 #SBATCH --job-name no_30_mnist  
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../.results/no_30_mnist.out
+#SBATCH -o ../../../../../.results/no_30_mnist.out
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-cd ../../../..
+cd ../../../../..
 export PYTHONBREAKPOINT=ipdb.set_trace
 source python_venvs/vm/bin/activate
 
@@ -27,8 +27,6 @@ python test_tasks.py \
     --jobname no_30_mnist \
     --img_type greyscale \
     --model UpDown2D \
-    --model_path '.results/mmnist_sl1-epoch=00-valid_loss=120.14.ckpt' \
-    --loss mnist \
-    --reduction mean \
+    --model_path '.results/mixed_ssim-epoch=72-valid_loss=0.02.ckpt' \
     --shuffle \
     --wandb 
