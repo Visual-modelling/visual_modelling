@@ -21,6 +21,7 @@ python test_tasks.py \
     --dataset_path data/3d_bouncing/hudson_true_3d_default \
     --bsz 16 \
     --val_bsz 100 \
+    --num_workers 0 \
     --in_no 5 \
     --out_no 1 \
     --depth 3 \

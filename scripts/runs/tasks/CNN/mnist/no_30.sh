@@ -19,6 +19,7 @@ python test_tasks.py \
     --task mnist \
     --bsz 16 \
     --val_bsz 100 \
+    --num_workers 0 \
     --in_no 5 \
     --out_no 1 \
     --depth 3 \

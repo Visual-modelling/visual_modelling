@@ -18,9 +18,10 @@ source python_venvs/vm/bin/activate
 python test_tasks.py \
     --task pendulum \
     --dataset simulations  \
-    --dataset_path data/visual_modelling/myphysicslab/DEMO_double_pendulum \
+    --dataset_path data/myphysicslab/DEMO_double_pendulum_1000 \
     --bsz 16 \
     --val_bsz 100 \
+    --num_workers 0 \
     --in_no 5 \
     --out_no 1 \
     --depth 3 \

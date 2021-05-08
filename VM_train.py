@@ -13,7 +13,6 @@ from dataset import MMNIST, Simulations
 from models.UpDown2D import FCUp_Down2D
 from models.UpDown3D import FCUp_Down3D
 from models.transformer import VMTransformer, VMTransformer2 
-#from models.OLD_transformer import VMTransformer, VMTransformer2 
 import tools.utils as utils
 from tools.utils import model_fwd
 import tools.radam as radam
@@ -53,7 +52,7 @@ def plot_self_out(pl_system):
         for ngif in range(args.n_gifs):
             pbar.update(1)
             pbar.set_description(f"Self output: {ngif+1}/{args.n_gifs}")
-            start_frames, gt_frames, vid_name = next(iter(self_out_loader))
+            start_frames, gt_frames, vid_name, _ = next(iter(self_out_loader))
             start_frames = start_frames.float().to(args.device)
             out = pl_system(start_frames)
             gif_frames = []
@@ -243,7 +242,7 @@ class Bouncing_CNN(pl.LightningModule):
         return optimizer
 
     def training_step(self, train_batch, batch_idx):
-        frames, gt_frames, vid_names = train_batch
+        frames, gt_frames, vid_names, _ = train_batch
         frames, gt_frames = frames.float(), gt_frames.float()
         out = self(frames)
         train_loss = self.criterion(out, gt_frames)
@@ -253,7 +252,7 @@ class Bouncing_CNN(pl.LightningModule):
         return train_loss
 
     def validation_step(self, valid_batch, batch_idx):
-        frames, gt_frames, vid_names = valid_batch
+        frames, gt_frames, vid_names, _ = valid_batch
         frames, gt_frames = frames.float(), gt_frames.float()
         out = self(frames)
         valid_loss = self.criterion(out, gt_frames)

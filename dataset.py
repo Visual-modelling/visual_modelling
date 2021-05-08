@@ -48,11 +48,12 @@ class Simulations(Dataset):
     """
     root_dir -> clip_0,...clip_999 -> frame_00.png-frame_99.png AND positions.csv AND simulation.gif AND config.yml
     """
-    def __init__(self, dataset_path, args, segmentation_flag=False):
+    def __init__(self, dataset_path, args, segmentation_flag=False, yaml_return=None):
         self.mode = "unset"
         self.args = args
         # Flags
         self.segmentation_flag = segmentation_flag
+        self.yaml_return = yaml_return  # To control what the yaml file should output for our simulations
         # Data processing
         data = self.read_frames(dataset_path)
         self.train_dict, self.valid_dict = self.train_val_split(data, args.split_condition)
@@ -109,7 +110,15 @@ class Simulations(Dataset):
         else:
             start_frames, gt_frames = frames[:self.args.in_no], frames[self.args.in_no:self.args.in_no+self.args.out_no]
         vid_name = [ frm['vid'] for frm in data.values() ][0] 
-        return (start_frames, gt_frames, vid_name)           
+        if self.yaml_return == None:
+            yaml_return = 0
+        elif self.yaml_return == "pendulum":    # Assuming pendulum predicts gravity
+            yaml_return = [frm['config'] for frm in data.values()]
+            yaml_return = [yaml_return[idx]['SIM.GRAVITY'] for idx in range(self.args.in_no, self.args.in_no+self.args.out_no) ]
+            yaml_return = torch.tensor(yaml_return).float()
+        else:
+            raise NotImplementedError(f"No yaml elements for {self.yaml_return} prepared for")
+        return (start_frames, gt_frames, vid_name, yaml_return)           
 
     def prepare_dicts(self, train_dict, valid_dict):
         # Training

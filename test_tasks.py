@@ -46,6 +46,8 @@ class FCUp_Down2D_2_Scalars(pl.LightningModule):
         # Different tasks will be expecting different output numbers
         if args.task == "mnist":
             n_outputs = 10
+        elif args.task == "pendulum":
+            n_outputs = 1
         else:
             raise NotImplementedError("Task has not been implemented yet")
 
@@ -67,7 +69,11 @@ class FCUp_Down2D_2_Scalars(pl.LightningModule):
 
         # Training metrics
         self.train_acc = torchmetrics.Accuracy()
-        self.criterion = nn.CrossEntropyLoss()
+
+        if args.task == "mnist":
+            self.criterion = nn.CrossEntropyLoss()
+        elif args.task == "pendulum":
+            self.criterion = nn.SmoothL1Loss()
 
     def configure_optimizers(self):
         model_opt = radam.RAdam([p for p in self.model.parameters() if p.requires_grad], lr=3e-6, weight_decay=1e-5)
@@ -85,31 +91,41 @@ class FCUp_Down2D_2_Scalars(pl.LightningModule):
         model_opt, cls_mlp_opt = self.optimizers()
         model_opt.zero_grad()
         cls_mlp_opt.zero_grad()
-        frame, label = train_batch
-        frame = frame.float()
-        frames = frame.repeat(1,self.args.in_no,1,1)
+        if self.args.task == "mnist":
+            frame, label = train_batch
+            frames = frame.repeat(1,self.args.in_no,1,1)
+        else:
+            frames, _, _, label = train_batch
+        frames = frames.float()
         out = self.model(frames)
         out = out.view(self.args.bsz, -1)
         out = self.cls_mlp(out)
-        out = F.softmax(out, dim=1)
+        if self.args.task == "mnist":
+            out = F.softmax(out, dim=1)
         train_loss = self.criterion(out, label)
         self.manual_backward(train_loss)
         model_opt.step()
         cls_mlp_opt.step()
         self.log("train_loss", train_loss, prog_bar=True, on_step=False, on_epoch=True)
-        self.log("train_acc", self.train_acc(out, label), prog_bar=True, on_step=False, on_epoch=True)
+        if self.args.task == "mnist":
+            self.log("train_acc", self.train_acc(out, label), prog_bar=True, on_step=False, on_epoch=True)
 
     def validation_step(self, valid_batch, batch_idx):
-        frame, label = valid_batch
-        frame = frame.float()
-        frames = frame.repeat(1,self.args.in_no,1,1)
+        if self.args.task == "mnist":
+            frame, label = valid_batch
+            frames = frame.repeat(1,self.args.in_no,1,1)
+        else:
+            frames, _, _, label = valid_batch
+        frames = frames.float()
         out = self.model(frames)
         out = out.view(self.args.val_bsz, -1)
         out = self.cls_mlp(out)
-        out = F.softmax(out, dim=1)
+        if self.args.task == "mnist":
+            out = F.softmax(out, dim=1)
         valid_loss = self.criterion(out, label)
         self.log("valid_loss", valid_loss, on_step=False, on_epoch=True)
-        self.log("valid_acc", self.valid_acc(out, label), prog_bar=True, on_step=False, on_epoch=True)
+        if self.args.task == "mnist":
+            self.log("valid_acc", self.valid_acc(out, label), prog_bar=True, on_step=False, on_epoch=True)
 
 
 class FCUp_Down2D_2_Segmentation(pl.LightningModule):
@@ -136,7 +152,7 @@ class FCUp_Down2D_2_Segmentation(pl.LightningModule):
         return out
 
     def training_step(self, train_batch, batch_idx):
-        frame, gt_frame, vid_name = train_batch
+        frame, gt_frame, vid_name, _ = train_batch
         frame, gt_frame = frame.float(), gt_frame.float()
         frames = frame.repeat(1,self.args.in_no,1,1)
         out = self.model(frames)
@@ -145,7 +161,7 @@ class FCUp_Down2D_2_Segmentation(pl.LightningModule):
         return train_loss
 
     def validation_step(self, valid_batch, batch_idx):
-        frame, gt_frame, vid_name = valid_batch
+        frame, gt_frame, vid_name, _ = valid_batch
         frame, gt_frame = frame.float(), gt_frame.float()
         frames = frame.repeat(1,self.args.in_no,1,1)
         out = self.model(frames)
@@ -162,6 +178,7 @@ if __name__ == "__main__":
     parser.add_argument("--device", type=int, default=-1, help="-1 for CPU, 0, 1 for appropriate device")
     parser.add_argument("--bsz", type=int, default=32)
     parser.add_argument("--val_bsz", type=int, default=100)
+    parser.add_argument("--num_workers", type=int, default=0, help="Pytorch dataloader workers")
     parser.add_argument("--in_no", type=int, default=5, help="number of frames to use for forward pass")
     parser.add_argument("--out_no", type=int, default=1, help="number of frames to use for ground_truth")
     parser.add_argument("--wandb", action="store_true", help="Save models/validation things to checkpoint location")
@@ -197,7 +214,7 @@ if __name__ == "__main__":
     if args.task in ["hdmb51","mocap"]:
         raise NotImplementedError("Haven't reimplemented this yet. May not be worth it in the end.")
 
-    if args.task in ["grav","pendulum"]:
+    if args.task in ["grav"]:
         raise NotImplementedError(f"{args.task} is next to implement")
 
     if args.task == "segmentation":
@@ -251,6 +268,16 @@ if __name__ == "__main__":
         pl_system = FCUp_Down2D_2_Segmentation(args)
 
     ################################
+    # Pendulum
+    ################################   
+    elif args.task == "pendulum":
+        train_dset = Simulations(args.dataset_path[0], args, yaml_return="pendulum")
+        valid_dset = copy.deepcopy(train_dset)
+        train_dset.set_mode("train")
+        valid_dset.set_mode("valid")
+        pl_system = FCUp_Down2D_2_Scalars(args)
+
+    ################################
     # HDMB-51
     ################################
     elif args.task == "hdmb51":
@@ -296,8 +323,8 @@ if __name__ == "__main__":
         #        label_dict[subj_counter][f"{int(subj):02}"] = descr
         #print(label_dict)
 
-    train_loader = DataLoader(train_dset, batch_size=args.bsz)
-    valid_loader = DataLoader(valid_dset, batch_size=args.val_bsz)
+    train_loader = DataLoader(train_dset, batch_size=args.bsz, num_workers=args.num_workers)
+    valid_loader = DataLoader(valid_dset, batch_size=args.val_bsz, num_workers=args.num_workers)
 
     # Checkpointing and running
     if args.task in ["mnist", "mocap", "hdmb51"]:   # Accuracy tasks
@@ -310,7 +337,7 @@ if __name__ == "__main__":
             save_top_k=1,
             mode=max_or_min,
         )
-    elif args.task in ["segmentation"]:
+    elif args.task in ["segmentation", "pendulum"]:
         max_or_min = "min"
         monitoring = "valid_loss"
         checkpoint_callback = pl.callbacks.ModelCheckpoint(
@@ -320,7 +347,7 @@ if __name__ == "__main__":
             save_top_k=1,
             mode=max_or_min,
         )
-    elif args.task in ["grav", "pendulum"]:
+    elif args.task in ["grav"]:
         raise NotImplementedError(f"Task: {args.task} has not got its optimisation and task definitions well defined")
         #max_or_min = "min"
         #monitoring = "valid_loss"
