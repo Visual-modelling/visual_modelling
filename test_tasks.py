@@ -48,6 +48,8 @@ class FCUp_Down2D_2_Scalars(pl.LightningModule):
             n_outputs = 10
         elif args.task == "pendulum":
             n_outputs = 1
+        elif args.task == "bounces":
+            n_outputs = 2
         else:
             raise NotImplementedError("Task has not been implemented yet")
 
@@ -72,7 +74,7 @@ class FCUp_Down2D_2_Scalars(pl.LightningModule):
 
         if args.task == "mnist":
             self.criterion = nn.CrossEntropyLoss()
-        elif args.task == "pendulum":
+        elif args.task in ["pendulum","bounces"]:
             self.criterion = nn.SmoothL1Loss()
 
     def configure_optimizers(self):
@@ -173,7 +175,7 @@ if __name__ == "__main__":
     torch.manual_seed(2667)
     parser = argparse.ArgumentParser()
     parser.add_argument_group("Run specific arguments")
-    parser.add_argument("--task", type=str, choices=["mnist", "mocap", "hdmb51", "grav", "pendulum", "segmentation"], help="Which task, classification or otherwise, to apply")
+    parser.add_argument("--task", type=str, choices=["mnist", "mocap", "hdmb51", "pendulum", "segmentation", "bounces"], help="Which task, classification or otherwise, to apply")
     parser.add_argument("--epoch", type=int, default=10)
     parser.add_argument("--device", type=int, default=-1, help="-1 for CPU, 0, 1 for appropriate device")
     parser.add_argument("--bsz", type=int, default=32)
@@ -213,9 +215,6 @@ if __name__ == "__main__":
 
     if args.task in ["hdmb51","mocap"]:
         raise NotImplementedError("Haven't reimplemented this yet. May not be worth it in the end.")
-
-    if args.task in ["grav"]:
-        raise NotImplementedError(f"{args.task} is next to implement")
 
     if args.task == "segmentation":
         assert args.out_no == 1, f"Segmentation is only well defined with out_no == 1. in_no is handled separately"
@@ -277,6 +276,28 @@ if __name__ == "__main__":
         valid_dset.set_mode("valid")
         pl_system = FCUp_Down2D_2_Scalars(args)
 
+    #################################
+    ## # TODO DEPRECATED Gravity prediction
+    #################################   
+    #elif args.task == "grav_3d":
+    #    train_dset = Simulations(args.dataset_path[0], args, yaml_return="grav_3d")
+    #    valid_dset = copy.deepcopy(train_dset)
+    #    train_dset.set_mode("train")
+    #    valid_dset.set_mode("valid")
+    #    pl_system = FCUp_Down2D_2_Scalars(args)
+
+    ################################
+    # Ball bounces prediction
+    ################################   
+    elif args.task == "bounces":
+        train_dset = Simulations(args.dataset_path[0], args, yaml_return="bounces")
+        valid_dset = copy.deepcopy(train_dset)
+        train_dset.set_mode("train")
+        valid_dset.set_mode("valid")
+        pl_system = FCUp_Down2D_2_Scalars(args)
+
+
+
     ################################
     # HDMB-51
     ################################
@@ -337,7 +358,7 @@ if __name__ == "__main__":
             save_top_k=1,
             mode=max_or_min,
         )
-    elif args.task in ["segmentation", "pendulum"]:
+    elif args.task in ["segmentation", "pendulum", "bounces"]:
         max_or_min = "min"
         monitoring = "valid_loss"
         checkpoint_callback = pl.callbacks.ModelCheckpoint(

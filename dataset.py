@@ -109,12 +109,15 @@ class Simulations(Dataset):
             start_frames, gt_frames = frames[:self.args.in_no], frames[self.args.in_no:]
         else:
             start_frames, gt_frames = frames[:self.args.in_no], frames[self.args.in_no:self.args.in_no+self.args.out_no]
-        vid_name = [ frm['vid'] for frm in data.values() ][0] 
+        vid_name = [ frm['vid'] for frm in data.values() ][0]
+        d_idx = list(data.keys())[0]
         if self.yaml_return == None:
             yaml_return = 0
         elif self.yaml_return == "pendulum":    # Assuming pendulum predicts gravity
-            yaml_return = [frm['config'] for frm in data.values()]
-            yaml_return = [yaml_return[idx]['SIM.GRAVITY'] for idx in range(self.args.in_no, self.args.in_no+self.args.out_no) ]
+            yaml_return = [data[d_idx]['config']['SIM.GRAVITY']]
+            yaml_return = torch.tensor(yaml_return).float()
+        elif self.yaml_return == "bounces":
+            yaml_return = [data[d_idx]['config']['bounces']['ball-ball'],data[d_idx]['config']['bounces']['wall']]
             yaml_return = torch.tensor(yaml_return).float()
         else:
             raise NotImplementedError(f"No yaml elements for {self.yaml_return} prepared for")
