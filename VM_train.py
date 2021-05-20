@@ -10,8 +10,7 @@ import numpy as np
 from cv2 import putText, FONT_HERSHEY_SIMPLEX
 
 from dataset import MMNIST, Simulations
-from models.UpDown2D import FCUp_Down2D
-from models.UpDown3D import FCUp_Down3D
+from models.UpDown2D import FCUpDown2D
 from models.transformer import VMTransformer, VMTransformer2 
 import tools.utils as utils
 from tools.utils import model_fwd
@@ -193,7 +192,7 @@ class Bouncing_CNN(pl.LightningModule):
         """
         super().__init__()
         self.args = args
-        self.model = FCUp_Down2D(args)
+        self.model = FCUpDown2D(args)
         self.self_out_loader = self_out_loader
 
         # Validation metrics

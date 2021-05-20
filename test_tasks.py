@@ -12,7 +12,7 @@ import pytorch_lightning as pl
 import torchmetrics
 
 from dataset import Simulations
-from models.UpDown2D import FCUp_Down2D
+from models.UpDown2D import FCUpDown2D
 import tools.radam as radam
 import tools.loss
 import tools.utils as utils
@@ -29,11 +29,11 @@ import wandb
 ################################################################################################
 # Pytorch lightning trainers
 ################################################################################################
-class FCUp_Down2D_2_Scalars(pl.LightningModule):
+class FcUpDown2D2Scalars(pl.LightningModule):
     def __init__(self, args):
         super().__init__()
         self.args = args
-        self.model = FCUp_Down2D(args)
+        self.model = FCUpDown2D(args)
         
         # Checkpointing
         if args.model_path != "":   # Empty string implies no loading
@@ -130,11 +130,11 @@ class FCUp_Down2D_2_Scalars(pl.LightningModule):
             self.log("valid_acc", self.valid_acc(out, label), prog_bar=True, on_step=False, on_epoch=True)
 
 
-class FCUp_Down2D_2_Segmentation(pl.LightningModule):
+class FCUpDown2D_2_Segmentation(pl.LightningModule):
     def __init__(self, args):
         super().__init__()
         self.args = args
-        self.model = FCUp_Down2D(args)
+        self.model = FCUpDown2D(args)
         # Checkpointing
         if args.model_path != "":   # Empty string implies no loading
             checkpoint = torch.load(args.model_path)
@@ -249,7 +249,7 @@ if __name__ == "__main__":
        """
         train_dset = MNIST(train=True, transform=transforms.Compose([transforms.Pad(18,0), transforms.ToTensor()]), root=os.path.join(os.path.dirname(os.path.realpath(__file__)), "data"))
         valid_dset = MNIST(train=False, transform=transforms.Compose([transforms.Pad(18,0), transforms.ToTensor()]), root=os.path.join(os.path.dirname(os.path.realpath(__file__)), "data"))
-        pl_system = FCUp_Down2D_2_Scalars(args)
+        pl_system = FcUpDown2D2Scalars(args)
 
     ################################
     # Segmentation
@@ -264,7 +264,7 @@ if __name__ == "__main__":
         valid_dset = copy.deepcopy(train_dset)
         train_dset.set_mode("train")
         valid_dset.set_mode("valid")
-        pl_system = FCUp_Down2D_2_Segmentation(args)
+        pl_system = FCUpDown2D_2_Segmentation(args)
 
     ################################
     # Pendulum
@@ -274,7 +274,7 @@ if __name__ == "__main__":
         valid_dset = copy.deepcopy(train_dset)
         train_dset.set_mode("train")
         valid_dset.set_mode("valid")
-        pl_system = FCUp_Down2D_2_Scalars(args)
+        pl_system = FcUpDown2D2Scalars(args)
 
     #################################
     ## # TODO DEPRECATED Gravity prediction
@@ -284,7 +284,7 @@ if __name__ == "__main__":
     #    valid_dset = copy.deepcopy(train_dset)
     #    train_dset.set_mode("train")
     #    valid_dset.set_mode("valid")
-    #    pl_system = FCUp_Down2D_2_Scalars(args)
+    #    pl_system = FcUpDown2D2Scalars(args)
 
     ################################
     # Ball bounces prediction
@@ -294,7 +294,7 @@ if __name__ == "__main__":
         valid_dset = copy.deepcopy(train_dset)
         train_dset.set_mode("train")
         valid_dset.set_mode("valid")
-        pl_system = FCUp_Down2D_2_Scalars(args)
+        pl_system = FcUpDown2D2Scalars(args)
 
 
 
@@ -308,7 +308,7 @@ if __name__ == "__main__":
         test_labels, _, _ = utils.load_pickle(os.path.join(os.path.dirname(os.path.realpath(__file__)), "data/HDMB-51/train_labels.pickle"))
 
         # Models
-        model = FCUp_Down2D_2_MNIST(args, load_path=args.model_path)
+        model = FCUpDown2D_2_MNIST(args, load_path=args.model_path)
         model.to(args.device)
 
         # Training and Testing Loops

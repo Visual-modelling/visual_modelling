@@ -10,7 +10,7 @@ from tools.activations import sigmoid_256
 
 
 
-class FCUp_Down2D(nn.Module):
+class FCUpDown2D(nn.Module):
     """
     __author__ = Jumperkables
     Fully convolutional Up down U net designed by Tom Winterbottom
@@ -18,7 +18,7 @@ class FCUp_Down2D(nn.Module):
     #(args.UD_depth, args.in_no, args.out_no, args.UD_channel_factor
     def __init__(self, args):
         super().__init__()
-        self.UDChain = Up_Down_Chain(args)
+        self.UDChain = UpDownChain(args)
 
 
     def forward(self, x):
@@ -27,7 +27,7 @@ class FCUp_Down2D(nn.Module):
 
 
 
-class Up_Down_Chain(nn.Module):
+class UpDownChain(nn.Module):
 
     """
     __author__ = Jumperkables
@@ -188,10 +188,10 @@ class DoubleConv(nn.Module):
 # #TODO DEPRECATED CODE
 ############################################################
 
-#class FCUp_Down2D_2_FCPred(nn.Module):
+#class FCUpDown2D_2_FCPred(nn.Module):
 #    """
 #    __author__ = Jumperkables
-#    Class that adapts the FCUp_Down2D model to the gravity prediction task. Damn i wish pytorch lightning was around when i started coding this
+#    Class that adapts the FCUpDown2D model to the gravity prediction task. Damn i wish pytorch lightning was around when i started coding this
 #    """
 #    def __init__(self, args, load_path="", load_mode="append_classification", mode="grav_pred"):
 #        super().__init__()
@@ -218,10 +218,10 @@ class DoubleConv(nn.Module):
 #            #cargs.in_no = in_no
 #            #self.in_no = in_no
 #
-#            full = FCUp_Down2D(cargs)
+#            full = FCUpDown2D(cargs)
 #            full.load_state_dict(torch.load(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), load_path)), strict=False)
 #        else:
-#            full = FCUp_Down2D(cargs)
+#            full = FCUpDown2D(cargs)
 #        # Replace the first layer
 #        if mode == "grav_pred":
 #            pred_out_dim = 3    # gx, gy, gz
@@ -256,10 +256,10 @@ class DoubleConv(nn.Module):
 #
 #
 #
-#class FCUp_Down2D_2_Segmentation(nn.Module):
+#class FCUpDown2D_2_Segmentation(nn.Module):
 #    """
 #    __author__ = Jumperkables
-#    Class that adapts the FCUp_Down2D model to an appropriate segmentation task
+#    Class that adapts the FCUpDown2D model to an appropriate segmentation task
 #    """
 #    def __init__(self, args, load_path="", load_mode="pad"):
 #        super().__init__()
@@ -284,10 +284,10 @@ class DoubleConv(nn.Module):
 #            #cargs.in_no = in_no
 #            #self.in_no = in_no
 #
-#            full = FCUp_Down2D(cargs)
+#            full = FCUpDown2D(cargs)
 #            full.load_state_dict(torch.load(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), load_path)), strict=False)
 #        else:
-#            full = FCUp_Down2D(cargs)
+#            full = FCUpDown2D(cargs)
 #        # Replace the first layer
 #        if load_mode == "replace":
 #            full.UDChain.layers[0].maxpool_conv[1].double_conv[0]= nn.Conv2d(1,args.channel_factor, kernel_size=args.krnl_size, padding=args.padding)
@@ -304,10 +304,10 @@ class DoubleConv(nn.Module):
 #        return x
 #
 #
-#class FCUp_Down2D_2_MNIST(nn.Module):
+#class FCUpDown2D_2_MNIST(nn.Module):
 #    """
 #    __author__ = Jumperkables
-#    Class that adapts the FCUp_Down2D model to an appropriate MNIST adaption
+#    Class that adapts the FCUpDown2D model to an appropriate MNIST adaption
 #    """
 #    def __init__(self, args, load_path="", load_mode="pad"):
 #        super().__init__()
@@ -326,7 +326,7 @@ class DoubleConv(nn.Module):
 #            cargs.in_no = args.model_in_no
 #            self.duplicate = cargs.in_no
 #
-#        full = FCUp_Down2D(cargs)
+#        full = FCUpDown2D(cargs)
 #        if load_path != "":
 #            full.load_state_dict(torch.load(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), load_path)), strict=False)
 #        # Replace the first layer
