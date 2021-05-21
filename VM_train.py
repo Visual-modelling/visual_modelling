@@ -11,7 +11,6 @@ from cv2 import putText, FONT_HERSHEY_SIMPLEX
 
 from dataset import MMNIST, Simulations
 from models.UpDown2D import FCUpDown2D
-from models.transformer import VMTransformer, VMTransformer2 
 import tools.utils as utils
 from tools.utils import model_fwd
 import tools.radam as radam

@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH --ntasks 6
 #SBATCH -p part0
-#SBATCH --job-name rollerFlightBigger_sl1 
+#SBATCH --job-name rollerFlightBigger_5-1_sl1 
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../.results/rollerFlightBigger_sl1.out
+#SBATCH -o ../../../../.results/rollerFlightBigger_5-1_sl1.out
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd ../../../..
 source python_venvs/vm/bin/activate
@@ -22,7 +22,7 @@ python VM_train.py \
     --device 0 \
     --epoch 1000 \
     --n_gifs 50 \
-    --jobname rollerFlightBigger_sl1 \
+    --jobname rollerFlightBigger_5-1_sl1 \
     --loss sl1 \
     --reduction mean \
     --img_type greyscale \
