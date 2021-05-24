@@ -6,9 +6,9 @@
 #SBATCH -x gpu[0-3]
 #SBATCH --mem 12G
 #SBATCH -p res-gpu-small
-#SBATCH --job-name mocap_5-1_sl1 
+#SBATCH --job-name mocap_5-1_k-3_d-3_sl1 
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../.results/mocap_5-1_sl1.out
+#SBATCH -o ../../../../.results/mocap_5-1_k-3_d-3_sl1.out
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd ../../../..
 source python_venvs/vm/bin/activate
@@ -27,7 +27,7 @@ python VM_train.py \
     --device 0 \
     --epoch 1000 \
     --n_gifs 50 \
-    --jobname mocap_5-1_sl1 \
+    --jobname mocap_5-1_k-3_d-3_sl1 \
     --loss sl1 \
     --reduction mean \
     --img_type greyscale \

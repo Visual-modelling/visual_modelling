@@ -18,7 +18,7 @@ source python_venvs/vm/bin/activate
 python test_tasks.py \
     --task segmentation \
     --dataset simulations \
-    --dataset_path data/3d_bouncing/hudson_true_3d_default \
+    --dataset_path data/3dBouncing/3dOld \
     --bsz 16 \
     --val_bsz 100 \
     --num_workers 0 \
@@ -30,6 +30,6 @@ python test_tasks.py \
     --jobname no_30_segmentation_3d_bouncing \
     --img_type greyscale \
     --model UpDown2D \
-    --model_path '.results/mixed_ssim-epoch=72-valid_loss=0.02.ckpt' \
+    --model_path '' \
     --shuffle \
     --wandb 

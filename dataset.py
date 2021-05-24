@@ -119,6 +119,9 @@ class Simulations(Dataset):
         elif self.yaml_return == "bounces":
             yaml_return = [data[d_idx]['config']['bounces']['ball-ball'],data[d_idx]['config']['bounces']['wall']]
             yaml_return = torch.tensor(yaml_return).float()
+        elif self.yaml_return == "grav":
+            yaml_return = [data[d_idx]['config']['gy']]
+            yaml_return = torch.tensor(yaml_return).float()
         else:
             raise NotImplementedError(f"No yaml elements for {self.yaml_return} prepared for")
         return (start_frames, gt_frames, vid_name, yaml_return)           

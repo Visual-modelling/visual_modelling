@@ -6,17 +6,17 @@
 #SBATCH -x gpu[0-3]
 #SBATCH --mem 12G
 #SBATCH -p res-gpu-small
-#SBATCH --job-name hdmb51_5-1_sl1 
+#SBATCH --job-name mmnist_5-1_k-3_d-3_sl1 
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../.results/hdmb51_5-1_sl1.out
+#SBATCH -o ../../../../.results/mmnist_5-1_k-3_d-3_sl1.out
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd ../../../..
 source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 # Pretrain
 python VM_train.py \
-    --dataset hdmb51 \
-    --dataset_path data/HDMB-51/grey_64x64_frames \
+    --dataset mmnist \
+    --dataset_path data/moving_mnist/1_2_3 \
     --split_condition tv_ratio:4-1 \
     --bsz 16 \
     --val_bsz 100 \
@@ -26,8 +26,8 @@ python VM_train.py \
     --depth 3 \
     --device 0 \
     --epoch 1000 \
-    --n_gifs 50 \
-    --jobname hdmb51_5-1_sl1 \
+    --n_gifs 20 \
+    --jobname mmnist_5-1_k-3_d-3_sl1 \
     --loss sl1 \
     --reduction mean \
     --img_type greyscale \

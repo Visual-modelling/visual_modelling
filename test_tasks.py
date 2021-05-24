@@ -48,8 +48,14 @@ class FcUpDown2D2Scalars(pl.LightningModule):
             n_outputs = 10
         elif args.task == "pendulum":
             n_outputs = 1
-        elif args.task == "bounces":
+        elif args.task == "bounces-regress":
             n_outputs = 2
+        elif args.task == "bounces-pred":
+            n_outputs = 50  # Sum of wall and ball-ball bounces is capped at 49
+        elif args.task == "grav-regress":
+            n_outputs = 1
+        elif args.task == "grav-pred":
+            n_outputs = 7 # Prediction for gy for 2D bouncing dataset
         else:
             raise NotImplementedError("Task has not been implemented yet")
 
@@ -72,10 +78,12 @@ class FcUpDown2D2Scalars(pl.LightningModule):
         # Training metrics
         self.train_acc = torchmetrics.Accuracy()
 
-        if args.task == "mnist":
+        if args.task in ["mnist","grav-pred","bounces-pred"]:
             self.criterion = nn.CrossEntropyLoss()
-        elif args.task in ["pendulum","bounces"]:
+        elif args.task in ["pendulum","bounces-regress","grav-regress"]:
             self.criterion = nn.SmoothL1Loss()
+        else:
+            raise NotImplementedError(f"Task: '{args.task}' has not got a specified criterion")
 
     def configure_optimizers(self):
         model_opt = radam.RAdam([p for p in self.model.parameters() if p.requires_grad], lr=3e-6, weight_decay=1e-5)
@@ -104,12 +112,18 @@ class FcUpDown2D2Scalars(pl.LightningModule):
         out = self.cls_mlp(out)
         if self.args.task == "mnist":
             out = F.softmax(out, dim=1)
+        elif self.args.task == "grav-pred":
+            out = F.softmax(out, dim=1)
+            label = ((label*10000)+3).round().long().squeeze(1) # Rescale the output to be appropriate for softmax [-0.0003,-0.0002,...,0.0003]
+        elif self.args.task == "bounces-pred":
+            out = F.softmax(out, dim=1)
+            label = label.sum(dim=1).clamp(0,49).long() # Cap the sum of both bounce types at 49 for classification
         train_loss = self.criterion(out, label)
         self.manual_backward(train_loss)
         model_opt.step()
         cls_mlp_opt.step()
         self.log("train_loss", train_loss, prog_bar=True, on_step=False, on_epoch=True)
-        if self.args.task == "mnist":
+        if self.args.task in ["mnist","grav-pred"]:
             self.log("train_acc", self.train_acc(out, label), prog_bar=True, on_step=False, on_epoch=True)
 
     def validation_step(self, valid_batch, batch_idx):
@@ -124,9 +138,15 @@ class FcUpDown2D2Scalars(pl.LightningModule):
         out = self.cls_mlp(out)
         if self.args.task == "mnist":
             out = F.softmax(out, dim=1)
+        elif self.args.task == "grav-pred":
+            out = F.softmax(out, dim=1)
+            label = ((label*10000)+3).round().long().squeeze(1) # Rescale the output to be appropriate for softmax [-0.0003,-0.0002,...,0.0003]
+        elif self.args.task == "bounces-pred":
+            out = F.softmax(out, dim=1)
+            label = label.sum(dim=1).clamp(0,49).long() # Cap the sum of both bounce types at 49 for classification
         valid_loss = self.criterion(out, label)
         self.log("valid_loss", valid_loss, on_step=False, on_epoch=True)
-        if self.args.task == "mnist":
+        if self.args.task in ["mnist","grav-pred"]:
             self.log("valid_acc", self.valid_acc(out, label), prog_bar=True, on_step=False, on_epoch=True)
 
 
@@ -175,7 +195,7 @@ if __name__ == "__main__":
     torch.manual_seed(2667)
     parser = argparse.ArgumentParser()
     parser.add_argument_group("Run specific arguments")
-    parser.add_argument("--task", type=str, choices=["mnist", "mocap", "hdmb51", "pendulum", "segmentation", "bounces"], help="Which task, classification or otherwise, to apply")
+    parser.add_argument("--task", type=str, choices=["mnist","mocap","hdmb51","pendulum","segmentation","bounces-regress","bounces-pred","grav-regress","grav-pred"], help="Which task, classification or otherwise, to apply")
     parser.add_argument("--epoch", type=int, default=10)
     parser.add_argument("--device", type=int, default=-1, help="-1 for CPU, 0, 1 for appropriate device")
     parser.add_argument("--bsz", type=int, default=32)
@@ -276,20 +296,20 @@ if __name__ == "__main__":
         valid_dset.set_mode("valid")
         pl_system = FcUpDown2D2Scalars(args)
 
-    #################################
-    ## # TODO DEPRECATED Gravity prediction
-    #################################   
-    #elif args.task == "grav_3d":
-    #    train_dset = Simulations(args.dataset_path[0], args, yaml_return="grav_3d")
-    #    valid_dset = copy.deepcopy(train_dset)
-    #    train_dset.set_mode("train")
-    #    valid_dset.set_mode("valid")
-    #    pl_system = FcUpDown2D2Scalars(args)
+    ################################
+    # Gravity regression/prediction
+    ################################   
+    elif args.task in ["grav-regress","grav-pred"]:
+        train_dset = Simulations(args.dataset_path[0], args, yaml_return="grav")
+        valid_dset = copy.deepcopy(train_dset)
+        train_dset.set_mode("train")
+        valid_dset.set_mode("valid")
+        pl_system = FcUpDown2D2Scalars(args)
 
     ################################
-    # Ball bounces prediction
+    # Ball bounces regression/prediction
     ################################   
-    elif args.task == "bounces":
+    elif args.task in ["bounces-regress","bounces-pred"]:
         train_dset = Simulations(args.dataset_path[0], args, yaml_return="bounces")
         valid_dset = copy.deepcopy(train_dset)
         train_dset.set_mode("train")
@@ -344,11 +364,11 @@ if __name__ == "__main__":
         #        label_dict[subj_counter][f"{int(subj):02}"] = descr
         #print(label_dict)
 
-    train_loader = DataLoader(train_dset, batch_size=args.bsz, num_workers=args.num_workers)
-    valid_loader = DataLoader(valid_dset, batch_size=args.val_bsz, num_workers=args.num_workers)
+    train_loader = DataLoader(train_dset, batch_size=args.bsz, num_workers=args.num_workers, shuffle=args.shuffle)
+    valid_loader = DataLoader(valid_dset, batch_size=args.val_bsz, num_workers=args.num_workers, shuffle=args.shuffle)
 
     # Checkpointing and running
-    if args.task in ["mnist", "mocap", "hdmb51"]:   # Accuracy tasks
+    if args.task in ["mnist","mocap","hdmb51","grav-pred","bounces-pred"]:   # Accuracy tasks
         max_or_min = "max"
         monitoring = "valid_acc"
         checkpoint_callback = pl.callbacks.ModelCheckpoint(
@@ -358,7 +378,7 @@ if __name__ == "__main__":
             save_top_k=1,
             mode=max_or_min,
         )
-    elif args.task in ["segmentation", "pendulum", "bounces"]:
+    elif args.task in ["segmentation","pendulum","bounces-regress","grav-regress"]:
         max_or_min = "min"
         monitoring = "valid_loss"
         checkpoint_callback = pl.callbacks.ModelCheckpoint(
@@ -368,10 +388,6 @@ if __name__ == "__main__":
             save_top_k=1,
             mode=max_or_min,
         )
-    elif args.task in ["grav"]:
-        raise NotImplementedError(f"Task: {args.task} has not got its optimisation and task definitions well defined")
-        #max_or_min = "min"
-        #monitoring = "valid_loss"
     else:
         raise NotImplementedError(f"Task: {args.task} is not handled")
 

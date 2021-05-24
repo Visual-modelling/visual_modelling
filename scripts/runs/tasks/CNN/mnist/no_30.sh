@@ -28,6 +28,6 @@ python test_tasks.py \
     --jobname no_30_mnist \
     --img_type greyscale \
     --model UpDown2D \
-    --model_path '.results/mixed_ssim-epoch=72-valid_loss=0.02.ckpt' \
+    --model_path '' \
     --shuffle \
     --wandb 
