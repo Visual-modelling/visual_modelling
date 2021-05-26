@@ -15,6 +15,7 @@ import tools.utils as utils
 from tools.utils import model_fwd
 import tools.radam as radam
 import tools.loss
+from tools.ball_distance_metric import calculate_metric
 import torch.nn.functional as F
 import tqdm
 from tqdm import tqdm
@@ -43,6 +44,7 @@ def plot_self_out(pl_system):
         #'LPIPS':piq.LPIPS(), # TODO Re-add this, it is very slow, maybe not worth it
         'ssim':torchmetrics.functional.ssim,
         'MS_SSIM':piq.multi_scale_ssim,
+        'ball_distance':calculate_metric,
         #'FID':piq.FID(),
         #'FVD':tools.loss.FVD()
     }
@@ -58,34 +60,36 @@ def plot_self_out(pl_system):
                 self_output_n = gt_frames.shape[1]
             else:
                 self_output_n = args.self_output_n
-            for itr in range(self_output_n):
+            for itr in range(0, self_output_n, args.out_no):
                 start_frames = torch.cat([ start_frames[:,args.out_no:args.in_no] , out ], 1)
                 out = pl_system(start_frames)
                 for n in range(args.out_no):
                     gif_frames.append(out[0][n].cpu().detach().byte())
                 # Add the ground truth frame side by side to generated frame
+            gif_frames = gif_frames[:gt_frames.shape[1]]
             gif_metrics = get_gif_metrics(gif_frames, gt_frames, metrics)
             colour_gradients = [255,240,225,210,195,180,165,150,135,120,120,135,150,165,180,195,210,225,240,255]   # Make sure that white/grey backgrounds dont hinder the frame count
             # Number the frames to see which frame of the gif in output plut
             gt_frames = [torch.from_numpy(putText(np.array(frame), f"{f_idx}", (0,frame.shape[1]), FONT_HERSHEY_SIMPLEX, fontScale = 0.55, color = (colour_gradients[f_idx%len(colour_gradients)]))) for f_idx, frame in enumerate(gt_frames[0])]
-            # PSNR plot
+
+            # Ball distance plot
             img_h = start_frames.shape[2]
             # TODO Be sure that this dimension is height, not width
-            plt.plot(gif_metrics["psnr"])
+            plt.plot(gif_metrics["ball_distance"])
             canvas = plt.gcf()
             dpi = plt.gcf().get_dpi()
             canvas.set_size_inches(2*img_h/dpi, 2*img_h/dpi)
-            canvas.suptitle(f"PSNR", fontsize=6)
+            canvas.suptitle(f"Ball Distance", fontsize=6)
             plt.xticks(fontsize=5)
             plt.yticks(fontsize=5)
             canvas.tight_layout()
             canvas = plt.gca().figure.canvas
             canvas.draw()
             data = np.frombuffer(canvas.tostring_rgb(), dtype=np.uint8)
-            psnr_image = data.reshape(canvas.get_width_height()[::-1] + (3,))
+            ball_distance_image = data.reshape(canvas.get_width_height()[::-1] + (3,))
             plt.clf()
-            psnr_image = torch.from_numpy(np.copy(psnr_image)).permute(2,0,1)#.unsqueeze(0)
-            psnr_image = psnr_image.float().mean(0).byte()
+            ball_distance_image = torch.from_numpy(np.copy(ball_distance_image)).permute(2,0,1)#.unsqueeze(0)
+            ball_distance_image = ball_distance_image.float().mean(0).byte()
 
             # SSIM plot
             plt.plot(gif_metrics['ssim'])
@@ -122,7 +126,7 @@ def plot_self_out(pl_system):
             sl1_image = sl1_image.float().mean(0).byte()
 
             # Gif
-            gif_frames = [ torch.cat( [torch.cat( [torch.stack(gif_frames)[n_frm], gt_frames[n_frm]], dim=0), psnr_image, ssim_image, sl1_image], dim=1)for n_frm in range(len(gif_frames)) ]
+            gif_frames = [ torch.cat( [torch.cat( [torch.stack(gif_frames)[n_frm], gt_frames[n_frm]], dim=0), ball_distance_image, ssim_image, sl1_image], dim=1)for n_frm in range(len(gif_frames)) ]
             gif_save_path = os.path.join(args.results_dir, f"{ngif}-{vid_name[0]}.gif") 
             # TODO gifs from different datasets with the same name will overwrite eachother. this is niche and not worth the time right now
             imageio.mimsave(gif_save_path, gif_frames)
@@ -136,7 +140,6 @@ def plot_self_out(pl_system):
 
 
 def get_gif_metrics(gif_frames, gt_frames, metrics):
-    #import ipdb; ipdb.set_trace()
     gif_frames, gt_frames = torch.stack(gif_frames).unsqueeze(1), gt_frames[0].unsqueeze(1)
     # TODO Can use this if i want the old metrics
     #metric_vals = {
@@ -149,15 +152,18 @@ def get_gif_metrics(gif_frames, gt_frames, metrics):
     #    #'FVD':metrics['FVD'](gif_frames[:utils.round_down(gif_frames.shape[0],16)], gt_frames[:utils.round_down(gt_frames.shape[0],16)] )
     #    #'FVD':metrics['FVD'](gif_frames, gt_frames)
     #}
-    running_psnr = []
+    #running_psnr = []
+    running_ball_distance = []
     running_ssim = []
     running_sl1 = []
     for frame_idx in range(gif_frames.shape[0]):
-        running_psnr.append( float(metrics['psnr']( gif_frames[frame_idx].float(), gt_frames[frame_idx].float())) )
+        #running_psnr.append( float(metrics['psnr']( gif_frames[frame_idx].float(), gt_frames[frame_idx].float())) )
+        running_ball_distance.append( float(metrics['ball_distance']( gif_frames[frame_idx], gt_frames[frame_idx])) )
         running_ssim.append( float(metrics['ssim']( gif_frames[frame_idx].unsqueeze(0).float(), gt_frames[frame_idx].unsqueeze(0).float())) )
         running_sl1.append( float(metrics['sl1']( gif_frames[frame_idx].float(), gt_frames[frame_idx].float())) )
     metric_vals = {
-        'psnr':running_psnr,
+        #'psnr':running_psnr,
+        'ball_distance':running_ball_distance,
         'ssim':running_ssim,
         'sl1':running_sl1
     }
@@ -264,6 +270,7 @@ class Bouncing_CNN(pl.LightningModule):
         # TODO compute_on_step functionality isn't working. update when it is
         valid_loss = float(sum(validation_step_outputs)/len(validation_step_outputs))
         if (valid_loss < self.best_loss):
+            self.log("best_epoch", wandb.Html(str(self.current_epoch)))
             if not self.trainer.running_sanity_check:  # Dont adjust loss for initial sanity check
                 self.best_loss = float(valid_loss)
             plot_self_out(self)  # Plot gifs and metrics
