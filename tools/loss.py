@@ -17,8 +17,8 @@ from pytorch_lightning.metrics import Metric
 
 
 # This is for FVD metrics
-tf.compat.v1.enable_eager_execution() 
-tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+#tf.compat.v1.enable_eager_execution() 
+#tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 
 ######################################
