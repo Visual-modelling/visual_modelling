@@ -3,7 +3,7 @@
 #SBATCH -N 1
 #SBATCH -c 4
 #SBATCH -t 2-00:00
-#SBATCH --mem 8G
+#SBATCH --mem 12G
 #SBATCH -p res-gpu-small
 #SBATCH --job-name 2dBouncingMG-y_10-5_k-3_d-3_sl1 
 #SBATCH --gres gpu:1
@@ -24,7 +24,7 @@ python VM_train.py \
     --out_no 5 \
     --depth 3 \
     --device 0 \
-    --epoch 200 \
+    --epoch 50 \
     --n_gifs 20 \
     --jobname 2dBouncingMG-y_10-5_k-3_d-3_sl1 \
     --loss sl1 \

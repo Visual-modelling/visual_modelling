@@ -3,7 +3,7 @@
 #SBATCH -N 1
 #SBATCH -c 4
 #SBATCH -t 7-00:00
-#SBATCH --mem 8G
+#SBATCH --mem 12G
 #SBATCH -p res-gpu-small
 #SBATCH --job-name hdmb51_5-1_k-3_d-3_sl1 
 #SBATCH --gres gpu:1
@@ -24,7 +24,7 @@ python VM_train.py \
     --out_no 1 \
     --depth 3 \
     --device 0 \
-    --epoch 200 \
+    --epoch 50 \
     --n_gifs 20 \
     --jobname hdmb51_5-1_k-3_d-3_sl1 \
     --loss sl1 \

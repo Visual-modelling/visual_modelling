@@ -25,7 +25,7 @@ python VM_train.py \
     --out_no 1 \
     --depth 3 \
     --device 0 \
-    --epoch 200 \
+    --epoch 50 \
     --n_gifs 20 \
     --jobname mocap_5-1_k-3_d-3_sl1 \
     --loss sl1 \
