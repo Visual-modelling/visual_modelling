@@ -19,7 +19,7 @@ python VM_train.py \
     --split_condition tv_ratio:4-1 \
     --bsz 16 \
     --val_bsz 100 \
-    --num_workers 4 \
+    --num_workers 0 \
     --in_no 10 \
     --out_no 5 \
     --depth 3 \
