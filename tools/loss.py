@@ -11,7 +11,7 @@ import piq
 import os, sys
 from .pytorch_i3d import InceptionI3d
 import numpy as np
-import tensorflow.compat.v1 as tf
+#import tensorflow.compat.v1 as tf
 from . import frechet_video_distance as fvd
 from pytorch_lightning.metrics import Metric
 
