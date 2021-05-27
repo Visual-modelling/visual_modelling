@@ -123,7 +123,7 @@ class FcUpDown2D2Scalars(pl.LightningModule):
         model_opt.step()
         cls_mlp_opt.step()
         self.log("train_loss", train_loss, prog_bar=True, on_step=False, on_epoch=True)
-        if self.args.task in ["mnist","grav-pred"]:
+        if self.args.task in ["mnist","mocap","hdmb51","grav-pred","bounces-pred"]:
             self.log("train_acc", self.train_acc(out, label), prog_bar=True, on_step=False, on_epoch=True)
 
     def validation_step(self, valid_batch, batch_idx):
@@ -146,7 +146,7 @@ class FcUpDown2D2Scalars(pl.LightningModule):
             label = label.sum(dim=1).clamp(0,49).long() # Cap the sum of both bounce types at 49 for classification
         valid_loss = self.criterion(out, label)
         self.log("valid_loss", valid_loss, on_step=False, on_epoch=True)
-        if self.args.task in ["mnist","grav-pred"]:
+        if self.args.task in ["mnist","mocap","hdmb51","grav-pred","bounces-pred"]:
             self.log("valid_acc", self.valid_acc(out, label), prog_bar=True, on_step=False, on_epoch=True)
 
 
