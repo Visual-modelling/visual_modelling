@@ -1,28 +1,26 @@
 #!/bin/bash
 #SBATCH --ntasks 6
 #SBATCH -p part0
-#SBATCH --job-name no_50_bounces-pred_2d  
+#SBATCH --job-name no_200_mnist  
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../../.results/no_50_bounces-pred_2d.out
+#SBATCH -o ../../../../../.results/no_200_mnist.out
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd ../../../../..
 export PYTHONBREAKPOINT=ipdb.set_trace
 source python_venvs/vm/bin/activate
 
-# bounces-pred_2d Task
+# MNIST Task
 python test_tasks.py \
-    --task bounces-pred \
-    --dataset simulations  \
-    --dataset_path data/2dBouncing/2dMultiGrav-Y_regen/raw \
+    --task mnist \
     --bsz 16 \
     --val_bsz 100 \
     --num_workers 2 \
-    --in_no 59 \
+    --in_no 5 \
     --out_no 1 \
     --depth 3 \
     --device 0 \
-    --epoch 50 \
-    --jobname no_50_bounces-pred_2d \
+    --epoch 200 \
+    --jobname no_200_mnist \
     --img_type greyscale \
     --model UpDown2D \
     --model_path '' \

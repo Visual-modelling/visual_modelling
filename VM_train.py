@@ -421,5 +421,5 @@ if __name__ == "__main__":
         save_top_k=1,
         mode=max_or_min,
     )
-    trainer = pl.Trainer(callbacks=[checkpoint_callback], logger=wandb_logger, gpus=gpus)
+    trainer = pl.Trainer(callbacks=[checkpoint_callback], logger=wandb_logger, gpus=gpus, max_epochs=args.epoch)
     trainer.fit(pl_system, train_loader, valid_loader)
