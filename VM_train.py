@@ -75,7 +75,10 @@ def plot_self_out(pl_system):
             # Ball distance plot
             img_h = start_frames.shape[2]
             # TODO Be sure that this dimension is height, not width
-            plt.plot(gif_metrics["ball_distance"])
+            bdm = np.array(gif_metrics["ball_distance"]).astype(np.double)
+            bdm_mask = np.isfinite(bdm)
+            bdm = bdm[bdm_mask]
+            plt.plot(bdm)
             canvas = plt.gcf()
             dpi = plt.gcf().get_dpi()
             canvas.set_size_inches(2*img_h/dpi, 2*img_h/dpi)
@@ -158,7 +161,7 @@ def get_gif_metrics(gif_frames, gt_frames, metrics):
     running_sl1 = []
     for frame_idx in range(gif_frames.shape[0]):
         #running_psnr.append( float(metrics['psnr']( gif_frames[frame_idx].float(), gt_frames[frame_idx].float())) )
-        running_ball_distance.append( float(metrics['ball_distance']( gif_frames[frame_idx], gt_frames[frame_idx])) )
+        running_ball_distance.append( metrics['ball_distance']( gif_frames[frame_idx], gt_frames[frame_idx]) )
         running_ssim.append( float(metrics['ssim']( gif_frames[frame_idx].unsqueeze(0).float(), gt_frames[frame_idx].unsqueeze(0).float())) )
         running_sl1.append( float(metrics['sl1']( gif_frames[frame_idx].float(), gt_frames[frame_idx].float())) )
     metric_vals = {

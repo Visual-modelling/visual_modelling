@@ -31,7 +31,7 @@ def calculate_metric(img_1, img_2):
     x1, y1 = get_circle(img_1)
     x2, y2 = get_circle(img_2)
     if x1 is None or x2 is None:
-        return -1#None
+        return None
     return np.linalg.norm(np.array([x1, y1]) - np.array([x2, y2]))
 
 
