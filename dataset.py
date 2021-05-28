@@ -3,7 +3,6 @@ __author__ = "Jumperkables"
 import os, sys, random, math, argparse
 import getpass
 
-from PIL import Image
 import numpy as np
 import torch
 from torch import nn
