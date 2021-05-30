@@ -2,6 +2,7 @@ __author__ = "Jumperkables"
 
 import os, sys, argparse, shutil, copy
 import torch
+import torch.nn as nn
 from PIL import Image
 import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader
@@ -203,6 +204,10 @@ class Bouncing_CNN(pl.LightningModule):
         self.model = FCUpDown2D(args)
         self.self_out_loader = self_out_loader
 
+        # args.reduction == none requires manual optimisation flag set
+        if args.reduction == "none":
+            self.automatic_optimization = False 
+
         # Validation metrics
         self.valid_PSNR = torchmetrics.functional.psnr
         self.valid_SSIM = torchmetrics.functional.ssim #torchmetrics.SSIM() # TODO reintroduce when memory leak is solved https://github.com/PyTorchLightning/pytorch-lightning/issues/5733
@@ -231,7 +236,10 @@ class Bouncing_CNN(pl.LightningModule):
         elif args.loss == "sl1":
             self.valid_loss = tools.loss.Smooth_L1_pl(reduction=args.reduction)
             self.train_loss = tools.loss.Smooth_L1_pl(reduction=args.reduction)
-            self.criterion = tools.loss.Smooth_L1_pl(reduction=args.reduction)
+            if args.reduction == "none":
+                self.criterion = nn.SmoothL1Loss(reduction=args.reduction)
+            else:
+                self.criterion = tools.loss.Smooth_L1_pl(reduction=args.reduction)
         elif args.loss == "ssim":
             self.valid_loss = torchmetrics.functional.ssim#SSIM(reduction="elementwise_mean" if args.reduction == "mean" else args.reduction) # TODO when fixed, use torchmetrics
             self.train_loss = torchmetrics.functional.ssim#(reduction="elementwise_mean" if args.reduction == "mean" else args.reduction)
@@ -253,6 +261,12 @@ class Bouncing_CNN(pl.LightningModule):
         frames, gt_frames = frames.float(), gt_frames.float()
         out = self(frames)
         train_loss = self.criterion(out, gt_frames)
+        if self.args.reduction == 'none':
+            grad = torch.ones(train_loss.shape, requires_grad=True).to(self.device)
+            opt = self.optimizers()
+            opt.zero_grad()
+            self.manual_backward(train_loss, gradient=grad)
+            opt.step()
         if self.args.loss == "ssim":
             train_loss = 1-((1+train_loss)/2)   # SSIM Range = (-1 -> 1) SSIM should be maximised => restructure as minimisation
         self.log("train_loss", train_loss, prog_bar=True, on_step=False, on_epoch=True)
@@ -263,6 +277,8 @@ class Bouncing_CNN(pl.LightningModule):
         frames, gt_frames = frames.float(), gt_frames.float()
         out = self(frames)
         valid_loss = self.criterion(out, gt_frames)
+        if self.args.reduction == 'none':
+            valid_loss = valid_loss.mean(dim=(0,1,2,3))
         if self.args.loss == "ssim":
             valid_loss = 1-((1+valid_loss)/2)   # SSIM Range = (-1 -> 1) SSIM should be maximised => restructure as minimisation
         self.log("valid_loss", valid_loss, prog_bar=True, on_step=False, on_epoch=True)
@@ -321,7 +337,7 @@ if __name__ == "__main__":
 
     parser.add_argument_group("Other things")
     parser.add_argument("--loss", type=str, default="mse", choices=["mse", "sl1", "focal", "ssim"], help="Loss function for the network")
-    parser.add_argument("--reduction", type=str, choices=["mean", "sum"], help="type of reduction to apply on loss")
+    parser.add_argument("--reduction", type=str, choices=["mean", "sum", "none"], help="type of reduction to apply on loss")
 
     ####
     # Sorting arguements

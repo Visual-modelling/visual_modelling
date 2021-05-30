@@ -35,6 +35,9 @@ class Smooth_L1_pl(Metric):
 
     def update(self, preds: torch.Tensor, target: torch.Tensor):
         preds, target = self._input_format(preds, target)
+        if self.reduction == "none":
+            self.sl1 += F.smooth_l1_loss(preds, target, reduction="none").mean(dim=(1,2,3)).sum(dim=0)  # Written verbosely on purpose so you know exactly what i mean by mean and sum
+            self.total += target.shape[0]
         if self.reduction == "mean":
             self.sl1 += F.smooth_l1_loss(preds, target, reduction="none").mean(dim=(1,2,3)).sum(dim=0)  # Written verbosely on purpose so you know exactly what i mean by mean and sum
             self.total += target.shape[0]
