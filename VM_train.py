@@ -253,7 +253,10 @@ class Bouncing_CNN(pl.LightningModule):
         return out
 
     def configure_optimizers(self):
-        optimizer = radam.RAdam([p for p in self.parameters() if p.requires_grad], lr=3e-4, weight_decay=1e-5)
+        if self.args.reduction == "none":   # Higher rate for none reduction needed?
+            optimizer = radam.RAdam([p for p in self.parameters() if p.requires_grad], lr=3e-2, weight_decay=1e-5)
+        else:
+            optimizer = radam.RAdam([p for p in self.parameters() if p.requires_grad], lr=3e-4, weight_decay=1e-5)
         return optimizer
 
     def training_step(self, train_batch, batch_idx):
