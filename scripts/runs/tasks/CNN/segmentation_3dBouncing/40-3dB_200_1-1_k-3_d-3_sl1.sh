@@ -1,0 +1,35 @@
+#!/bin/bash
+#SBATCH --qos short
+#SBATCH -N 1
+#SBATCH -c 4
+#SBATCH -t 2-00:00
+#SBATCH -x gpu[0-3]
+#SBATCH --mem 12G
+#SBATCH -p res-gpu-small
+#SBATCH --job-name 40-3dB_200_segmentation_3d_bouncing_1-1_k-3_d-3_sl1  
+#SBATCH --gres gpu:1
+#SBATCH -o ../../../../../.results/40-3dB_200_segmentation_3d_bouncing_1-1_k-3_d-3_sl1.out
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+cd ../../../../..
+export PYTHONBREAKPOINT=ipdb.set_trace
+source python_venvs/vm/bin/activate
+
+# segmentation_3d_bouncing Task
+python test_tasks.py \
+    --task segmentation \
+    --dataset simulations \
+    --dataset_path data/3dBouncing/3dOld \
+    --bsz 16 \
+    --val_bsz 100 \
+    --num_workers 2 \
+    --in_no 1 \
+    --out_no 1 \
+    --depth 3 \
+    --device 0 \
+    --epoch 200 \
+    --jobname 40-3dB_200_segmentation_3d_bouncing_1-1_k-3_d-3_sl1 \
+    --img_type greyscale \
+    --model UpDown2D \
+    --model_path '.results/3dBouncing_5-1_k-3_d-3_sl1-epoch=40-valid_loss=1.20.ckpt' \
+    --shuffle \
+    --wandb 

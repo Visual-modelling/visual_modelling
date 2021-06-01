@@ -24,7 +24,7 @@ python VM_train.py \
     --out_no 2 \
     --depth 3 \
     --device 0 \
-    --epoch 50 \
+    --epoch 75 \
     --n_gifs 20 \
     --jobname pendulumSingleBigger_5-2_k-3_d-3_sl1-mean \
     --loss sl1 \

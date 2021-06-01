@@ -1,6 +1,7 @@
 import os, sys, copy
 import argparse
 import shutil
+import math
 
 import torch
 from torchvision.datasets import MNIST
@@ -39,8 +40,17 @@ class FcUpDown2D2Scalars(pl.LightningModule):
         if args.model_path != "":   # Empty string implies no loading
             checkpoint = torch.load(args.model_path)
             state_dict = checkpoint['state_dict']
-            # need to change the names of the state_dict keys from preloaded model
             state_dict = {".".join(mod_name.split(".")[1:]):mod for mod_name, mod in state_dict.items()}
+            # handle differences in inputs by repeating or removing input layers
+            if args.in_no != state_dict['UDChain.layers.0.maxpool_conv.1.double_conv.0.weight'].shape[1]:
+                increase_ratio = math.ceil(args.in_no / state_dict['UDChain.layers.0.maxpool_conv.1.double_conv.0.weight'].shape[1])
+                state_dict['UDChain.layers.0.maxpool_conv.1.double_conv.0.weight'] = state_dict['UDChain.layers.0.maxpool_conv.1.double_conv.0.weight'].repeat(1,increase_ratio,1,1)[:,:args.in_no]
+                # Figure out the position of the final layer with depth
+                final_layer = (2*args.depth)+2-1    # -1 for python indexing
+                increase_ratio = math.ceil(args.out_no / state_dict[f"UDChain.layers.{final_layer}.conv.weight"].shape[0])
+                state_dict[f"UDChain.layers.{final_layer}.conv.weight"] = state_dict[f"UDChain.layers.{final_layer}.conv.weight"].repeat(increase_ratio,1,1,1)[:args.out_no]
+                state_dict[f"UDChain.layers.{final_layer}.conv.bias"] = state_dict[f"UDChain.layers.{final_layer}.conv.bias"].repeat(increase_ratio)[:args.out_no]
+            # need to change the names of the state_dict keys from preloaded model
             self.model.load_state_dict(state_dict)
 
         # Different tasks will be expecting different output numbers
@@ -161,6 +171,15 @@ class FCUpDown2D_2_Segmentation(pl.LightningModule):
             state_dict = checkpoint['state_dict']
             # need to change the names of the state_dict keys from preloaded model
             state_dict = {".".join(mod_name.split(".")[1:]):mod for mod_name, mod in state_dict.items()}
+            # handle differences in inputs by repeating or removing input layers
+            if args.in_no != state_dict['UDChain.layers.0.maxpool_conv.1.double_conv.0.weight'].shape[1]:
+                increase_ratio = math.ceil(args.in_no / state_dict['UDChain.layers.0.maxpool_conv.1.double_conv.0.weight'].shape[1])
+                state_dict['UDChain.layers.0.maxpool_conv.1.double_conv.0.weight'] = state_dict['UDChain.layers.0.maxpool_conv.1.double_conv.0.weight'].repeat(1,increase_ratio,1,1)[:,:args.in_no]
+                # Figure out the position of the final layer with depth
+                final_layer = (2*args.depth)+2-1    # -1 for python indexing
+                increase_ratio = math.ceil(args.out_no / state_dict[f"UDChain.layers.{final_layer}.conv.weight"].shape[0])
+                state_dict[f"UDChain.layers.{final_layer}.conv.weight"] = state_dict[f"UDChain.layers.{final_layer}.conv.weight"].repeat(increase_ratio,1,1,1)[:args.out_no]
+                state_dict[f"UDChain.layers.{final_layer}.conv.bias"] = state_dict[f"UDChain.layers.{final_layer}.conv.bias"].repeat(increase_ratio)[:args.out_no]
             self.model.load_state_dict(state_dict)
         self.criterion = tools.loss.Smooth_L1_pl(reduction="mean")
 

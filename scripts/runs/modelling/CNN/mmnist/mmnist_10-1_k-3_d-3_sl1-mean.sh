@@ -24,7 +24,7 @@ python VM_train.py \
     --out_no 1 \
     --depth 3 \
     --device 0 \
-    --epoch 50 \
+    --epoch 75 \
     --n_gifs 20 \
     --jobname mmnist_10-1_k-3_d-3_sl1-mean \
     --loss sl1 \

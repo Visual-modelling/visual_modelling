@@ -1,9 +1,14 @@
 #!/bin/bash
-#SBATCH --ntasks 6
-#SBATCH -p part0
-#SBATCH --job-name no_200_grav_2d-pred  
+#SBATCH --qos short
+#SBATCH -N 1
+#SBATCH -c 4
+#SBATCH -t 2-00:00
+#SBATCH -x gpu[0-3]
+#SBATCH --mem 12G
+#SBATCH -p res-gpu-small
+#SBATCH --job-name 34-2dB_200_grav_2d-pred_5-1_k-3_d-3_sl1  
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../../.results/no_200_grav_2d-pred.out
+#SBATCH -o ../../../../../.results/34-2dB_200_grav_2d-pred_5-1_k-3_d-3_sl1.out
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd ../../../../..
 export PYTHONBREAKPOINT=ipdb.set_trace
@@ -22,9 +27,9 @@ python test_tasks.py \
     --depth 3 \
     --device 0 \
     --epoch 200 \
-    --jobname no_200_grav_2d-pred \
+    --jobname 34-2dB_200_grav_2d-pred_5-1_k-3_d-3_sl1 \
     --img_type greyscale \
     --model UpDown2D \
-    --model_path '' \
+    --model_path '.results/2dBouncingMG-y_5-1_k-3_d-3_sl1-epoch=34-valid_loss=2.38.ckpt' \
     --shuffle \
     --wandb 
