@@ -1,6 +1,10 @@
 #!/bin/bash
-#SBATCH --ntasks 6
-#SBATCH -p part0
+#SBATCH --qos short
+#SBATCH -N 1
+#SBATCH -c 4
+#SBATCH -t 2-00:00
+#SBATCH --mem 12G
+#SBATCH -p res-gpu-small
 #SBATCH --job-name no_200_bounces-pred_2d_59-1_k-3_d-3_sl1  
 #SBATCH --gres gpu:1
 #SBATCH -o ../../../../../.results/no_200_bounces-pred_2d_59-1_k-3_d-3_sl1.out
@@ -14,9 +18,9 @@ python test_tasks.py \
     --task bounces-pred \
     --dataset simulations  \
     --dataset_path data/2dBouncing/2dMultiGrav-Y_regen/raw \
-    --bsz 16 \
+    --bsz 32 \
     --val_bsz 100 \
-    --num_workers 2 \
+    --num_workers 4 \
     --in_no 59 \
     --out_no 1 \
     --depth 3 \

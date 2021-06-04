@@ -65,8 +65,10 @@ class FcUpDown2D2Scalars(pl.LightningModule):
             n_outputs = 10
         elif args.task == "pendulum":
             n_outputs = 1
-        elif args.task == "roller":
+        elif args.task == "roller-regress":
             n_outputs = 1
+        elif args.task == "roller-pred":
+            n_outputs = 201 # [0,0.5,1.0,....,99.5,100]
         elif args.task == "bounces-regress":
             n_outputs = 2
         elif args.task == "bounces-pred":
@@ -97,9 +99,9 @@ class FcUpDown2D2Scalars(pl.LightningModule):
         # Training metrics
         self.train_acc = torchmetrics.Accuracy()
 
-        if args.task in ["mnist","grav-pred","bounces-pred"]:
+        if args.task in ["mnist","grav-pred","bounces-pred","roller-pred"]:
             self.criterion = nn.CrossEntropyLoss()
-        elif args.task in ["pendulum","bounces-regress","grav-regress","roller"]:
+        elif args.task in ["pendulum","bounces-regress","grav-regress","roller-regress"]:
             self.criterion = nn.SmoothL1Loss()
         else:
             raise NotImplementedError(f"Task: '{args.task}' has not got a specified criterion")
@@ -137,6 +139,9 @@ class FcUpDown2D2Scalars(pl.LightningModule):
         elif self.args.task == "bounces-pred":
             out = F.softmax(out, dim=1)
             label = label.sum(dim=1).clamp(0,49).long() # Cap the sum of both bounce types at 49 for classification
+        elif self.args.task == "roller-pred":
+            out = F.softmax(out, dim=1)
+            label = (label*2).long().squeeze(1)
         train_loss = self.criterion(out, label)
         self.manual_backward(train_loss)
         model_opt.step()
@@ -163,6 +168,9 @@ class FcUpDown2D2Scalars(pl.LightningModule):
         elif self.args.task == "bounces-pred":
             out = F.softmax(out, dim=1)
             label = label.sum(dim=1).clamp(0,49).long() # Cap the sum of both bounce types at 49 for classification
+        elif self.args.task == "roller-pred":
+            out = F.softmax(out, dim=1)
+            label = (label*2).long().squeeze(1)
         valid_loss = self.criterion(out, label)
         self.log("valid_loss", valid_loss, on_step=False, on_epoch=True)
         if self.args.task in ["mnist","mocap","hdmb51","grav-pred","bounces-pred"]:
@@ -223,7 +231,7 @@ if __name__ == "__main__":
     torch.manual_seed(2667)
     parser = argparse.ArgumentParser()
     parser.add_argument_group("Run specific arguments")
-    parser.add_argument("--task", type=str, choices=["mnist","mocap","hdmb51","pendulum","roller","segmentation","bounces-regress","bounces-pred","grav-regress","grav-pred"], help="Which task, classification or otherwise, to apply")
+    parser.add_argument("--task", type=str, choices=["mnist","mocap","hdmb51","pendulum","roller-regress","roller-pred","segmentation","bounces-regress","bounces-pred","grav-regress","grav-pred"], help="Which task, classification or otherwise, to apply")
     parser.add_argument("--epoch", type=int, default=10)
     parser.add_argument("--device", type=int, default=-1, help="-1 for CPU, 0, 1 for appropriate device")
     parser.add_argument("--bsz", type=int, default=32)
@@ -317,9 +325,9 @@ if __name__ == "__main__":
         pl_system = FCUpDown2D_2_Segmentation(args)
 
     ################################
-    # Roller
+    # Roller regression/prediction
     ################################   
-    elif args.task == "roller":
+    elif args.task in ["roller-regress","roller-pred"]:
         train_dset = Simulations(args.dataset_path[0], args, yaml_return="roller")
         valid_dset = copy.deepcopy(train_dset)
         train_dset.set_mode("train")
@@ -418,7 +426,7 @@ if __name__ == "__main__":
             save_top_k=1,
             mode=max_or_min,
         )
-    elif args.task in ["segmentation","pendulum","bounces-regress","grav-regress","roller"]:
+    elif args.task in ["segmentation","pendulum","bounces-regress","grav-regress","roller-regress","roller-pred"]:
         max_or_min = "min"
         monitoring = "valid_loss"
         checkpoint_callback = pl.callbacks.ModelCheckpoint(

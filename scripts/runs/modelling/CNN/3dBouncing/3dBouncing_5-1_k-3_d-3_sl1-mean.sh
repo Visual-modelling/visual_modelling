@@ -23,6 +23,8 @@ python VM_train.py \
     --in_no 5 \
     --out_no 1 \
     --depth 3 \
+    --krnl_size 3 \
+    --padding 1 \
     --device 0 \
     --epoch 75 \
     --n_gifs 20 \
