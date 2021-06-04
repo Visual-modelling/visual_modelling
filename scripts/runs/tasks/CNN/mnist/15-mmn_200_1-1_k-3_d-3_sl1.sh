@@ -29,5 +29,6 @@ python test_tasks.py \
     --img_type greyscale \
     --model UpDown2D \
     --model_path '.results/mmnist_5-1_k-3_d-3_sl1-epoch=15-valid_loss=5.03.ckpt' \
+    --encoder_freeze \
     --shuffle \
     --wandb 

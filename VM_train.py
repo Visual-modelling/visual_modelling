@@ -254,7 +254,7 @@ class Bouncing_CNN(pl.LightningModule):
 
     def configure_optimizers(self):
         if self.args.reduction == "none":   # Higher rate for none reduction needed?
-            optimizer = radam.RAdam([p for p in self.parameters() if p.requires_grad], lr=3e-2, weight_decay=1e-5)
+            optimizer = radam.RAdam([p for p in self.parameters() if p.requires_grad], lr=3e-3, weight_decay=1e-5)
         else:
             optimizer = radam.RAdam([p for p in self.parameters() if p.requires_grad], lr=3e-4, weight_decay=1e-5)
         return optimizer
@@ -395,10 +395,12 @@ if __name__ == "__main__":
         self_out_dset = self_out_list[0]
     train_loader = DataLoader(train_dset, batch_size=args.bsz, num_workers=args.num_workers, shuffle=args.shuffle, drop_last=True)
     valid_loader = DataLoader(valid_dset, batch_size=args.val_bsz, num_workers=args.num_workers, shuffle=args.shuffle, drop_last=True)
+    torch.manual_seed(2667)
     self_out_loader = DataLoader(self_out_dset, batch_size=1, num_workers=args.num_workers, shuffle=args.shuffle, drop_last=True)
 
     #### Logging and Saving: If we're saving this run, prepare the neccesary directory for saving things
     wandb_logger = pl.loggers.WandbLogger(project="visual-modelling", name=args.jobname, offline=not args.wandb)#, resume="allow")
+    wandb_logger.log_hyperparams(args)
     repo_rootdir = os.path.dirname(os.path.realpath(sys.argv[0]))
     results_dir = os.path.join(repo_rootdir, ".results", args.jobname )
     if os.path.exists(results_dir):

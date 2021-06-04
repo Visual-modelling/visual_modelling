@@ -31,5 +31,6 @@ python test_tasks.py \
     --img_type greyscale \
     --model UpDown2D \
     --model_path '.results/3dBouncing_5-1_k-3_d-3_sl1-epoch=40-valid_loss=1.20.ckpt' \
+    --encoder_freeze \
     --shuffle \
     --wandb 

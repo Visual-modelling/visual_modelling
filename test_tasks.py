@@ -53,10 +53,19 @@ class FcUpDown2D2Scalars(pl.LightningModule):
             # need to change the names of the state_dict keys from preloaded model
             self.model.load_state_dict(state_dict)
 
+            # If we are loading a checkpoint, the we are freezing the rest of the pretrained layers
+
+        # Freeze the CNN weights
+        if args.encoder_freeze:
+            for param in self.model.parameters():
+                param.requires_grad = False
+
         # Different tasks will be expecting different output numbers
         if args.task == "mnist":
             n_outputs = 10
         elif args.task == "pendulum":
+            n_outputs = 1
+        elif args.task == "roller":
             n_outputs = 1
         elif args.task == "bounces-regress":
             n_outputs = 2
@@ -90,7 +99,7 @@ class FcUpDown2D2Scalars(pl.LightningModule):
 
         if args.task in ["mnist","grav-pred","bounces-pred"]:
             self.criterion = nn.CrossEntropyLoss()
-        elif args.task in ["pendulum","bounces-regress","grav-regress"]:
+        elif args.task in ["pendulum","bounces-regress","grav-regress","roller"]:
             self.criterion = nn.SmoothL1Loss()
         else:
             raise NotImplementedError(f"Task: '{args.task}' has not got a specified criterion")
@@ -214,7 +223,7 @@ if __name__ == "__main__":
     torch.manual_seed(2667)
     parser = argparse.ArgumentParser()
     parser.add_argument_group("Run specific arguments")
-    parser.add_argument("--task", type=str, choices=["mnist","mocap","hdmb51","pendulum","segmentation","bounces-regress","bounces-pred","grav-regress","grav-pred"], help="Which task, classification or otherwise, to apply")
+    parser.add_argument("--task", type=str, choices=["mnist","mocap","hdmb51","pendulum","roller","segmentation","bounces-regress","bounces-pred","grav-regress","grav-pred"], help="Which task, classification or otherwise, to apply")
     parser.add_argument("--epoch", type=int, default=10)
     parser.add_argument("--device", type=int, default=-1, help="-1 for CPU, 0, 1 for appropriate device")
     parser.add_argument("--bsz", type=int, default=32)
@@ -232,6 +241,7 @@ if __name__ == "__main__":
     parser.add_argument("--shuffle", action="store_true", help="shuffle dataset")
 
     parser.add_argument_group("Model specific arguments")
+    parser.add_argument("--encoder_freeze", action="store_true", help="freeze the CNN/transformer layers and only train the linear cls layer afterwards")
     parser.add_argument("--model", type=str, default="UpDown2D", choices=["UpDown2D", "UpDown3D", "transformer"], help="Type of model to run")
     parser.add_argument("--model_path", type=str, default="", help="path of saved model")
     parser.add_argument("--img_type", type=str, default="binary", choices=["binary", "greyscale", "RGB"], help="Type of input image")
@@ -272,6 +282,7 @@ if __name__ == "__main__":
 
     # Logging and Saving: If we're saving this run, prepare the neccesary directory for saving things
     wandb_logger = pl.loggers.WandbLogger(project="visual-modelling", name=args.jobname, offline=not args.wandb)#, resume="allow")
+    wandb_logger.log_hyperparams(args)
     repo_rootdir = os.path.dirname(os.path.realpath(sys.argv[0]))
     results_dir = os.path.join(repo_rootdir, ".results", args.jobname )
     if os.path.exists(results_dir):
@@ -304,6 +315,16 @@ if __name__ == "__main__":
         train_dset.set_mode("train")
         valid_dset.set_mode("valid")
         pl_system = FCUpDown2D_2_Segmentation(args)
+
+    ################################
+    # Roller
+    ################################   
+    elif args.task == "roller":
+        train_dset = Simulations(args.dataset_path[0], args, yaml_return="roller")
+        valid_dset = copy.deepcopy(train_dset)
+        train_dset.set_mode("train")
+        valid_dset.set_mode("valid")
+        pl_system = FcUpDown2D2Scalars(args)
 
     ################################
     # Pendulum
@@ -397,7 +418,7 @@ if __name__ == "__main__":
             save_top_k=1,
             mode=max_or_min,
         )
-    elif args.task in ["segmentation","pendulum","bounces-regress","grav-regress"]:
+    elif args.task in ["segmentation","pendulum","bounces-regress","grav-regress","roller"]:
         max_or_min = "min"
         monitoring = "valid_loss"
         checkpoint_callback = pl.callbacks.ModelCheckpoint(
