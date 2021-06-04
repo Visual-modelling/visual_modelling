@@ -124,7 +124,7 @@ def ms_ssim(img1, img2, data_range): # data_range = 255
 # These losses supplied by Zheming Zhou
 class FocalLoss(nn.Module):
     'Focal Loss - https://arxiv.org/abs/1708.02002'
-    def __init__(self, alpha=0.25, gamma=2, reduce=False, reduction=None):
+    def __init__(self, alpha=0.25, gamma=2, reduce=True, reduction="mean"):
         super().__init__()
         self.alpha = alpha
         self.gamma = gamma
@@ -140,7 +140,7 @@ class FocalLoss(nn.Module):
         if not self.reduce:
             return ret
         elif self.reduction == "sum":
-            return torch.sum(ret)
+            raise NotImplementedError("Sum reduction needed")
         elif self.reduction == "mean":
             return torch.mean(ret)
         else:

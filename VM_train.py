@@ -210,21 +210,14 @@ class Bouncing_CNN(pl.LightningModule):
 
         # Validation metrics
         self.valid_PSNR = torchmetrics.functional.psnr
-        self.valid_SSIM = torchmetrics.functional.ssim #torchmetrics.SSIM() # TODO reintroduce when memory leak is solved https://github.com/PyTorchLightning/pytorch-lightning/issues/5733
-        self.valid_LPIPS = tools.loss.LPIPS_Metric_pl()
-        self.valid_MS_SSIM = tools.loss.MS_SSIM_Metric_pl()
+        self.valid_SSIM = torchmetrics.functional.ssim
+        self.valid_sl1 = nn.SmoothL1Loss(reduction=args.reduction).to(self.device)
+        self.valid_focal = tools.loss.FocalLoss().to(self.device)
         # TODO Remove this workaround when 'on_best_epoch' is implemented in lightning
         self.best_loss = float('inf')
 
-        # Training metrics
-        self.train_PSNR = torchmetrics.functional.psnr
-        self.train_SSIM = torchmetrics.functional.ssim
-        self.train_LPIPS = tools.loss.LPIPS_Metric_pl()
-        self.train_MS_SSIM = tools.loss.MS_SSIM_Metric_pl()
-
         # Criterion and plotting loss
-        ## TODO Get pytorch lightning compatible metrics when they become of available for all below
-        if args.loss == "mse":  # Only compatible with mean reduction https://torchmetrics.readthedocs.io/en/latest/references/modules.html#meansquarederror
+        if args.loss == "mse":
             self.valid_loss = torchmetrics.functional.mean_squared_error
             self.train_loss = torchmetrics.functional.mean_squared_error
             self.criterion =  torchmetrics.functional.mean_squared_error
@@ -232,19 +225,14 @@ class Bouncing_CNN(pl.LightningModule):
             raise NotImplementedError("Need to implement this for focal loss")
             self.valid_loss = None
             self.train_loss = None
-            #self.criterion = tools.loss.FocalLoss(reduce=args.reduce, reduction=args.reduction).to(args.device) # TODO Get torchmetrics focal loss when it exists
         elif args.loss == "sl1":
-            self.valid_loss = tools.loss.Smooth_L1_pl(reduction=args.reduction)
-            self.train_loss = tools.loss.Smooth_L1_pl(reduction=args.reduction)
-            if args.reduction == "none":
-                self.criterion = nn.SmoothL1Loss(reduction=args.reduction)
-            else:
-                self.criterion = tools.loss.Smooth_L1_pl(reduction=args.reduction)
+            self.valid_loss = nn.SmoothL1Loss(reduction=args.reduction).to(self.device)
+            self.train_loss = nn.SmoothL1Loss(reduction=args.reduction).to(self.device)
+            self.criterion = nn.SmoothL1Loss(reduction=args.reduction).to(self.device)
         elif args.loss == "ssim":
-            self.valid_loss = torchmetrics.functional.ssim#SSIM(reduction="elementwise_mean" if args.reduction == "mean" else args.reduction) # TODO when fixed, use torchmetrics
-            self.train_loss = torchmetrics.functional.ssim#(reduction="elementwise_mean" if args.reduction == "mean" else args.reduction)
-            self.criterion = torchmetrics.functional.ssim#SSIM(reduction="elementwise_mean" if args.reduction == "mean" else args.reduction)
-            #tools.loss.ssim(data_range=255, size_average=True, channel=1).to(args.device)
+            self.valid_loss = torchmetrics.functional.ssim
+            self.train_loss = torchmetrics.functional.ssim
+            self.criterion = torchmetrics.functional.ssim
         else:
             raise Exception("Loss not implemented")
         
@@ -285,6 +273,10 @@ class Bouncing_CNN(pl.LightningModule):
         if self.args.loss == "ssim":
             valid_loss = 1-((1+valid_loss)/2)   # SSIM Range = (-1 -> 1) SSIM should be maximised => restructure as minimisation
         self.log("valid_loss", valid_loss, prog_bar=True, on_step=False, on_epoch=True)
+        self.log("valid_PSNR", self.valid_PSNR(out, gt_frames), on_step=False, on_epoch=True)
+        self.log("valid_SSIM", self.valid_SSIM(out, gt_frames), on_step=False, on_epoch=True)
+        self.log("valid_sl1", self.valid_sl1(out, gt_frames), on_step=False, on_epoch=True)
+        self.log("valid_focal", self.valid_focal(out, gt_frames), on_step=False, on_epoch=True)
         return valid_loss
 
     def validation_epoch_end(self, validation_step_outputs):
