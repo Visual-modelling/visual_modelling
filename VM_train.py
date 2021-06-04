@@ -385,8 +385,8 @@ if __name__ == "__main__":
         train_dset = train_list[0]
         valid_dset = valid_list[0]
         self_out_dset = self_out_list[0]
-    train_loader = DataLoader(train_dset, batch_size=args.bsz, num_workers=args.num_workers, shuffle=args.shuffle, drop_last=True)
-    valid_loader = DataLoader(valid_dset, batch_size=args.val_bsz, num_workers=args.num_workers, shuffle=args.shuffle, drop_last=True)
+    train_loader = DataLoader(train_dset, batch_size=args.bsz, num_workers=args.num_workers, shuffle=args.shuffle)#, drop_last=True)
+    valid_loader = DataLoader(valid_dset, batch_size=args.val_bsz, num_workers=args.num_workers, shuffle=args.shuffle)#, drop_last=True)
     torch.manual_seed(2667)
     self_out_loader = DataLoader(self_out_dset, batch_size=1, num_workers=args.num_workers, shuffle=args.shuffle, drop_last=True)
 

@@ -15,7 +15,7 @@ python VM_train.py \
     --split_condition tv_ratio:4-1 \
     --bsz 64 \
     --val_bsz 100 \
-    --num_workers 8 \
+    --num_workers 6 \
     --in_no 5 \
     --out_no 1 \
     --depth 3 \
@@ -23,7 +23,7 @@ python VM_train.py \
     --padding 1 \
     --device 0 \
     --epoch 75 \
-    --n_gifs 20 \
+    --n_gifs 12 \
     --jobname 2dBouncingMG-y_5-1_k-3_d-3_ssim \
     --loss ssim \
     --reduction mean \
