@@ -107,8 +107,8 @@ class FcUpDown2D2Scalars(pl.LightningModule):
             raise NotImplementedError(f"Task: '{args.task}' has not got a specified criterion")
 
     def configure_optimizers(self):
-        model_opt = radam.RAdam([p for p in self.model.parameters() if p.requires_grad], lr=3e-6, weight_decay=1e-5)
-        cls_mlp_opt = radam.RAdam([p for p in self.cls_mlp.parameters() if p.requires_grad], lr=3e-4, weight_decay=1e-5)
+        model_opt = radam.RAdam([p for p in self.model.parameters()], lr=3e-6, weight_decay=1e-5)
+        cls_mlp_opt = radam.RAdam([p for p in self.cls_mlp.parameters()], lr=3e-4, weight_decay=1e-5)
         return model_opt, cls_mlp_opt
 
     def forward(self, x):
@@ -147,7 +147,7 @@ class FcUpDown2D2Scalars(pl.LightningModule):
         model_opt.step()
         cls_mlp_opt.step()
         self.log("train_loss", train_loss, prog_bar=True, on_step=False, on_epoch=True)
-        if self.args.task in ["mnist","mocap","hdmb51","grav-pred","bounces-pred"]:
+        if self.args.task in ["mnist","mocap","hdmb51","grav-pred","bounces-pred","roller-pred"]:
             self.log("train_acc", self.train_acc(out, label), prog_bar=True, on_step=False, on_epoch=True)
 
     def validation_step(self, valid_batch, batch_idx):
@@ -173,7 +173,7 @@ class FcUpDown2D2Scalars(pl.LightningModule):
             label = (label*2).long().squeeze(1)
         valid_loss = self.criterion(out, label)
         self.log("valid_loss", valid_loss, on_step=False, on_epoch=True)
-        if self.args.task in ["mnist","mocap","hdmb51","grav-pred","bounces-pred"]:
+        if self.args.task in ["mnist","mocap","hdmb51","grav-pred","bounces-pred","roller-pred"]:
             self.log("valid_acc", self.valid_acc(out, label), prog_bar=True, on_step=False, on_epoch=True)
 
 
@@ -182,6 +182,13 @@ class FCUpDown2D_2_Segmentation(pl.LightningModule):
         super().__init__()
         self.args = args
         self.model = FCUpDown2D(args)
+
+        # Freeze the CNN weights
+        if args.encoder_freeze:
+            raise ValueError("encoder_freeze argument does not make sense in this segmentation model")
+            for param in self.model.parameters():
+                param.requires_grad = False
+
         # Checkpointing
         if args.model_path != "":   # Empty string implies no loading
             checkpoint = torch.load(args.model_path)
@@ -416,7 +423,7 @@ if __name__ == "__main__":
     valid_loader = DataLoader(valid_dset, batch_size=args.val_bsz, num_workers=args.num_workers, shuffle=args.shuffle)
 
     # Checkpointing and running
-    if args.task in ["mnist","mocap","hdmb51","grav-pred","bounces-pred"]:   # Accuracy tasks
+    if args.task in ["mnist","mocap","hdmb51","grav-pred","bounces-pred","roller-pred"]:   # Accuracy tasks
         max_or_min = "max"
         monitoring = "valid_acc"
         checkpoint_callback = pl.callbacks.ModelCheckpoint(
@@ -426,7 +433,7 @@ if __name__ == "__main__":
             save_top_k=1,
             mode=max_or_min,
         )
-    elif args.task in ["segmentation","pendulum","bounces-regress","grav-regress","roller-regress","roller-pred"]:
+    elif args.task in ["segmentation","pendulum","bounces-regress","grav-regress","roller-regress"]:
         max_or_min = "min"
         monitoring = "valid_loss"
         checkpoint_callback = pl.callbacks.ModelCheckpoint(

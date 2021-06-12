@@ -212,7 +212,7 @@ class Bouncing_CNN(pl.LightningModule):
         self.valid_PSNR = torchmetrics.functional.psnr
         self.valid_SSIM = torchmetrics.functional.ssim
         self.valid_sl1 = nn.SmoothL1Loss(reduction=args.reduction).to(self.device)
-        self.valid_focal = tools.loss.FocalLoss().to(self.device)
+        #self.valid_focal = tools.loss.FocalLoss().to(self.device)
         # TODO Remove this workaround when 'on_best_epoch' is implemented in lightning
         self.best_loss = float('inf')
 
@@ -276,7 +276,7 @@ class Bouncing_CNN(pl.LightningModule):
         self.log("valid_PSNR", self.valid_PSNR(out, gt_frames), on_step=False, on_epoch=True)
         self.log("valid_SSIM", self.valid_SSIM(out, gt_frames), on_step=False, on_epoch=True)
         self.log("valid_sl1", self.valid_sl1(out, gt_frames), on_step=False, on_epoch=True)
-        self.log("valid_focal", self.valid_focal(out, gt_frames), on_step=False, on_epoch=True)
+        #self.log("valid_focal", self.valid_focal(out, gt_frames), on_step=False, on_epoch=True)
         return valid_loss
 
     def validation_epoch_end(self, validation_step_outputs):

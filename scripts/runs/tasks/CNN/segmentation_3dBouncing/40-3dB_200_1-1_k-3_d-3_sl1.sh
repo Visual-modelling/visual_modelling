@@ -1,11 +1,6 @@
 #!/bin/bash
-#SBATCH --qos short
-#SBATCH -N 1
-#SBATCH -c 4
-#SBATCH -t 2-00:00
-#SBATCH -x gpu[0-3]
-#SBATCH --mem 12G
-#SBATCH -p res-gpu-small
+#SBATCH --ntasks 6
+#SBATCH -p part0
 #SBATCH --job-name 40-3dB_200_segmentation_3d_bouncing_1-1_k-3_d-3_sl1  
 #SBATCH --gres gpu:1
 #SBATCH -o ../../../../../.results/40-3dB_200_segmentation_3d_bouncing_1-1_k-3_d-3_sl1.out
@@ -19,9 +14,9 @@ python test_tasks.py \
     --task segmentation \
     --dataset simulations \
     --dataset_path data/3dBouncing/3dOld \
-    --bsz 16 \
+    --bsz 32 \
     --val_bsz 100 \
-    --num_workers 2 \
+    --num_workers 4 \
     --in_no 1 \
     --out_no 1 \
     --depth 3 \
@@ -31,6 +26,5 @@ python test_tasks.py \
     --img_type greyscale \
     --model UpDown2D \
     --model_path '.results/3dBouncing_5-1_k-3_d-3_sl1-epoch=40-valid_loss=1.20.ckpt' \
-    --encoder_freeze \
     --shuffle \
     --wandb 
