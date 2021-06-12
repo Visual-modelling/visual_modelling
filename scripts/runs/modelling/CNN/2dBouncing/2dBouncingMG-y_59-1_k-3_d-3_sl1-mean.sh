@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --qos short
 #SBATCH -N 1
-#SBATCH -c 8
+#SBATCH -c 4
 #SBATCH -t 2-00:00
 #SBATCH --mem 12G
 #SBATCH -p res-gpu-small
