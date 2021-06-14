@@ -1,31 +1,31 @@
 #!/bin/bash
 #SBATCH --ntasks 6
 #SBATCH -p part0
-#SBATCH --job-name 40-3dB_200_bounces-pred_3d_59-1_k-3_d-3_sl1  
+#SBATCH --job-name 74-2dB_200_grav_2d-pred_5-1_k-3_d-3_ssim  
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../../.results/40-3dB_200_bounces-pred_3d_59-1_k-3_d-3_sl1.out
+#SBATCH -o ../../../../../.results/74-2dB_200_grav_2d-pred_5-1_k-3_d-3_ssim.out
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd ../../../../..
 export PYTHONBREAKPOINT=ipdb.set_trace
 source python_venvs/vm/bin/activate
 
-# bounces-pred_3d Task
+# grav_2d-pred Task
 python test_tasks.py \
-    --task bounces-pred \
+    --task grav-pred \
     --dataset simulations  \
-    --dataset_path data/3dBouncing/3dRegen \
+    --dataset_path data/2dBouncing/2dMultiGrav-Y_regen/raw \
     --bsz 32 \
     --val_bsz 100 \
     --num_workers 4 \
-    --in_no 59 \
+    --in_no 5 \
     --out_no 1 \
     --depth 3 \
     --device 0 \
     --epoch 200 \
-    --jobname 40-3dB_200_bounces-pred_3d_59-1_k-3_d-3_sl1 \
+    --jobname 74-2dB_200_grav_2d-pred_5-1_k-3_d-3_ssim \
     --img_type greyscale \
     --model UpDown2D \
-    --model_path '.results/3dBouncing_5-1_k-3_d-3_sl1-epoch=40-valid_loss=1.20.ckpt' \
+    --model_path '.results/2dBouncingMG-y_5-1_k-3_d-3_ssim-epoch=74-valid_loss=0.01.ckpt' \
     --encoder_freeze \
     --shuffle \
     --wandb 
