@@ -54,7 +54,7 @@ def plot_self_out(pl_system):
             pbar.update(1)
             pbar.set_description(f"Self output: {ngif+1}/{args.n_gifs}")
             start_frames, gt_frames, vid_name, _ = next(iter(self_out_loader))
-            start_frames = start_frames.float().to(args.device)
+            start_frames = start_frames.float().to(pl_system.device)
             out = pl_system(start_frames)
             gif_frames = []
             if args.self_output_n == -1:
@@ -211,7 +211,7 @@ class Bouncing_CNN(pl.LightningModule):
         # Validation metrics
         self.valid_PSNR = torchmetrics.functional.psnr
         self.valid_SSIM = torchmetrics.functional.ssim
-        self.valid_sl1 = nn.SmoothL1Loss(reduction=args.reduction).to(self.device)
+        self.valid_sl1 = nn.SmoothL1Loss(reduction=args.reduction)#.to(self.device)
         #self.valid_focal = tools.loss.FocalLoss().to(self.device)
         # TODO Remove this workaround when 'on_best_epoch' is implemented in lightning
         self.best_loss = float('inf')
@@ -226,9 +226,9 @@ class Bouncing_CNN(pl.LightningModule):
             self.valid_loss = None
             self.train_loss = None
         elif args.loss == "sl1":
-            self.valid_loss = nn.SmoothL1Loss(reduction=args.reduction).to(self.device)
-            self.train_loss = nn.SmoothL1Loss(reduction=args.reduction).to(self.device)
-            self.criterion = nn.SmoothL1Loss(reduction=args.reduction).to(self.device)
+            self.valid_loss = nn.SmoothL1Loss(reduction=args.reduction)#.to(self.device)
+            self.train_loss = nn.SmoothL1Loss(reduction=args.reduction)#.to(self.device)
+            self.criterion = nn.SmoothL1Loss(reduction=args.reduction)#.to(self.device)
         elif args.loss == "ssim":
             self.valid_loss = torchmetrics.functional.ssim
             self.train_loss = torchmetrics.functional.ssim
@@ -416,7 +416,7 @@ if __name__ == "__main__":
 
     # GPU
     if args.device == -1:
-        gpus = None
+        pl_system = None
     else: 
         gpus = [args.device]  # TODO Implement multi GPU support
 

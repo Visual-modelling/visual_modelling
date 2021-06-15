@@ -6,12 +6,12 @@
 #SBATCH -o ../../../../../.results/TEST.out
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd ../../../../..
-source python_venvs/vm_new/bin/activate
+source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 # Pretrain
 python VM_train.py \
     --dataset simulations \
-    --dataset_path data/2dBouncing/2dMultiGrav-Y_regen/raw \
+    --dataset_path data/myphysicslab/Pendulum_1200 \
     --split_condition tv_ratio:4-1 \
     --bsz 64 \
     --val_bsz 100 \
@@ -21,7 +21,7 @@ python VM_train.py \
     --depth 3 \
     --krnl_size 3 \
     --padding 1 \
-    --device 0 \
+    --device -1 \
     --epoch 75 \
     --n_gifs 12 \
     --jobname TEST \
