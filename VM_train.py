@@ -416,7 +416,7 @@ if __name__ == "__main__":
 
     # GPU
     if args.device == -1:
-        pl_system = None
+        gpus = None 
     else: 
         gpus = [args.device]  # TODO Implement multi GPU support
 
