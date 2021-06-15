@@ -308,6 +308,7 @@ if __name__ == "__main__":
     parser.add_argument("--out_no", type=int, default=1, help="number of frames to use for ground_truth")
     parser.add_argument("--num_workers", type=int, default=0, help="Pytorch dataloader workers")
     parser.add_argument("--wandb", action="store_true", help="Use wandb plotter")
+    parser.add_argument("--wandb_entity", type=str, default="visual-modelling", help="wandb entity to save project and run in")
     parser.add_argument("--n_gifs", type=int, default=10, help="Number of output gifs to visualise")
     parser.add_argument("--self_output_n", type=int, default=-1, help="Number of frames to run selfoutput plotting to. -1 = all available frames")
     parser.add_argument("--jobname", type=str, required=True, help="Jobname for wandb and saving things")
@@ -391,7 +392,7 @@ if __name__ == "__main__":
     self_out_loader = DataLoader(self_out_dset, batch_size=1, num_workers=args.num_workers, shuffle=args.shuffle, drop_last=True)
 
     #### Logging and Saving: If we're saving this run, prepare the neccesary directory for saving things
-    wandb.init(entity="visual-modelling", project="visual-modelling", name=args.jobname)
+    wandb.init(entity=args.wandb_entity, project="visual-modelling", name=args.jobname)
     wandb_logger = pl.loggers.WandbLogger(offline=not args.wandb)#, resume="allow")
     wandb_logger.log_hyperparams(args)
     repo_rootdir = os.path.dirname(os.path.realpath(sys.argv[0]))
