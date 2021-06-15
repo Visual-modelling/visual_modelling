@@ -10,7 +10,7 @@ tools/__pycache__
 tools/*.pyc
 tools/*.pyo
 
-.results
+.results/*
 .old
 
 data
