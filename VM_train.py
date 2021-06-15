@@ -391,7 +391,8 @@ if __name__ == "__main__":
     self_out_loader = DataLoader(self_out_dset, batch_size=1, num_workers=args.num_workers, shuffle=args.shuffle, drop_last=True)
 
     #### Logging and Saving: If we're saving this run, prepare the neccesary directory for saving things
-    wandb_logger = pl.loggers.WandbLogger(project="visual-modelling", name=args.jobname, offline=not args.wandb)#, resume="allow")
+    wandb.init(entity="visual-modelling", project="visual-modelling", name=args.jobname)
+    wandb_logger = pl.loggers.WandbLogger(offline=not args.wandb)#, resume="allow")
     wandb_logger.log_hyperparams(args)
     repo_rootdir = os.path.dirname(os.path.realpath(sys.argv[0]))
     results_dir = os.path.join(repo_rootdir, ".results", args.jobname )
