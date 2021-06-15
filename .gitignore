@@ -14,5 +14,6 @@ tools/*.pyo
 .old
 
 data
+python_venvs
 
 **/wandb/
