@@ -352,7 +352,6 @@ if __name__ == "__main__":
     # Sorting arguements
     args = parser.parse_args()
     print(args)
-    breakpoint()
 
     ######## ERROR CONDITIONS To make sure erroneous runs aren't accidentally executed
     # This code allows multiple datasets to be combined, assert this has happened correctly
