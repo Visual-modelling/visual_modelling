@@ -4,6 +4,7 @@
 #SBATCH --job-name TEST 
 #SBATCH --gres gpu:1
 #SBATCH -o ../../../../../.results/TEST.out
+cd ../../../../..
 source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 # Pretrain

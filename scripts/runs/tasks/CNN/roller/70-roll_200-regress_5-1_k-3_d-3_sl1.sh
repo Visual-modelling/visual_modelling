@@ -4,6 +4,7 @@
 #SBATCH --job-name 70-roll_200_roller-regress_5-1_k-3_d-3_sl1  
 #SBATCH --gres gpu:1
 #SBATCH -o ../../../../../.results/70-roll_200_roller-regress_5-1_k-3_d-3_sl1.out
+cd ../../../../..
 export PYTHONBREAKPOINT=ipdb.set_trace
 source python_venvs/vm/bin/activate
 

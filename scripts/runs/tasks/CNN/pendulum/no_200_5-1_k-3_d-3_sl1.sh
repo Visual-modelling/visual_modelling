@@ -4,6 +4,7 @@
 #SBATCH --job-name no_200_pendulum_5-1_k-3_d-3_sl1  
 #SBATCH --gres gpu:1
 #SBATCH -o ../../../../../.results/no_200_pendulum_5-1_k-3_d-3_sl1.out
+cd ../../../../..
 export PYTHONBREAKPOINT=ipdb.set_trace
 source python_venvs/vm/bin/activate
 

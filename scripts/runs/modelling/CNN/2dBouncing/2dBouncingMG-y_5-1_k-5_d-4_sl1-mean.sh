@@ -4,6 +4,7 @@
 #SBATCH --job-name 2dBouncingMG-y_5-1_k-5_d-4_sl1-mean 
 #SBATCH --gres gpu:1
 #SBATCH -o ../../../../../.results/2dBouncingMG-y_5-1_k-5_d-4_sl1-mean.out
+cd ../../../../..
 source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 # Pretrain

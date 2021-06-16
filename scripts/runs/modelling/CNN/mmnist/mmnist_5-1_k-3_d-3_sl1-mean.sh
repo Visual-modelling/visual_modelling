@@ -4,6 +4,7 @@
 #SBATCH --job-name mmnist_5-1_k-3_d-3_sl1-mean 
 #SBATCH --gres gpu:1
 #SBATCH -o ../../../../../.results/mmnist_5-1_k-3_d-3_sl1-mean.out
+cd ../../../../..
 source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 # Pretrain

@@ -4,6 +4,7 @@
 #SBATCH --job-name 2dBouncingMG-y_5-1_k-3_d-3_ssim 
 #SBATCH --gres gpu:1
 #SBATCH -o ../../../../../.results/2dBouncingMG-y_5-1_k-3_d-3_ssim.out
+cd ../../../../..
 source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 # Pretrain

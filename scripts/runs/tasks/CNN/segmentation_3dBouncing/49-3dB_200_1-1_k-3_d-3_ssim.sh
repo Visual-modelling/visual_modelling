@@ -4,6 +4,7 @@
 #SBATCH --job-name 49-3dB_200_segmentation_3d_bouncing_1-1_k-3_d-3_ssim  
 #SBATCH --gres gpu:1
 #SBATCH -o ../../../../../.results/49-3dB_200_segmentation_3d_bouncing_1-1_k-3_d-3_ssim.out
+cd ../../../../..
 export PYTHONBREAKPOINT=ipdb.set_trace
 source python_venvs/vm/bin/activate
 

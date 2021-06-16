@@ -4,6 +4,7 @@
 #SBATCH -p part0
 #SBATCH --job-name hdmb51_5-1_k-3_d-3_ssim 
 #SBATCH --gres gpu:1
+cd ../../../../..
 cd $SCRIPT_DIR/../../../../..
 source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace

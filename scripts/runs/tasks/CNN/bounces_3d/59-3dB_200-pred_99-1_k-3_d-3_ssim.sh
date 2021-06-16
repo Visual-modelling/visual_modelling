@@ -1,9 +1,10 @@
 #!/bin/bash
 #SBATCH --ntasks 6
 #SBATCH -p part0
-#SBATCH --job-name 49-3dB_200_bounces-pred_3d_59-1_k-3_d-3_ssim  
+#SBATCH --job-name 59-3dB_200_bounces-pred_3d_99-1_k-3_d-3_ssim  
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../../.results/49-3dB_200_bounces-pred_3d_59-1_k-3_d-3_ssim.out
+#SBATCH -o ../../../../../.results/59-3dB_200_bounces-pred_3d_99-1_k-3_d-3_ssim.out
+cd ../../../../..
 export PYTHONBREAKPOINT=ipdb.set_trace
 source python_venvs/vm/bin/activate
 
@@ -15,15 +16,15 @@ python test_tasks.py \
     --bsz 32 \
     --val_bsz 100 \
     --num_workers 4 \
-    --in_no 59 \
+    --in_no 99 \
     --out_no 1 \
     --depth 3 \
     --device 0 \
     --epoch 200 \
-    --jobname 49-3dB_200_bounces-pred_3d_59-1_k-3_d-3_ssim \
+    --jobname 59-3dB_200_bounces-pred_3d_99-1_k-3_d-3_ssim \
     --img_type greyscale \
     --model UpDown2D \
-    --model_path '.results/' \
+    --model_path '.results/3dBouncing_99-1_k-3_d-3_ssim-epoch=59-valid_loss=0.02.ckpt' \
     --encoder_freeze \
     --shuffle \
     --wandb 
