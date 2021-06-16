@@ -194,15 +194,27 @@ class FID_dset(torch.utils.data.Dataset):
 #### ADD YOURS HERE
 ################################################################################
 ################################################################################
-class Bouncing_CNN(pl.LightningModule):
+class ModellingSystem(pl.LightningModule):
     def __init__(self, args, self_out_loader):
         """
         self_out_loader:    A pytorch dataloader specialised for the self-output generation
         """
         super().__init__()
         self.args = args
-        self.model = FCUpDown2D(args)
         self.self_out_loader = self_out_loader
+
+        # Model selection
+        if args.model == "UpDown3D":
+            raise NotImplementedError("Move 3D CNN to Pytorch lightning")
+            #pl_system = FCUp_Down3D(args)
+        elif args.model == "UpDown2D":
+            self.model = FCUpDown2D(args)
+        elif args.model == "transformer":
+            raise NotImplementedError("Transformer not implemented")
+            # self.model = 
+        else:
+            raise Exception(f"Model: {args.model} not implemented")
+
 
         # args.reduction == none requires manual optimisation flag set
         if args.reduction == "none":
@@ -402,19 +414,8 @@ if __name__ == "__main__":
     os.mkdir(results_dir)
     args.results_dir = results_dir
 
-    # Model info
-    if args.model == "UpDown3D":
-        raise NotImplementedError("Move 3D CNN to Pytorch lightning")
-        #pl_system = FCUp_Down3D(args)
-    elif args.model == "UpDown2D":
-        pl_system = Bouncing_CNN(args, self_out_loader)
-    elif args.model == "transformer":
-        breakpoint()
-        print("Your transformer model here")
-        pl_system = None 
-        import sys; sys.exit()
-    else:
-        raise Exception("Model: %s not implemented" % (args.model))
+    # Model
+    pl_system = ModellingSystem(args, self_out_loader)
 
     # GPU
     if args.device == -1:
