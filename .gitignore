@@ -17,3 +17,5 @@ data
 python_venvs
 
 **/wandb/
+
+settings.json
