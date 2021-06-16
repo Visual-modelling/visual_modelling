@@ -1,32 +1,37 @@
 __author__ = "Jumperkables"
 
-import os, sys, argparse, shutil, copy
-import torch
-import torch.nn as nn
-from PIL import Image
-import matplotlib.pyplot as plt
-from torch.utils.data import DataLoader
-from torchvision import transforms
-import numpy as np
-from cv2 import putText, FONT_HERSHEY_SIMPLEX
-
-from dataset import MMNIST, Simulations
-from models.UpDown2D import FCUpDown2D
-import tools.utils as utils
-from tools.utils import model_fwd
-import tools.radam as radam
-import tools.loss
-from tools.ball_distance_metric import calculate_metric
-import torch.nn.functional as F
-import tqdm
-from tqdm import tqdm
-import pytorch_lightning as pl
-import torchmetrics
-
+import os
+import sys
+import argparse
+import shutil
+import copy
 import wandb
 import piq
-
 import imageio
+import torchmetrics
+import torch
+
+import torch.nn as nn
+import torch.nn.functional as F
+import pytorch_lightning as pl
+import numpy as np
+import matplotlib.pyplot as plt
+
+from PIL import Image
+from torch.utils.data import DataLoader
+from torchvision import transforms
+from cv2 import putText, FONT_HERSHEY_SIMPLEX
+from tqdm import tqdm
+
+# local
+import tools.loss
+import tools.radam as radam
+import tools.utils as utils
+from dataset import MMNIST, Simulations
+from tools.utils import model_fwd
+from tools.ball_distance_metric import calculate_metric
+from models.UpDown2D import FCUpDown2D
+
 
 
 ################################################################################
@@ -204,17 +209,13 @@ class ModellingSystem(pl.LightningModule):
         self.self_out_loader = self_out_loader
 
         # Model selection
-        if args.model == "UpDown3D":
-            raise NotImplementedError("Move 3D CNN to Pytorch lightning")
-            #pl_system = FCUp_Down3D(args)
-        elif args.model == "UpDown2D":
+        if args.model == "UpDown2D":
             self.model = FCUpDown2D(args)
         elif args.model == "transformer":
             raise NotImplementedError("Transformer not implemented")
             # self.model = 
         else:
-            raise Exception(f"Model: {args.model} not implemented")
-
+            raise ValueError(f"Unknown model: {args.model}")
 
         # args.reduction == none requires manual optimisation flag set
         if args.reduction == "none":
@@ -246,7 +247,7 @@ class ModellingSystem(pl.LightningModule):
             self.train_loss = torchmetrics.functional.ssim
             self.criterion = torchmetrics.functional.ssim
         else:
-            raise Exception("Loss not implemented")
+            raise ValueError(f"Unknown loss: {args.loss}")
         
     def forward(self, x):
         out = self.model(x)
@@ -334,7 +335,7 @@ if __name__ == "__main__":
     parser.add_argument("--shuffle", action="store_true", help="shuffle dataset")
 
     parser.add_argument_group("2D and 3D CNN specific arguments")
-    parser.add_argument("--model", type=str, default="UpDown2D", choices=["UpDown2D", "UpDown3D", "transformer"], help="Type of model to run")
+    parser.add_argument("--model", type=str, default="UpDown2D", choices=["UpDown2D", "UpDown2D_transformer" "UpDown3D", "transformer"], help="Type of model to run")
     parser.add_argument("--img_type", type=str, default="binary", choices=["binary", "greyscale", "RGB"], help="Type of input image")
     parser.add_argument("--krnl_size", type=int, default=3, help="Height and width kernel size")
     parser.add_argument("--krnl_size_t", type=int, default=3, help="Temporal kernel size")
@@ -351,6 +352,7 @@ if __name__ == "__main__":
     # Sorting arguements
     args = parser.parse_args()
     print(args)
+    breakpoint()
 
     ######## ERROR CONDITIONS To make sure erroneous runs aren't accidentally executed
     # This code allows multiple datasets to be combined, assert this has happened correctly
@@ -414,8 +416,19 @@ if __name__ == "__main__":
     os.mkdir(results_dir)
     args.results_dir = results_dir
 
-    # Model
-    pl_system = ModellingSystem(args, self_out_loader)
+    # Model info
+    if args.model == "UpDown3D":
+        raise NotImplementedError("Move 3D CNN to Pytorch lightning")
+        #pl_system = FCUp_Down3D(args)
+    elif args.model == "UpDown2D" or args.moedl == "UpDown2D_transformer":
+        pl_system = ModellingSystem(args, self_out_loader)
+    elif args.model == "transformer":
+        breakpoint()
+        print("Your transformer model here")
+        pl_system = None 
+        import sys; sys.exit()
+    else:
+        raise ValueError(f"Unknown model: {args.model}")
 
     # GPU
     if args.device == -1:
