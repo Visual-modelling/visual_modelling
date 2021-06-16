@@ -4,12 +4,6 @@
 #SBATCH --job-name 74-2dB_200_grav_2d-regress_5-1_k-3_d-3_ssim  
 #SBATCH --gres gpu:1
 #SBATCH -o ../../../../../.results/74-2dB_200_grav_2d-regress_5-1_k-3_d-3_ssim.out
-if [ -n $SLURM_JOB_ID ] ; then
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-else
-SCRIPT_DIR="."
-fi
-cd "$SCRIPT_DIR/../../../../.."
 export PYTHONBREAKPOINT=ipdb.set_trace
 source python_venvs/vm/bin/activate
 

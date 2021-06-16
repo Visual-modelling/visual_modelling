@@ -4,12 +4,6 @@
 #SBATCH --job-name 3dBouncing_99-1_k-3_d-3_sl1-mean 
 #SBATCH --gres gpu:1
 #SBATCH -o ../../../../../.results/3dBouncing_99-1_k-3_d-3_sl1-mean.out
-if [ -n $SLURM_JOB_ID ] ; then
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-else
-SCRIPT_DIR="."
-fi
-cd "$SCRIPT_DIR/../../../../.."
 source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 # Pretrain
