@@ -5,7 +5,7 @@
 #SBATCH --gres gpu:1
 #SBATCH -o ../../../../../.results/pendulumSingleBigger_5-5_k-3_d-3_sl1-none.out
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-cd ../../../../..
+cd $DIR/../../../../..
 source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 # Pretrain
