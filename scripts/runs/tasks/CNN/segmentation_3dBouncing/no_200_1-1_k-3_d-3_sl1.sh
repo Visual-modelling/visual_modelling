@@ -1,15 +1,13 @@
 #!/bin/bash
-#SBATCH --qos short
-#SBATCH -N 1
-#SBATCH -c 4
-#SBATCH -t 2-00:00
-#SBATCH --mem 12G
-#SBATCH -p res-gpu-small
+#SBATCH --ntasks 6
+#SBATCH -p part0
 #SBATCH --job-name no_200_segmentation_3d_bouncing_1-1_k-3_d-3_sl1  
 #SBATCH --gres gpu:1
 #SBATCH -o ../../../../../.results/no_200_segmentation_3d_bouncing_1-1_k-3_d-3_sl1.out
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-cd ../../../../..
+if [ -n $SLURM_JOB_ID ] ; then
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+fi
+cd "$SCRIPT_DIR/../../../../.."
 export PYTHONBREAKPOINT=ipdb.set_trace
 source python_venvs/vm/bin/activate
 

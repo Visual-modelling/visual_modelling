@@ -4,8 +4,10 @@
 #SBATCH --job-name pendulumSingleBigger_5-1_k-3_d-3_ssim 
 #SBATCH --gres gpu:1
 #SBATCH -o ../../../../../.results/pendulumSingleBigger_5-1_k-3_d-3_ssim.out
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-cd $DIR/../../../../..
+if [ -n $SLURM_JOB_ID ] ; then
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+fi
+cd "$SCRIPT_DIR/../../../../.."
 source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 # Pretrain

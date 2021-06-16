@@ -1,14 +1,13 @@
 #!/bin/bash
-#SBATCH --qos long-high-prio
-#SBATCH -N 1
-#SBATCH -c 4
+#SBATCH --ntasks 6
 #SBATCH -t 7-00:00
-#SBATCH --mem 12G
-#SBATCH -p res-gpu-small
+#SBATCH -p part0
 #SBATCH --job-name hdmb51_5-1_k-3_d-3_sl1-mean 
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../../.results/hdmb51_5-1_k-3_d-3_sl1-mean.out
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+if [ -n $SLURM_JOB_ID ] ; then
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+fi
+cd "$SCRIPT_DIR/../../../../.."
 cd $DIR/../../../../..
 source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
