@@ -6,6 +6,8 @@
 #SBATCH -o ../../../../../.results/2dBouncingMG-y_5-1_k-3_d-4_sl1-mean.out
 if [ -n $SLURM_JOB_ID ] ; then
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+else
+SCRIPT_DIR="."
 fi
 cd "$SCRIPT_DIR/../../../../.."
 source python_venvs/vm/bin/activate

@@ -6,6 +6,8 @@
 #SBATCH -o ../../../../../.results/68-2dB_200_bounces-regress_2d_5-1_k-3_d-3_sl1.out
 if [ -n $SLURM_JOB_ID ] ; then
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+else
+SCRIPT_DIR="."
 fi
 cd "$SCRIPT_DIR/../../../../.."
 export PYTHONBREAKPOINT=ipdb.set_trace
