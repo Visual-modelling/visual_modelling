@@ -71,8 +71,6 @@ class FcUpDown2D2Scalars(pl.LightningModule):
             n_outputs = 201 # [0,0.5,1.0,....,99.5,100]
         elif args.task == "bounces-regress":
             n_outputs = 2
-        elif args.task == "bounces-pred":
-            n_outputs = 50  # Sum of wall and ball-ball bounces is capped at 49
         elif args.task == "grav-regress":
             n_outputs = 1
         elif args.task == "grav-pred":
@@ -80,15 +78,12 @@ class FcUpDown2D2Scalars(pl.LightningModule):
         else:
             raise NotImplementedError("Task has not been implemented yet")
 
-        # Classifier at the end
-        self.cls_mlp = nn.Sequential(
-            nn.Dropout(0.2),
-            nn.Linear(64*64, 100),
-            nn.BatchNorm1d(100),
-            nn.GELU(),
-            nn.Dropout(0.2),
-            nn.Linear(100, n_outputs)   # n+1 (includes unknown answer token)
-        )
+        # Probe classifier
+        probe_len = (args.out_no*64*64) # Final layer
+        for i in range(args.depth):
+            probe_len +=  2 * args.channel_factor * (2**i)  * (64/(2**(i+1))) * (64/(2**(i+1)))  # once on the way up and back down
+        probe_len += args.channel_factor * (2**args.depth) * (64/(2**(args.depth+1))) * (64/(2**(args.depth+1)))
+        self.probe_fc = nn.Linear(int(probe_len), n_outputs)
 
         # Manual optimisation to allow slower training for previous layers
         self.automatic_optimization = False
@@ -108,29 +103,28 @@ class FcUpDown2D2Scalars(pl.LightningModule):
 
     def configure_optimizers(self):
         model_opt = radam.RAdam([p for p in self.model.parameters()], lr=3e-6, weight_decay=1e-5)
-        cls_mlp_opt = radam.RAdam([p for p in self.cls_mlp.parameters()], lr=3e-4, weight_decay=1e-5)
-        return model_opt, cls_mlp_opt
+        probe_fc_opt = radam.RAdam([p for p in self.probe_fc.parameters()], lr=3e-4, weight_decay=1e-5)
+        return model_opt, probe_fc_opt
 
     def forward(self, x):
         # Through the encoder
-        x = self.model(x)
+        _, probe_ret = self.model(x)
         # And then the classifier
-        out = self.cls_mlp(x)
-        return out
+        probe_ret = torch.cat([ tens.view(x.shape[0], -1) for tens in probe_ret], dim=1)
+        probe_ret = self.probe_fc(probe_ret)
+        return probe_ret
 
     def training_step(self, train_batch, batch_idx, optimizer_idx):
-        model_opt, cls_mlp_opt = self.optimizers()
+        model_opt, probe_fc_opt = self.optimizers()
         model_opt.zero_grad()
-        cls_mlp_opt.zero_grad()
+        probe_fc_opt.zero_grad()
         if self.args.task == "mnist":
             frame, label = train_batch
             frames = frame.repeat(1,self.args.in_no,1,1)
         else:
             frames, _, _, label = train_batch
         frames = frames.float()
-        out = self.model(frames)
-        out = out.view(self.args.bsz, -1)
-        out = self.cls_mlp(out)
+        out = self(frames)
         if self.args.task == "mnist":
             out = F.softmax(out, dim=1)
         elif self.args.task == "grav-pred":
@@ -145,7 +139,7 @@ class FcUpDown2D2Scalars(pl.LightningModule):
         train_loss = self.criterion(out, label)
         self.manual_backward(train_loss)
         model_opt.step()
-        cls_mlp_opt.step()
+        probe_fc_opt.step()
         self.log("train_loss", train_loss, prog_bar=True, on_step=False, on_epoch=True)
         if self.args.task in ["mnist","mocap","hdmb51","grav-pred","bounces-pred","roller-pred"]:
             self.log("train_acc", self.train_acc(out, label), prog_bar=True, on_step=False, on_epoch=True)
@@ -157,9 +151,7 @@ class FcUpDown2D2Scalars(pl.LightningModule):
         else:
             frames, _, _, label = valid_batch
         frames = frames.float()
-        out = self.model(frames)
-        out = out.view(self.args.val_bsz, -1)
-        out = self.cls_mlp(out)
+        out = self(frames)
         if self.args.task == "mnist":
             out = F.softmax(out, dim=1)
         elif self.args.task == "grav-pred":
