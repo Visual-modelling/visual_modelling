@@ -31,6 +31,7 @@ from dataset import MMNIST, Simulations
 from tools.utils import model_fwd
 from tools.ball_distance_metric import calculate_metric
 from models.UpDown2D import FCUpDown2D
+from models.transformer import PixelTransformer
 
 
 
@@ -212,8 +213,7 @@ class ModellingSystem(pl.LightningModule):
         if args.model == "UpDown2D":
             self.model = FCUpDown2D(args)
         elif args.model == "transformer":
-            raise NotImplementedError("Transformer not implemented")
-            # self.model = 
+            self.model = PixelTransformer(args)
         else:
             raise ValueError(f"Unknown model: {args.model}")
 
@@ -333,9 +333,11 @@ if __name__ == "__main__":
     #############
     parser.add_argument("--split_condition", type=str, default="tv_ratio:4-1", help="Custom string deciding how to split datasets into train/test. Affiliated with a custom function in dataset")
     parser.add_argument("--shuffle", action="store_true", help="shuffle dataset")
+    
+    parser.add_argument_group("Shared Model argmuents")
+    parser.add_argument("--model", type=str, default="UpDown2D", choices=["UpDown2D", "UpDown3D", "transformer"], help="Type of model to run")
 
     parser.add_argument_group("2D and 3D CNN specific arguments")
-    parser.add_argument("--model", type=str, default="UpDown2D", choices=["UpDown2D", "UpDown2D_transformer" "UpDown3D", "transformer"], help="Type of model to run")
     parser.add_argument("--img_type", type=str, default="binary", choices=["binary", "greyscale", "RGB"], help="Type of input image")
     parser.add_argument("--krnl_size", type=int, default=3, help="Height and width kernel size")
     parser.add_argument("--krnl_size_t", type=int, default=3, help="Temporal kernel size")
@@ -343,6 +345,15 @@ if __name__ == "__main__":
     parser.add_argument("--padding_t", type=int, default=1, help="Temporal Padding")
     parser.add_argument("--depth", type=int, default=2, help="depth of the updown")
     parser.add_argument("--channel_factor", type=int, default=64, help="channel scale factor for up down network")
+
+    parser.add_argument_group("Transformer model specific arguments")
+    parser.add_argument("--d_model", type=int, default=4096, help="The number of features in the input (flattened image dimensions)")
+    parser.add_argument("--n_layers", type=int, default=6, help="Number of transformer layers to use")
+    parser.add_argument("--nhead", type=int, default=8, help="The number of heads in the multiheadattention models")
+    parser.add_argument("--dim_feedforward", type=int, default=16384, help="The dimension of the linear layers after each attention")
+    parser.add_argument("--dropout", type=float, default=0.1, help="The dropout value")
+    parser.add_argument("--pixel_regression_layer", action="store_true", help="Add a pixel regression layer")
+    parser.add_argument("--norm_layer", type=str, default="layer_norm", choices=["layer_norm", "batch_norm"], help="What normalisation layer to use")
 
     parser.add_argument_group("Other things")
     parser.add_argument("--loss", type=str, default="mse", choices=["mse", "sl1", "focal", "ssim"], help="Loss function for the network")
@@ -419,13 +430,10 @@ if __name__ == "__main__":
     if args.model == "UpDown3D":
         raise NotImplementedError("Move 3D CNN to Pytorch lightning")
         #pl_system = FCUp_Down3D(args)
-    elif args.model == "UpDown2D" or args.moedl == "UpDown2D_transformer":
+    elif args.model == "UpDown2D":
         pl_system = ModellingSystem(args, self_out_loader)
     elif args.model == "transformer":
-        breakpoint()
-        print("Your transformer model here")
-        pl_system = None 
-        import sys; sys.exit()
+        pl_system = ModellingSystem(args, self_out_loader)
     else:
         raise ValueError(f"Unknown model: {args.model}")
 
