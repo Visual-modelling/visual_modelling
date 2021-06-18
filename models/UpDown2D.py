@@ -25,8 +25,8 @@ class FCUpDown2D(nn.Module):
 
 
     def forward(self, x):
-        x = self.UDChain(x)
-        return(x)
+        x, probe_ret = self.UDChain(x)
+        return x, probe_ret
 
 
 
@@ -71,19 +71,24 @@ class UpDownChain(nn.Module):
         Residues will are saved to move forward into appropriate places on up chain
         """
         residues = []
+        probe_ret = []
         # Downward Pass
         x = self.layers[0](x)
+        probe_ret.append(x)
         for layer in self.layers[1:self.half]:
             x = layer(x)
+            probe_ret.append(x)
             residues.insert(0, x)
 
         # Upward Pass
         for idx, layer in enumerate(self.layers[self.half:(len(self.layers)-1)]):
             x = layer(x, residues[idx])
+            probe_ret.append(x)
         if self.half != len(self.layers):
             x = self.layers[-1](x)
+            probe_ret.append(x)
 
-        return(x)
+        return(x, probe_ret)
 
 
 """

@@ -4,8 +4,7 @@
 #SBATCH --job-name 2dBouncingMG-y_5-1_k-5_d-4_ssim 
 #SBATCH --gres gpu:1
 #SBATCH -o ../../../../../.results/2dBouncingMG-y_5-1_k-5_d-4_ssim.out
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-cd $DIR/../../../../..
+cd ../../../../..
 source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 # Pretrain

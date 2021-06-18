@@ -250,7 +250,7 @@ class ModellingSystem(pl.LightningModule):
             raise ValueError(f"Unknown loss: {args.loss}")
         
     def forward(self, x):
-        out = self.model(x)
+        out, _ = self.model(x)
         return out
 
     def configure_optimizers(self):
@@ -263,7 +263,7 @@ class ModellingSystem(pl.LightningModule):
     def training_step(self, train_batch, batch_idx):
         frames, gt_frames, vid_names, _ = train_batch
         frames, gt_frames = frames.float(), gt_frames.float()
-        out = self(frames)
+        out, _ = self(frames)
         train_loss = self.criterion(out, gt_frames)
         if self.args.reduction == 'none':
             grad = torch.ones(train_loss.shape, requires_grad=True).to(self.device)
@@ -279,7 +279,7 @@ class ModellingSystem(pl.LightningModule):
     def validation_step(self, valid_batch, batch_idx):
         frames, gt_frames, vid_names, _ = valid_batch
         frames, gt_frames = frames.float(), gt_frames.float()
-        out = self(frames)
+        out, _ = self(frames)
         valid_loss = self.criterion(out, gt_frames)
         if self.args.reduction == 'none':
             valid_loss = valid_loss.mean(dim=(0,1,2,3))
