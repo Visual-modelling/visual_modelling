@@ -13,8 +13,8 @@ python VM_train.py \
     --dataset mocap \
     --dataset_path data/mocap/grey_64x64_frames \
     --split_condition tv_ratio:4-1 \
-    --bsz 2 \
-    --val_bsz 2 \
+    --bsz 64 \
+    --val_bsz 64 \
     --num_workers 4 \
     --in_no 5 \
     --padding 1 \

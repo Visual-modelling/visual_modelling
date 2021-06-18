@@ -12,8 +12,8 @@ python VM_train.py \
     --dataset simulations \
     --dataset_path data/3dBouncing/3dRegen \
     --split_condition tv_ratio:4-1 \
-    --bsz 2 \
-    --val_bsz 2 \
+    --bsz 64 \
+    --val_bsz 64 \
     --num_workers 4 \
     --in_no 5 \
     --out_no 1 \
