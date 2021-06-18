@@ -205,14 +205,14 @@ class FCUpDown2D_2_Segmentation(pl.LightningModule):
 
     def forward(self, x):
         # Through the encoder
-        out = self.model(x)
+        out, _ = self.model(x)
         return out
 
     def training_step(self, train_batch, batch_idx):
         frame, gt_frame, vid_name, _ = train_batch
         frame, gt_frame = frame.float(), gt_frame.float()
         frames = frame.repeat(1,self.args.in_no,1,1)
-        out = self.model(frames)
+        out = self(frames)
         train_loss = self.criterion(out, gt_frame)
         self.log("train_loss", train_loss, prog_bar=True, on_step=False, on_epoch=True)
         return train_loss
@@ -221,7 +221,7 @@ class FCUpDown2D_2_Segmentation(pl.LightningModule):
         frame, gt_frame, vid_name, _ = valid_batch
         frame, gt_frame = frame.float(), gt_frame.float()
         frames = frame.repeat(1,self.args.in_no,1,1)
-        out = self.model(frames)
+        out = self(frames)
         valid_loss = self.criterion(out, gt_frame)
         self.log("valid_loss", valid_loss, on_step=False, on_epoch=True)
         return valid_loss
