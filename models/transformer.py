@@ -86,4 +86,4 @@ class PixelTransformer(nn.Module):
         # extract output
         x = x[:, -self.args.out_no:, :, :]  # (batch, out_no, height, width)
 
-        return x
+        return x, None
