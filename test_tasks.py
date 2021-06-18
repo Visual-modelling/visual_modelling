@@ -83,7 +83,17 @@ class FcUpDown2D2Scalars(pl.LightningModule):
         for i in range(args.depth):
             probe_len +=  2 * args.channel_factor * (2**i)  * (64/(2**(i+1))) * (64/(2**(i+1)))  # once on the way up and back down
         probe_len += args.channel_factor * (2**args.depth) * (64/(2**(args.depth+1))) * (64/(2**(args.depth+1)))
-        self.probe_fc = nn.Linear(int(probe_len), n_outputs)
+        if self.args.linear_probes:
+            self.probe_fc = nn.Linear(int(probe_len), n_outputs)
+        else:
+            self.probe_fc = nn.Sequential(
+                nn.Dropout(0.2),
+                nn.Linear(self.args.out_no*64*64, 100),
+                nn.BatchNorm1d(100),
+                nn.GELU(),
+                nn.Dropout(0.2),
+                nn.Linear(100, n_outputs)
+            )
 
         # Manual optimisation to allow slower training for previous layers
         self.automatic_optimization = False
@@ -108,9 +118,13 @@ class FcUpDown2D2Scalars(pl.LightningModule):
 
     def forward(self, x):
         # Through the encoder
-        _, probe_ret = self.model(x)
+        if self.args.linear_probes:
+            _, probe_ret = self.model(x)
+            probe_ret = torch.cat([ tens.view(x.shape[0], -1) for tens in probe_ret], dim=1)
+        else:
+            probe_ret, _ = self.model(x)
+            probe_ret = probe_ret.view(probe_ret.shape[0], -1)
         # And then the classifier
-        probe_ret = torch.cat([ tens.view(x.shape[0], -1) for tens in probe_ret], dim=1)
         probe_ret = self.probe_fc(probe_ret)
         return probe_ret
 
@@ -249,6 +263,7 @@ if __name__ == "__main__":
 
     parser.add_argument_group("Model specific arguments")
     parser.add_argument("--encoder_freeze", action="store_true", help="freeze the CNN/transformer layers and only train the linear cls layer afterwards")
+    parser.add_argument("--linear_probes", action="store_true", help="Use linear probes as output instead")
     parser.add_argument("--model", type=str, default="UpDown2D", choices=["UpDown2D", "UpDown3D", "transformer"], help="Type of model to run")
     parser.add_argument("--model_path", type=str, default="", help="path of saved model")
     parser.add_argument("--img_type", type=str, default="binary", choices=["binary", "greyscale", "RGB"], help="Type of input image")
