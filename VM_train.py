@@ -212,7 +212,7 @@ class ModellingSystem(pl.LightningModule):
         # Model selection
         if args.model == "UpDown2D":
             self.model = FCUpDown2D(args)
-        elif args.model == "transformer":
+        elif args.model == "pixel_transformer":
             self.model = PixelTransformer(args)
         else:
             raise ValueError(f"Unknown model: {args.model}")
@@ -335,7 +335,7 @@ if __name__ == "__main__":
     parser.add_argument("--shuffle", action="store_true", help="shuffle dataset")
     
     parser.add_argument_group("Shared Model argmuents")
-    parser.add_argument("--model", type=str, default="UpDown2D", choices=["UpDown2D", "UpDown3D", "transformer"], help="Type of model to run")
+    parser.add_argument("--model", type=str, default="UpDown2D", choices=["UpDown2D", "UpDown3D", "pixel_transformer"], help="Type of model to run")
 
     parser.add_argument_group("2D and 3D CNN specific arguments")
     parser.add_argument("--img_type", type=str, default="binary", choices=["binary", "greyscale", "RGB"], help="Type of input image")
@@ -432,7 +432,7 @@ if __name__ == "__main__":
         #pl_system = FCUp_Down3D(args)
     elif args.model == "UpDown2D":
         pl_system = ModellingSystem(args, self_out_loader)
-    elif args.model == "transformer":
+    elif args.model == "pixel_transformer":
         pl_system = ModellingSystem(args, self_out_loader)
     else:
         raise ValueError(f"Unknown model: {args.model}")
