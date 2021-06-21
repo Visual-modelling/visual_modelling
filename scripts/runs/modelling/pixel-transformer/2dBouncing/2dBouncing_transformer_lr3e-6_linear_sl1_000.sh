@@ -5,7 +5,7 @@
 #SBATCH -t 2-00:00
 #SBATCH --mem 12G
 #SBATCH -p res-gpu-small
-#SBATCH --job-name 2dBouncingMG-y-pt-sl1-mean 
+#SBATCH --job-name 2dBouncing_transformer_lr3e-6_linear_sl1_000 
 #SBATCH --gres gpu:1 
 #SBATCH -o ../../../../../.results/2dBouncing_transformer_lr3e-6_linear_sl1_000.out
 cd ../../../../..

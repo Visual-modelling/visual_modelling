@@ -8,7 +8,7 @@ if __name__ == '__main__':
     # losses = ['sl1', 'ssim']
     losses = ['sl1']
     # output_activations = ['linear', 'hardsigmoid-256', 'sigmoid-256']
-    output_activations = ['linear']
+    output_activations = ['hardsigmoid-256']
     learning_rates = ['3e-4', '1e-4', '3e-5', '1e-5', '3e-6', '1e-6']
 
     params = OrderedDict([
@@ -96,7 +96,7 @@ if __name__ == '__main__':
                         f.write('#SBATCH -p res-gpu-small\n')
                         if restrict_to_titan:
                             f.write('#SBATCH -x gpu[0-6]\n')
-                        f.write('#SBATCH --job-name 2dBouncingMG-y-pt-sl1-mean \n')
+                        f.write(f'#SBATCH --job-name {filename_core} \n')
                         f.write('#SBATCH --gres gpu:1 \n')
                         f.write(f'#SBATCH -o ../../../../../.results/{filename_core}.out\n')
                         f.write('cd ../../../../..\n')
