@@ -128,8 +128,8 @@ class PixelTransformer(nn.Module):
 
         # layers
         x = x + self.pos_encoder()
-        x, hidden_xs = self.transformer_encoder(x)
-        x = x[-self.args.out_no:, :, :, :]  # (out_no, batch, height, width)
+        x, hidden_xs = self.transformer(x)
+        x = x[-self.args.out_no:, :, :]  # (out_no, batch, imsize)
         x = self.pixel_regression_layer(x)
         x = self.output_activation_function(x)
 

@@ -2,6 +2,7 @@ import os
 from collections import OrderedDict
 
 if __name__ == '__main__':
+    restrict_to_titan = False
     experiment_no = 0
     dataset = '2dBouncing'  # None for all
     # losses = ['sl1', 'ssim']
@@ -81,7 +82,7 @@ if __name__ == '__main__':
         for loss in losses:
             for output_activation in output_activations:
                 for learning_rate in learning_rates:
-                    filename_core = f'{dataset}_lr{learning_rate}_{output_activation}_{loss}_{experiment_no:03}'
+                    filename_core = f'{dataset}_transformer_lr{learning_rate}_{output_activation}_{loss}_{experiment_no:03}'
                     filename = f'{filename_core}.sh'
                     if not os.path.exists(dataset_name):
                         os.makedirs(dataset_name)
@@ -93,7 +94,8 @@ if __name__ == '__main__':
                         f.write('#SBATCH -t 2-00:00\n')
                         f.write('#SBATCH --mem 12G\n')
                         f.write('#SBATCH -p res-gpu-small\n')
-                        f.write('#SBATCH -x gpu[0-6]\n')
+                        if restrict_to_titan:
+                            f.write('#SBATCH -x gpu[0-6]\n')
                         f.write('#SBATCH --job-name 2dBouncingMG-y-pt-sl1-mean \n')
                         f.write('#SBATCH --gres gpu:1)\n')
                         f.write(f'#SBATCH -o ../../../../../.results/{filename_core}.out\n')
