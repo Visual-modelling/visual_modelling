@@ -8,7 +8,7 @@ import copy
 import wandb
 import piq
 import imageio
-import torchmetrics
+import torchmetrics.functional
 import torch
 
 import torch.nn as nn
@@ -201,7 +201,7 @@ class FID_dset(torch.utils.data.Dataset):
 ################################################################################
 ################################################################################
 class ModellingSystem(pl.LightningModule):
-    def __init__(self, args, self_out_loader):
+    def __init__(self, args: argparse.Namespace, self_out_loader):
         """
         self_out_loader:    A pytorch dataloader specialised for the self-output generation
         """
@@ -254,10 +254,7 @@ class ModellingSystem(pl.LightningModule):
         return out
 
     def configure_optimizers(self):
-        if self.args.reduction == "none":   # Higher rate for none reduction needed?
-            optimizer = radam.RAdam([p for p in self.parameters() if p.requires_grad], lr=3e-3, weight_decay=1e-5)
-        else:
-            optimizer = radam.RAdam([p for p in self.parameters() if p.requires_grad], lr=3e-4, weight_decay=1e-5)
+        optimizer = radam.RAdam([p for p in self.parameters() if p.requires_grad], lr=self.args.lr, weight_decay=1e-5)
         return optimizer
 
     def training_step(self, train_batch, batch_idx):
@@ -352,12 +349,14 @@ if __name__ == "__main__":
     parser.add_argument("--nhead", type=int, default=8, help="The number of heads in the multiheadattention models")
     parser.add_argument("--dim_feedforward", type=int, default=16384, help="The dimension of the linear layers after each attention")
     parser.add_argument("--dropout", type=float, default=0.1, help="The dropout value")
-    parser.add_argument("--pixel_regression_layer", action="store_true", help="Add a pixel regression layer")
+    parser.add_argument("--pixel_regression_layers", type=int, default=1, help="How many layers to add after transformers")
     parser.add_argument("--norm_layer", type=str, default="layer_norm", choices=["layer_norm", "batch_norm"], help="What normalisation layer to use")
+    parser.add_argument("--output_activation", type=str, default="linear", choices=["linear", "hardsigmoid-256", "sigmoid-256"], help="What activation function to use at the end of the network")
 
     parser.add_argument_group("Other things")
     parser.add_argument("--loss", type=str, default="mse", choices=["mse", "sl1", "focal", "ssim"], help="Loss function for the network")
     parser.add_argument("--reduction", type=str, choices=["mean", "sum", "none"], help="type of reduction to apply on loss")
+    parser.add_argument("--lr", type=float, default=3e-4)
 
     ####
     # Sorting arguements

@@ -6,17 +6,17 @@
 #SBATCH --mem 12G
 #SBATCH -p res-gpu-small
 #SBATCH -x gpu[0-6]
-#SBATCH --job-name rollerFlightBigger-pt-sl1-mean 
-#SBATCH --gres gpu:1
-#SBATCH -o ../../../../../.results/rollerFlightBigger-pt-sl1-mean.out
+#SBATCH --job-name 2dBouncingMG-y-pt-sl1-mean 
+#SBATCH --gres gpu:1)
+#SBATCH -o ../../../../../.results/2dBouncing_lr3e-6_linear_sl1_000.out
 cd ../../../../..
 source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
-# Pretrain
 python VM_train.py \
     --dataset simulations \
-    --dataset_path data/myphysicslab/RollerFlight_10000_bigger \
-    --split_condition tv_ratio:4-1 \
+    --dataset_path data/2dBouncing/2dMultiGrav-Y_regen/raw \
+    --jobname 2dBouncing_lr3e-6_linear_sl1_000 \
+    --split_condition tv_ratio,4-1 \
     --bsz 64 \
     --val_bsz 64 \
     --num_workers 4 \
@@ -25,17 +25,18 @@ python VM_train.py \
     --device 0 \
     --epoch 75 \
     --n_gifs 20 \
-    --jobname rollerFlightBigger-pt-sl1-mean \
-    --loss sl1 \
     --reduction mean \
     --img_type greyscale \
-    --model pixel_transformer \
     --shuffle \
     --wandb \
+    --model pixel_transformer \
     --d_model 4096 \
-    --n_layers 6 \
-    --nhead 8 \
-    --dim_feedforward 16384 \
+    --n_layers 2 \
+    --nhead 1 \
+    --dim_feedforward 4096 \
     --dropout 0.1 \
-    --pixel_regression_layer \
-    --norm_layer layer_norm
+    --pixel_regression_layers 1 \
+    --norm_layer layer_norm \
+    --loss sl1 \
+    --output_activation linear \
+    --lr 3e-6 \

@@ -1,11 +1,63 @@
 __author__ = "Daniel Kluvanec"
 
+import copy
 import torch
-from torch._C import device
 import torch.nn as nn
 import torch.nn.functional as F
 
 from models.UpDown2D import sigmoid_256
+
+def hardsigmoid_256(inputs):
+    """
+    Scale the hardsigmoid function from 0-255 for greyscale image outputs
+    """
+    return 255 * F.hardsigmoid(inputs)
+
+def identity(inputs):
+    return inputs
+
+
+class PositionalEncoder(nn.Module):
+    """ Class that saves and returns the positional encodings"""
+    def __init__(self, d_model, max_sequence_len):
+        """
+        :param d_model: The number of features in each embedding
+        :param max_sequence_len: How many embeddings to store
+        """
+        super().__init__()
+        # positional encodings
+        positions = torch.arange(max_sequence_len)[:, None]
+        positional_i = torch.arange(d_model)[None, :]
+        positional_angle_rates = 1 / torch.pow(10000, (2 * (positional_i // 2)) / d_model)
+        positional_angle_rads = positions * positional_angle_rates
+        positional_angle_rads[:, 0::2] = torch.sin(positional_angle_rads[:, 0::2])
+        positional_angle_rads[:, 1::2] = torch.cos(positional_angle_rads[:, 1::2])
+
+        self.register_buffer('pos_encoding', positional_angle_rads[:, None, :])
+        self.pos_encoding.requires_grad = False
+
+    def forward(self):
+        return self.pos_encoding
+
+
+class TransformerEncoder(nn.Module):
+    """
+    Transformer that returns hidden activations in forward function as well
+    """
+    def __init__(self, n_layers, d_model, nhead, dim_feedforward, dropout):
+        super().__init__()
+        self.transformer_layers = nn.ModuleList([
+            nn.TransformerEncoderLayer(d_model, nhead, dim_feedforward, dropout) for _ in range(n_layers)
+        ])
+
+    def forward(self, x):
+        hidden_xs = []
+        for transformer_layer in self.transformer_layers:
+            x = transformer_layer(x)
+            hidden_xs.append(x)
+        # hidden_x includes output
+        return x, hidden_xs
+
 
 class PixelTransformer(nn.Module):
     """
@@ -22,8 +74,9 @@ class PixelTransformer(nn.Module):
         args.nhead: int = number of heads
         args.dim_feedforward: int = the dimension of the feedforward network model
         args.dropout: float
-        args.pixel_regression_layer: bool = whether to add a pixel regression linear layer pair at the end
+        args.pixel_regression_layers: int = number of layers at the end of transformer
         args.norm_layer: str = which normalisation layer to use, one of ("layer_norm", "batch_norm")
+        args.output_activation: str = what activation function to use at the end of the network (linear, hardsigmoid-256, sigmoid-256)
         """
         super().__init__()
         self.args = args
@@ -36,32 +89,32 @@ class PixelTransformer(nn.Module):
         else:
             raise ValueError(f"Unknown norm_layer: {args.norm_layer}")
 
-        # positional encodings
-        positions = torch.arange(args.in_no)[:, None]
-        positional_i = torch.arange(args.d_model)[None, :]
-        positional_angle_rates = 1 / torch.pow(10000, (2* (positional_i//2)) / args.d_model)
-        positional_angle_rads = positions * positional_angle_rates
-        positional_angle_rads[:, 0::2] = torch.sin(positional_angle_rads[:, 0::2])
-        positional_angle_rads[:, 1::2] = torch.cos(positional_angle_rads[:, 1::2])
-        self.register_buffer('pos_encoding', positional_angle_rads[:, None, :])
-        self.pos_encoding.requires_grad = False
+        # output_activation
+        if args.output_activation == 'linear':
+            self.output_activation_function = identity
+        elif args.output_activation == 'hardsigmoid-256':
+            self.output_activation_function = hardsigmoid_256
+        elif args.output_activation == 'sigmoid-256':
+            self.output_activation_function = sigmoid_256
+        else:
+            raise ValueError(f"Unknown output_activation: {args.output_activation}")
+
+        # positional encoder
+        self.pos_encoder = PositionalEncoder(args.d_model, args.in_no)
 
         # transformer
-        transformer_encoder_layer = nn.TransformerEncoderLayer(args.d_model, args.nhead, args.dim_feedforward, args.dropout)
-        self.transformer_encoder = nn.TransformerEncoder(transformer_encoder_layer, args.n_layers, self.norm_layer_class(args.d_model))
+        self.transformer = TransformerEncoder(args.n_layers, args.d_model, args.nhead, args.dim_feedforward, args.dropout)
 
-        # pixel regression layer
-        if args.pixel_regression_layer:
-            self.pixel_regression_layer = nn.Sequential(
-                nn.Linear(args.d_model, args.dim_feedforward),
-                nn.ReLU(),
-                nn.Dropout(args.dropout),
-                nn.Linear(args.dim_feedforward, args.d_model),
-            )
-        else:
-            self.pixel_regression_layer = nn.Identity()
+        # pixel regression layers
+        pixel_regression_layers = []
+        for i in range(args.pixel_regression_layers):
+            pixel_regression_layers.append(nn.ReLU())
+            pixel_regression_layers.append(nn.Dropout(args.dropout))
+            pixel_regression_layers.append(nn.Linear(args.d_model, args.d_model))
 
-    def forward(self, x:torch.Tensor):
+        self.pixel_regression_layer = nn.Sequential(*pixel_regression_layers)
+
+    def forward(self, x):
         shape = x.shape  # should be (batch, sequence, height, width)
         batchsize = shape[0]
         sequence_length = shape[1]
@@ -70,20 +123,17 @@ class PixelTransformer(nn.Module):
         imsize = height * width
 
         # reshape
-        x = x.view(batchsize, sequence_length, imsize)  # (batch, sequence, imsize)
-        x = torch.transpose(x, 0, 1)  # (sequence, batch, imsize)
+        x = torch.transpose(x, 0, 1)  # (sequence, batch, height, width)
+        x = x.view(sequence_length, batchsize, imsize)  # (batch, sequence, imsize)
 
         # layers
-        x = x + self.pos_encoding
-        x = self.transformer_encoder(x)
-        x = self.pixel_regression_layer(x)  # identity if not args.pixel_regression_layer
-        x = sigmoid_256(x)
+        x = x + self.pos_encoder()
+        x, hidden_xs = self.transformer_encoder(x)
+        x = x[-self.args.out_no:, :, :, :]  # (out_no, batch, height, width)
+        x = self.pixel_regression_layer(x)
+        x = self.output_activation_function(x)
 
         # reshape
-        x = torch.transpose(x, 0, 1)  # (batch, sequence, imsize)
-        x = x.view(batchsize, sequence_length, height, width)
-        
-        # extract output
-        x = x[:, -self.args.out_no:, :, :]  # (batch, out_no, height, width)
-
-        return x, None
+        x = x.view(self.args.out_no, batchsize, height, width)
+        x = torch.transpose(x, 0, 1)  # (out_no, sequence, imsize)
+        return x, hidden_xs
