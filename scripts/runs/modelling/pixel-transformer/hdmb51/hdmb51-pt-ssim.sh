@@ -5,6 +5,7 @@
 #SBATCH -t 2-00:00
 #SBATCH --mem 12G
 #SBATCH -t 7-00:00
+#SBATCH -x gpu[0-6]
 #SBATCH -p res-gpu-small
 #SBATCH --job-name hdmb51-pt-ssim 
 #SBATCH --gres gpu:1

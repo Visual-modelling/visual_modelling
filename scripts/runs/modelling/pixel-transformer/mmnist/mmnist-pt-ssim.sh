@@ -5,6 +5,7 @@
 #SBATCH -t 2-00:00
 #SBATCH --mem 12G
 #SBATCH -p res-gpu-small
+#SBATCH -x gpu[0-6]
 #SBATCH --job-name mmnist-pt-ssim 
 #SBATCH --gres gpu:1
 #SBATCH -o ../../../../../.results/mmnist-pt-ssim.out
