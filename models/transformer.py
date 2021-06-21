@@ -13,8 +13,8 @@ def hardsigmoid_256(inputs):
     """
     return 255 * F.hardsigmoid(inputs)
 
-def identity(inputs):
-    return inputs
+def linear_256(inputs):
+    return 255 * inputs
 
 
 class PositionalEncoder(nn.Module):
@@ -91,7 +91,7 @@ class PixelTransformer(nn.Module):
 
         # output_activation
         if args.output_activation == 'linear':
-            self.output_activation_function = identity
+            self.output_activation_function = linear_256
         elif args.output_activation == 'hardsigmoid-256':
             self.output_activation_function = hardsigmoid_256
         elif args.output_activation == 'sigmoid-256':
