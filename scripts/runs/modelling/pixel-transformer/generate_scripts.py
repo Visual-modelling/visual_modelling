@@ -97,7 +97,7 @@ if __name__ == '__main__':
                         if restrict_to_titan:
                             f.write('#SBATCH -x gpu[0-6]\n')
                         f.write('#SBATCH --job-name 2dBouncingMG-y-pt-sl1-mean \n')
-                        f.write('#SBATCH --gres gpu:1)\n')
+                        f.write('#SBATCH --gres gpu:1 \n')
                         f.write(f'#SBATCH -o ../../../../../.results/{filename_core}.out\n')
                         f.write('cd ../../../../..\n')
                         f.write('source python_venvs/vm/bin/activate\n')

@@ -6,7 +6,7 @@
 #SBATCH --mem 12G
 #SBATCH -p res-gpu-small
 #SBATCH --job-name 2dBouncingMG-y-pt-sl1-mean 
-#SBATCH --gres gpu:1)
+#SBATCH --gres gpu:1 
 #SBATCH -o ../../../../../.results/2dBouncing_transformer_lr1e-4_linear_sl1_000.out
 cd ../../../../..
 source python_venvs/vm/bin/activate
