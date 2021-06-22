@@ -32,6 +32,7 @@ from tools.utils import model_fwd
 from tools.ball_distance_metric import calculate_metric
 from models.UpDown2D import FCUpDown2D
 from models.transformer import ImageTransformer
+from models.deans_transformer import VMDecoder as DeansTransformer
 
 
 
@@ -214,6 +215,8 @@ class ModellingSystem(pl.LightningModule):
             self.model = FCUpDown2D(args)
         elif args.model == "image_transformer":
             self.model = ImageTransformer(args)
+        elif args.model == "deans_transformer":
+            self.model = DeansTransformer(in_dim=args.d_model, layers=args.n_layers, heads=args.nhead)
         else:
             raise ValueError(f"Unknown model: {args.model}")
 
@@ -332,7 +335,7 @@ if __name__ == "__main__":
     parser.add_argument("--shuffle", action="store_true", help="shuffle dataset")
     
     parser.add_argument_group("Shared Model argmuents")
-    parser.add_argument("--model", type=str, default="UpDown2D", choices=["UpDown2D", "UpDown3D", "image_transformer"], help="Type of model to run")
+    parser.add_argument("--model", type=str, default="UpDown2D", choices=["UpDown2D", "UpDown3D", "image_transformer", "deans_transformer"], help="Type of model to run")
 
     parser.add_argument_group("2D and 3D CNN specific arguments")
     parser.add_argument("--img_type", type=str, default="binary", choices=["binary", "greyscale", "RGB"], help="Type of input image")
@@ -351,12 +354,12 @@ if __name__ == "__main__":
     parser.add_argument("--dropout", type=float, default=0.1, help="The dropout value")
     parser.add_argument("--pixel_regression_layers", type=int, default=1, help="How many layers to add after transformers")
     parser.add_argument("--norm_layer", type=str, default="layer_norm", choices=["layer_norm", "batch_norm"], help="What normalisation layer to use")
-    parser.add_argument("--output_activation", type=str, default="linear", choices=["linear", "hardsigmoid-256", "sigmoid-256"], help="What activation function to use at the end of the network")
+    parser.add_argument("--output_activation", type=str, default="linear", choices=["linear-256", "hardsigmoid-256", "sigmoid-256"], help="What activation function to use at the end of the network")
 
     parser.add_argument_group("Other things")
     parser.add_argument("--loss", type=str, default="mse", choices=["mse", "sl1", "focal", "ssim"], help="Loss function for the network")
     parser.add_argument("--reduction", type=str, choices=["mean", "sum", "none"], help="type of reduction to apply on loss")
-    parser.add_argument("--lr", type=float, default=3e-4)
+    parser.add_argument("--lr", type=float, default=3e-4, help="Set the learning rate for the RAdam Optimiser")
 
     ####
     # Sorting arguements
@@ -433,6 +436,8 @@ if __name__ == "__main__":
     elif args.model == "UpDown2D":
         pl_system = ModellingSystem(args, self_out_loader)
     elif args.model == "image_transformer":
+        pl_system = ModellingSystem(args, self_out_loader)
+    elif args.model == "deans_transformer":
         pl_system = ModellingSystem(args, self_out_loader)
     else:
         raise ValueError(f"Unknown model: {args.model}")

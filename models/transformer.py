@@ -76,7 +76,7 @@ class ImageTransformer(nn.Module):
         args.dropout: float
         args.pixel_regression_layers: int = number of layers at the end of transformer
         args.norm_layer: str = which normalisation layer to use, one of ("layer_norm", "batch_norm")
-        args.output_activation: str = what activation function to use at the end of the network (linear, hardsigmoid-256, sigmoid-256)
+        args.output_activation: str = what activation function to use at the end of the network (linear-256, hardsigmoid-256, sigmoid-256)
         """
         super().__init__()
         self.args = args
@@ -90,7 +90,7 @@ class ImageTransformer(nn.Module):
             raise ValueError(f"Unknown norm_layer: {args.norm_layer}")
 
         # output_activation
-        if args.output_activation == 'linear':
+        if args.output_activation == 'linear-256':
             self.output_activation_function = linear_256
         elif args.output_activation == 'hardsigmoid-256':
             self.output_activation_function = hardsigmoid_256
