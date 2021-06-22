@@ -12,7 +12,7 @@ if __name__ == '__main__':
     learning_rates = ['3e-4', '1e-4', '3e-5', '1e-5', '3e-6', '1e-6']
 
     params = OrderedDict([
-        ('model', 'pixel_transformer'),
+        ('model', 'image_transformer'),
         ('d_model', 4096),
         ('n_layers', 2),
         ('nhead', 1),

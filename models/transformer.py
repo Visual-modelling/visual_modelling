@@ -59,9 +59,9 @@ class TransformerEncoder(nn.Module):
         return x, hidden_xs
 
 
-class PixelTransformer(nn.Module):
+class ImageTransformer(nn.Module):
     """
-    Pixel-wise image transformer that takes and outputs images of the shape (batch, channels, height, width).
+    Image-wise transformer that takes and outputs images of the shape (batch, channels, height, width).
     Takes a sequence of n images and returns m (<=n) images as predictions.
     Built as a simple transformer encoder
     """

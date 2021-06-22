@@ -28,7 +28,7 @@ python VM_train.py \
     --img_type greyscale \
     --shuffle \
     --wandb \
-    --model pixel_transformer \
+    --model image_transformer \
     --d_model 4096 \
     --n_layers 2 \
     --nhead 1 \
