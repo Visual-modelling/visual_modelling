@@ -12,7 +12,7 @@ if __name__ == '__main__':
     # learning_rates = ['3e-4', '1e-4', '3e-5', '1e-5', '3e-6', '1e-6']
     learning_rates = ['3e-6', '1e-6', '3e-7']
 
-    label = 'adam_'
+    label = 'radam_'
 
     params = OrderedDict([
         ('model', 'image_transformer'),
@@ -23,7 +23,7 @@ if __name__ == '__main__':
         ('dropout', 0.1),
         ('pixel_regression_layers', 1),
         ('norm_layer', 'layer_norm'),
-        ('optimiser', 'adam')
+        ('optimiser', 'radam')
     ])
 
     common_params = OrderedDict([
