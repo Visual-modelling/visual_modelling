@@ -241,10 +241,12 @@ class Bouncing_CNN(pl.LightningModule):
         return out
 
     def configure_optimizers(self):
-        if self.args.reduction == "none":   # Higher rate for none reduction needed?
-            optimizer = radam.RAdam([p for p in self.parameters() if p.requires_grad], lr=3e-3, weight_decay=1e-5)
-        else:
-            optimizer = radam.RAdam([p for p in self.parameters() if p.requires_grad], lr=3e-4, weight_decay=1e-5)
+        # self.args.reduction == "none" RAN WITH 3e-3
+        # Everything else ran with 3e-4
+        if self.args.optimiser == "radam":
+            optimizer = radam.RAdam([p for p in self.parameters() if p.requires_grad], lr=self.args.lr, weight_decay=1e-5)
+        elif self.args.optimiser == "adam":
+            optimizer = torch.optim.Adam([p for p in self.parameters() if p.requires_grad], lr=self.args.lr, eps=1e-8)
         return optimizer
 
     def training_step(self, train_batch, batch_idx):
@@ -333,6 +335,8 @@ if __name__ == "__main__":
 
     parser.add_argument_group("Other things")
     parser.add_argument("--loss", type=str, default="mse", choices=["mse", "sl1", "focal", "ssim"], help="Loss function for the network")
+    parser.add_argument("--lr", type=float, default=3e-4, help="Setting default to what it was, it should likely be lower")
+    parser.add_argument("--optimiser", type=str, default="radam", choices=["radam","adam"], help="Optimiser differences seem to help the transformer")
     parser.add_argument("--reduction", type=str, choices=["mean", "sum", "none"], help="type of reduction to apply on loss")
 
     ####
