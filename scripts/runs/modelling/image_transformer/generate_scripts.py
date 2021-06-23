@@ -3,14 +3,16 @@ from collections import OrderedDict
 
 if __name__ == '__main__':
     restrict_to_titan = False
-    experiment_no = 3
+    experiment_no = 4
     dataset = '3dBouncing'  # None for all
     # losses = ['sl1', 'ssim']
     losses = ['sl1']
     # output_activations = ['linear-256', 'hardsigmoid-256', 'sigmoid-256']
     output_activations = ['hardsigmoid-256']
     # learning_rates = ['3e-4', '1e-4', '3e-5', '1e-5', '3e-6', '1e-6']
-    learning_rates = ['1e-5', '3e-6', '1e-6']
+    learning_rates = ['3e-6', '1e-6', '3e-7']
+
+    label = 'adam_'
 
     params = OrderedDict([
         ('model', 'image_transformer'),
@@ -21,6 +23,7 @@ if __name__ == '__main__':
         ('dropout', 0.1),
         ('pixel_regression_layers', 1),
         ('norm_layer', 'layer_norm'),
+        ('optimiser', 'adam')
     ])
 
     common_params = OrderedDict([
@@ -83,7 +86,7 @@ if __name__ == '__main__':
         for loss in losses:
             for output_activation in output_activations:
                 for learning_rate in learning_rates:
-                    filename_core = f'{dataset}_transformer_lr{learning_rate}_{output_activation}_{loss}_{experiment_no:03}'
+                    filename_core = f'{dataset}_transformer_lr{learning_rate}_{output_activation}_{loss}_{label}{experiment_no:03}'
                     filename = f'{filename_core}.sh'
                     if not os.path.exists(dataset_name):
                         os.makedirs(dataset_name)
