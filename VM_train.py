@@ -257,7 +257,12 @@ class ModellingSystem(pl.LightningModule):
         return out
 
     def configure_optimizers(self):
-        optimizer = radam.RAdam([p for p in self.parameters() if p.requires_grad], lr=self.args.lr, weight_decay=1e-5)
+        # self.args.reduction == "none" RAN WITH 3e-3
+        # Everything else ran with 3e-4
+        if self.args.optimiser == "radam":
+            optimizer = radam.RAdam([p for p in self.parameters() if p.requires_grad], lr=self.args.lr, weight_decay=1e-5)
+        elif self.args.optimiser == "adam":
+            optimizer = torch.optim.Adam([p for p in self.parameters() if p.requires_grad], lr=self.args.lr, eps=1e-8)
         return optimizer
 
     def training_step(self, train_batch, batch_idx):
@@ -333,7 +338,7 @@ if __name__ == "__main__":
     #############
     parser.add_argument("--split_condition", type=str, default="tv_ratio:4-1", help="Custom string deciding how to split datasets into train/test. Affiliated with a custom function in dataset")
     parser.add_argument("--shuffle", action="store_true", help="shuffle dataset")
-    
+
     parser.add_argument_group("Shared Model argmuents")
     parser.add_argument("--model", type=str, default="UpDown2D", choices=["UpDown2D", "UpDown3D", "image_transformer", "deans_transformer"], help="Type of model to run")
 
@@ -358,8 +363,9 @@ if __name__ == "__main__":
 
     parser.add_argument_group("Other things")
     parser.add_argument("--loss", type=str, default="mse", choices=["mse", "sl1", "focal", "ssim"], help="Loss function for the network")
+    parser.add_argument("--lr", type=float, default=3e-4, help="Setting default to what it was, it should likely be lower")
+    parser.add_argument("--optimiser", type=str, default="radam", choices=["radam","adam"], help="Optimiser differences seem to help the transformer")
     parser.add_argument("--reduction", type=str, choices=["mean", "sum", "none"], help="type of reduction to apply on loss")
-    parser.add_argument("--lr", type=float, default=3e-4, help="Set the learning rate for the RAdam Optimiser")
 
     ####
     # Sorting arguements
