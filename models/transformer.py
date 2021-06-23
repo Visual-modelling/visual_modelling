@@ -135,5 +135,5 @@ class ImageTransformer(nn.Module):
 
         # reshape
         x = x.view(self.args.out_no, batchsize, height, width)
-        x = torch.transpose(x, 0, 1)  # (out_no, sequence, imsize)
+        x = torch.transpose(x, 0, 1)  # (batch, out_no, imsize)
         return x, hidden_xs

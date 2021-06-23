@@ -3,12 +3,12 @@ from collections import OrderedDict
 
 if __name__ == '__main__':
     restrict_to_titan = False
-    experiment_no = 2
-    dataset = '2dBouncing'  # None for all
+    experiment_no = 3
+    dataset = '3dBouncing'  # None for all
     # losses = ['sl1', 'ssim']
     losses = ['sl1']
     # output_activations = ['linear-256', 'hardsigmoid-256', 'sigmoid-256']
-    output_activations = ['sigmoid-256']
+    output_activations = ['hardsigmoid-256']
     # learning_rates = ['3e-4', '1e-4', '3e-5', '1e-5', '3e-6', '1e-6']
     learning_rates = ['1e-5', '3e-6', '1e-6']
 

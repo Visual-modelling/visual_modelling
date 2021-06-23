@@ -19,5 +19,5 @@ python_venvs
 **/wandb/
 
 .vscode/**
-./idea/**
+.idea/**
 tmp*
