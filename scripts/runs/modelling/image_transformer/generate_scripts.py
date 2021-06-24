@@ -3,16 +3,16 @@ from collections import OrderedDict
 
 if __name__ == '__main__':
     restrict_to_titan = False
-    experiment_no = 4
+    experiment_no = 6
     dataset = '3dBouncing'  # None for all
-    # losses = ['sl1', 'ssim']
+    # losses = ['mse', 'sl1', 'ssim']
     losses = ['sl1']
     # output_activations = ['linear-256', 'hardsigmoid-256', 'sigmoid-256']
     output_activations = ['hardsigmoid-256']
     # learning_rates = ['3e-4', '1e-4', '3e-5', '1e-5', '3e-6', '1e-6']
-    learning_rates = ['3e-6', '1e-6', '3e-7']
+    learning_rates = ['3e-5', '1e-5', '3e-6']
 
-    label = 'radam_'
+    label = 'nodropout_'
 
     params = OrderedDict([
         ('model', 'image_transformer'),
@@ -20,10 +20,10 @@ if __name__ == '__main__':
         ('n_layers', 2),
         ('nhead', 1),
         ('dim_feedforward', 4096),
-        ('dropout', 0.1),
+        ('dropout', 0.0),
         ('pixel_regression_layers', 1),
         ('norm_layer', 'layer_norm'),
-        ('optimiser', 'radam')
+        ('optimiser', 'adam')
     ])
 
     common_params = OrderedDict([
