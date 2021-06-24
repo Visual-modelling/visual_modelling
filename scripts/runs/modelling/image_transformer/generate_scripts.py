@@ -3,14 +3,14 @@ from collections import OrderedDict
 
 if __name__ == '__main__':
     restrict_to_titan = False
-    experiment_no = 6
-    dataset = '3dBouncing'  # None for all
+    experiment_no = 8
+    dataset_names = ['3dBouncing', '2dBouncing']  # None for all
     # losses = ['mse', 'sl1', 'ssim']
-    losses = ['sl1']
+    losses = ['mse']
     # output_activations = ['linear-256', 'hardsigmoid-256', 'sigmoid-256']
     output_activations = ['hardsigmoid-256']
     # learning_rates = ['3e-4', '1e-4', '3e-5', '1e-5', '3e-6', '1e-6']
-    learning_rates = ['3e-5', '1e-5', '3e-6']
+    learning_rates = ['2e-5']
 
     label = 'nodropout_'
 
@@ -42,7 +42,7 @@ if __name__ == '__main__':
         ('wandb', None),
     ])
     # jobname
-    datasets = {
+    datasets_params = {
         '2dBouncing': {
             'dataset': 'simulations',
             'dataset_path': 'data/2dBouncing/2dMultiGrav-Y_regen/raw'},
@@ -76,17 +76,15 @@ if __name__ == '__main__':
                             'data/HDMB-51/grey_64x64_frames'},
     }
 
-    if dataset is None:
-        dataset_list = datasets.keys()
-    else:
-        dataset_list = [dataset]
+    if dataset_names is None:
+        dataset_names = datasets_params.keys()
 
-    for dataset_name in dataset_list:
-        dataset_params = datasets[dataset_name]
+    for dataset_name in dataset_names:
+        dataset_params = datasets_params[dataset_name]
         for loss in losses:
             for output_activation in output_activations:
                 for learning_rate in learning_rates:
-                    filename_core = f'{dataset}_transformer_lr{learning_rate}_{output_activation}_{loss}_{label}{experiment_no:03}'
+                    filename_core = f'{dataset_name}_transformer_lr{learning_rate}_{output_activation}_{loss}_{label}{experiment_no:03}'
                     filename = f'{filename_core}.sh'
                     if not os.path.exists(dataset_name):
                         os.makedirs(dataset_name)
