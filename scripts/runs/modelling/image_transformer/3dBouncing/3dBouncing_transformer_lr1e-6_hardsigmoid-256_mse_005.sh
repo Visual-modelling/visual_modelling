@@ -5,16 +5,16 @@
 #SBATCH -t 2-00:00
 #SBATCH --mem 12G
 #SBATCH -p res-gpu-small
-#SBATCH --job-name 3dBouncing_transformer_lr1e-5_hardsigmoid-256_mse_adam_005 
+#SBATCH --job-name 3dBouncing_transformer_lr1e-6_hardsigmoid-256_mse_005 
 #SBATCH --gres gpu:1 
-#SBATCH -o ../../../../../.results/3dBouncing_transformer_lr1e-5_hardsigmoid-256_mse_adam_005.out
+#SBATCH -o ../../../../../.results/3dBouncing_transformer_lr1e-6_hardsigmoid-256_mse_005.out
 cd ../../../../..
 source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 python VM_train.py \
     --dataset simulations \
     --dataset_path data/3dBouncing/3dRegen \
-    --jobname 3dBouncing_transformer_lr1e-5_hardsigmoid-256_mse_adam_005 \
+    --jobname 3dBouncing_transformer_lr1e-6_hardsigmoid-256_mse_005 \
     --split_condition tv_ratio,4-1 \
     --bsz 64 \
     --val_bsz 64 \
@@ -39,4 +39,4 @@ python VM_train.py \
     --optimiser adam \
     --loss mse \
     --output_activation hardsigmoid-256 \
-    --lr 1e-5 \
+    --lr 1e-6 \
