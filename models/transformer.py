@@ -142,7 +142,7 @@ class ImageTransformer(nn.Module):
 
         # reshape
         x = torch.transpose(x, 0, 1)  # (sequence, batch, height, width)
-        x = x.view(sequence_length, batchsize, imsize)  # (batch, sequence, imsize)
+        x = x.view(sequence_length, batchsize, imsize)  # (sequence, batch, imsize)
 
         # positional encoding
         if self.args.pos_encoder == 'none':
@@ -150,7 +150,7 @@ class ImageTransformer(nn.Module):
         elif self.args.pos_encoder == 'add':
             x = x + self.pos_encoder()
         else:
-            x = torch.cat([x, self.pos_encoder()], dim=2)
+            x = torch.cat([x, self.pos_encoder().expand((-1, batchsize, -1))], dim=2)
 
         x, hidden_xs = self.transformer(x)
         x = x[-self.args.out_no:, :, :imsize]  # (out_no, batch, imsize) cuts off concatenated pos_encoder values
