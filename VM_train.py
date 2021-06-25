@@ -45,6 +45,7 @@ def plot_self_out(pl_system):
     [ os.remove(os.path.join(args.results_dir, file)) for file in os.listdir(args.results_dir) if file.endswith('.gif') ]
     self_out_loader = pl_system.self_out_loader
     wandb_frames = []
+    gt_vs_pred = []
     wandb_metric_n_names = []
     metrics = {
         'psnr':torchmetrics.functional.psnr,
@@ -62,7 +63,10 @@ def plot_self_out(pl_system):
             pbar.set_description(f"Self output: {ngif+1}/{args.n_gifs}")
             start_frames, gt_frames, vid_name, _ = next(iter(self_out_loader))
             start_frames = start_frames.float().to(pl_system.device)
+            og_frames = start_frames.clone().detach()
             out = pl_system(start_frames)
+            #start_frames = start_frames.cpu().detach().byte()
+            #out = out.cpu().detach().byte()
             gif_frames = []
             if args.self_output_n == -1:
                 self_output_n = gt_frames.shape[1]
@@ -77,6 +81,25 @@ def plot_self_out(pl_system):
             gif_frames = gif_frames[:gt_frames.shape[1]]
             gif_metrics = get_gif_metrics(gif_frames, gt_frames, metrics)
             colour_gradients = [255,240,225,210,195,180,165,150,135,120,120,135,150,165,180,195,210,225,240,255]   # Make sure that white/grey backgrounds dont hinder the frame count
+
+            # GT vs Predicted
+            gt_vs_pred_frm = []
+            # Go up to 3 frames into og_frames
+            past_n = int(og_frames[0][-3:].shape[0])
+            for i in range(0,past_n):
+                start_gt = og_frames[0][-past_n:][i].cpu().detach().byte()
+                start_gt = torch.from_numpy(putText(np.array(start_gt), f"{i-past_n}", (0,start_gt.shape[1]), FONT_HERSHEY_SIMPLEX, fontScale = 0.55, color = (colour_gradients[i%len(colour_gradients)])))
+                gt_vs_pred_frm.append(torch.cat([start_gt, start_gt], dim=0))
+
+            # Then the subsequent 25
+            less_or_25 = min(25, gt_frames.shape[1])
+            for i in range(less_or_25):
+                temp_gt = gt_frames[0][i]
+                temp_gt = torch.from_numpy(putText(np.array(temp_gt), f"{i}", (0,temp_gt.shape[1]), FONT_HERSHEY_SIMPLEX, fontScale = 0.55, color = (colour_gradients[i%len(colour_gradients)])))
+                gt_vs_pred_frm.append(torch.cat([gif_frames[i], temp_gt], dim=0))
+            gt_vs_pred_frm = torch.cat(gt_vs_pred_frm, dim=1)
+            gt_vs_pred.append(wandb.Image(gt_vs_pred_frm.numpy()))
+
             # Number the frames to see which frame of the gif in output plut
             gt_frames = [torch.from_numpy(putText(np.array(frame), f"{f_idx}", (0,frame.shape[1]), FONT_HERSHEY_SIMPLEX, fontScale = 0.55, color = (colour_gradients[f_idx%len(colour_gradients)]))) for f_idx, frame in enumerate(gt_frames[0])]
 
@@ -146,6 +169,7 @@ def plot_self_out(pl_system):
             # TODO Deprecated?
             #wandb_metric_n_names.append(gif_metrics)
         pbar.close()
+    wandb.log({"pred-top_gt-bottom": gt_vs_pred}, commit=False)
     wandb.log({"self_output_gifs": wandb_frames}, commit=False)
     wandb.log({"metrics":wandb_metric_n_names}, commit=True)
 
