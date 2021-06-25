@@ -3,27 +3,28 @@ from collections import OrderedDict
 
 if __name__ == '__main__':
     restrict_to_titan = False
-    experiment_no = 8
-    dataset_names = ['3dBouncing', '2dBouncing']  # None for all
+    experiment_no = 9
+    dataset_names = ['3dBouncing']  # None for all
     # losses = ['mse', 'sl1', 'ssim']
-    losses = ['mse']
-    # output_activations = ['linear-256', 'hardsigmoid-256', 'sigmoid-256']
-    output_activations = ['hardsigmoid-256']
-    # learning_rates = ['3e-4', '1e-4', '3e-5', '1e-5', '3e-6', '1e-6']
-    learning_rates = ['2e-5']
+    losses = ['sl1']
+    # learning_rates = ['2e-5', '1e-5', '5e-6']
+    learning_rates = ['2e-5', '1e-5', '5e-6']
 
-    label = 'nodropout_'
+    label = '2layer_1pixel_pos4_'
 
     params = OrderedDict([
         ('model', 'image_transformer'),
         ('d_model', 4096),
-        ('n_layers', 2),
+        ('n_layers', 3),
         ('nhead', 1),
         ('dim_feedforward', 4096),
         ('dropout', 0.0),
         ('pixel_regression_layers', 1),
         ('norm_layer', 'layer_norm'),
-        ('optimiser', 'adam')
+        ('optimiser', 'adam'),
+        ('output_activation', 'hardsigmoid-256'),  # ['linear-256', 'hardsigmoid-256', 'sigmoid-256']
+        ('pos_encoder', '4'),
+        # ('mask', None)  # enables mask
     ])
 
     common_params = OrderedDict([
@@ -34,7 +35,7 @@ if __name__ == '__main__':
         ('in_no', 5),
         ('out_no', 1),
         ('device', 0),
-        ('epoch', 75),
+        ('epoch', 60),
         ('n_gifs', 20),
         ('reduction', 'mean'),
         ('img_type', 'greyscale'),
@@ -82,42 +83,40 @@ if __name__ == '__main__':
     for dataset_name in dataset_names:
         dataset_params = datasets_params[dataset_name]
         for loss in losses:
-            for output_activation in output_activations:
-                for learning_rate in learning_rates:
-                    filename_core = f'{dataset_name}_transformer_lr{learning_rate}_{output_activation}_{loss}_{label}{experiment_no:03}'
-                    filename = f'{filename_core}.sh'
-                    if not os.path.exists(dataset_name):
-                        os.makedirs(dataset_name)
-                    with open(os.path.join(dataset_name, filename), 'w') as f:
-                        f.write('#!/bin/bash\n')
-                        f.write('#SBATCH --qos short\n')
-                        f.write('#SBATCH -N 1\n')
-                        f.write('#SBATCH -c 4\n')
-                        f.write('#SBATCH -t 2-00:00\n')
-                        f.write('#SBATCH --mem 12G\n')
-                        f.write('#SBATCH -p res-gpu-small\n')
-                        if restrict_to_titan:
-                            f.write('#SBATCH -x gpu[0-6]\n')
-                        f.write(f'#SBATCH --job-name {filename_core} \n')
-                        f.write('#SBATCH --gres gpu:1 \n')
-                        f.write(f'#SBATCH -o ../../../../../.results/{filename_core}.out\n')
-                        f.write('cd ../../../../..\n')
-                        f.write('source python_venvs/vm/bin/activate\n')
-                        f.write('export PYTHONBREAKPOINT=ipdb.set_trace\n')
-                        f.write('python VM_train.py \\\n')
-                        f.write(f'    --dataset {dataset_params["dataset"]} \\\n')
-                        f.write(f'    --dataset_path {dataset_params["dataset_path"]} \\\n')
-                        f.write(f'    --jobname {filename_core} \\\n')
-                        for param_name, param_value in common_params.items():
-                            if param_value is None:
-                                f.write(f'    --{param_name} \\\n')
-                            else:
-                                f.write(f'    --{param_name} {param_value} \\\n')
-                        for param_name, param_value in params.items():
-                            if param_value is None:
-                                f.write(f'    --{param_name} \\\n')
-                            else:
-                                f.write(f'    --{param_name} {param_value} \\\n')
-                        f.write(f'    --loss {loss} \\\n')
-                        f.write(f'    --output_activation {output_activation} \\\n')
-                        f.write(f'    --lr {learning_rate} \\\n')
+            for learning_rate in learning_rates:
+                filename_core = f'{dataset_name}_transformer_lr{learning_rate}_{loss}_{label}{experiment_no:03}'
+                filename = f'{filename_core}.sh'
+                if not os.path.exists(dataset_name):
+                    os.makedirs(dataset_name)
+                with open(os.path.join(dataset_name, filename), 'w') as f:
+                    f.write('#!/bin/bash\n')
+                    f.write('#SBATCH --qos short\n')
+                    f.write('#SBATCH -N 1\n')
+                    f.write('#SBATCH -c 4\n')
+                    f.write('#SBATCH -t 2-00:00\n')
+                    f.write('#SBATCH --mem 12G\n')
+                    f.write('#SBATCH -p res-gpu-small\n')
+                    if restrict_to_titan:
+                        f.write('#SBATCH -x gpu[0-6]\n')
+                    f.write(f'#SBATCH --job-name {filename_core} \n')
+                    f.write('#SBATCH --gres gpu:1 \n')
+                    f.write(f'#SBATCH -o ../../../../../.results/{filename_core}.out\n')
+                    f.write('cd ../../../../..\n')
+                    f.write('source python_venvs/vm/bin/activate\n')
+                    f.write('export PYTHONBREAKPOINT=ipdb.set_trace\n')
+                    f.write('python VM_train.py \\\n')
+                    f.write(f'    --dataset {dataset_params["dataset"]} \\\n')
+                    f.write(f'    --dataset_path {dataset_params["dataset_path"]} \\\n')
+                    f.write(f'    --jobname {filename_core} \\\n')
+                    for param_name, param_value in common_params.items():
+                        if param_value is None:
+                            f.write(f'    --{param_name} \\\n')
+                        else:
+                            f.write(f'    --{param_name} {param_value} \\\n')
+                    for param_name, param_value in params.items():
+                        if param_value is None:
+                            f.write(f'    --{param_name} \\\n')
+                        else:
+                            f.write(f'    --{param_name} {param_value} \\\n')
+                    f.write(f'    --loss {loss} \\\n')
+                    f.write(f'    --lr {learning_rate} \\\n')

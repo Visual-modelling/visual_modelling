@@ -44,16 +44,21 @@ class TransformerEncoder(nn.Module):
     """
     Transformer that returns hidden activations in forward function as well
     """
-    def __init__(self, n_layers, d_model, nhead, dim_feedforward, dropout):
+    def __init__(self, n_layers, d_model, nhead, dim_feedforward, dropout, masked=False):
         super().__init__()
         self.transformer_layers = nn.ModuleList([
             nn.TransformerEncoderLayer(d_model, nhead, dim_feedforward, dropout) for _ in range(n_layers)
         ])
+        self.masked = masked
 
     def forward(self, x):
+        if self.masked:
+            mask = torch.torch.triu(torch.ones((x.shape[0], x.shape[0]), dtype=torch.bool), diagonal=1)
+        else:
+            mask = None
         hidden_xs = []
         for transformer_layer in self.transformer_layers:
-            x = transformer_layer(x)
+            x = transformer_layer(x, src_mask=mask)
             hidden_xs.append(x)
         # hidden_x includes output
         return x, hidden_xs
@@ -77,6 +82,8 @@ class ImageTransformer(nn.Module):
         args.pixel_regression_layers: int = number of layers at the end of transformer
         args.norm_layer: str = which normalisation layer to use, one of ("layer_norm", "batch_norm")
         args.output_activation: str = what activation function to use at the end of the network (linear-256, hardsigmoid-256, sigmoid-256)
+        args.pos_encoder: str = 'none', 'add', or integer for concat mode
+        args.mask: bool = whether to add a triangular attn_mask to the transformer attention
         """
         super().__init__()
         self.args = args
@@ -100,10 +107,21 @@ class ImageTransformer(nn.Module):
             raise ValueError(f"Unknown output_activation: {args.output_activation}")
 
         # positional encoder
-        self.pos_encoder = PositionalEncoder(args.d_model, args.in_no)
+        if args.pos_encoder == 'none':
+            self.d_model_adjusted = args.d_model
+            self.pos_encoder = None
+        elif args.pos_encoder == 'add':
+            self.d_model_adjusted = args.d_model
+            self.pos_encoder = PositionalEncoder(args.d_model, args.in_no)
+        elif args.pos_encoder.isdigit():
+            self.d_model_adjusted = args.d_model + int(args.pos_encoder)
+            self.pos_encoder = PositionalEncoder(int(args.pos_encoder), args.in_no)
+        else:
+            raise ValueError(f"Unknown pos_encoder: {args.pos_encoder}. Needs to be 'add', 'none', or an integer for the"
+                             f" number of bits to concatenate.")
 
         # transformer
-        self.transformer = TransformerEncoder(args.n_layers, args.d_model, args.nhead, args.dim_feedforward, args.dropout)
+        self.transformer = TransformerEncoder(args.n_layers, self.d_model_adjusted, args.nhead, args.dim_feedforward, args.dropout)
 
         # pixel regression layers
         pixel_regression_layers = []
@@ -126,10 +144,16 @@ class ImageTransformer(nn.Module):
         x = torch.transpose(x, 0, 1)  # (sequence, batch, height, width)
         x = x.view(sequence_length, batchsize, imsize)  # (batch, sequence, imsize)
 
-        # layers
-        x = x + self.pos_encoder()
+        # positional encoding
+        if self.args.pos_encoder == 'none':
+            pass
+        elif self.args.pos_encoder == 'add':
+            x = x + self.pos_encoder()
+        else:
+            x = torch.cat([x, self.pos_encoder()], dim=2)
+
         x, hidden_xs = self.transformer(x)
-        x = x[-self.args.out_no:, :, :]  # (out_no, batch, imsize)
+        x = x[-self.args.out_no:, :, :imsize]  # (out_no, batch, imsize) cuts off concatenated pos_encoder values
         x = self.pixel_regression_layer(x)
         x = self.output_activation_function(x)
 

@@ -360,6 +360,8 @@ if __name__ == "__main__":
     parser.add_argument("--pixel_regression_layers", type=int, default=1, help="How many layers to add after transformers")
     parser.add_argument("--norm_layer", type=str, default="layer_norm", choices=["layer_norm", "batch_norm"], help="What normalisation layer to use")
     parser.add_argument("--output_activation", type=str, default="linear", choices=["linear-256", "hardsigmoid-256", "sigmoid-256"], help="What activation function to use at the end of the network")
+    parser.add_argument("--pos_encoder", type=str, default="add", help="What positional encoding to use. 'none', 'add' or an integer concatenation with the number of bits to concatenate.")
+    parser.add_argument("--mask", action="store_true", help="Whether to add a triangular attn_mask to the transformer attention")
 
     parser.add_argument_group("Other things")
     parser.add_argument("--loss", type=str, default="mse", choices=["mse", "sl1", "focal", "ssim"], help="Loss function for the network")
