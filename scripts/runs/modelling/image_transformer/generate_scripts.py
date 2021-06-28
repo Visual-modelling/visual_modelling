@@ -3,19 +3,19 @@ from collections import OrderedDict
 
 if __name__ == '__main__':
     restrict_to_titan = False
-    experiment_no = 9
-    dataset_names = ['3dBouncing']  # None for all
+    experiment_no = 10
+    dataset_names = ['2dBouncing', '3dBouncing']  # None for all
     # losses = ['mse', 'sl1', 'ssim']
-    losses = ['sl1']
+    losses = ['sl1', 'ssim']
     # learning_rates = ['2e-5', '1e-5', '5e-6']
-    learning_rates = ['2e-5', '1e-5', '5e-6']
+    learning_rates = ['1e-5']
 
-    label = '2layer_1pixel_pos4_'
+    label = 'Comparison_'
 
     params = OrderedDict([
         ('model', 'image_transformer'),
         ('d_model', 4096),
-        ('n_layers', 3),
+        ('n_layers', 2),
         ('nhead', 1),
         ('dim_feedforward', 4096),
         ('dropout', 0.0),
@@ -23,7 +23,7 @@ if __name__ == '__main__':
         ('norm_layer', 'layer_norm'),
         ('optimiser', 'adam'),
         ('output_activation', 'hardsigmoid-256'),  # ['linear-256', 'hardsigmoid-256', 'sigmoid-256']
-        ('pos_encoder', '4'),
+        ('pos_encoder', 'add'),
         # ('mask', None)  # enables mask
     ])
 
@@ -35,7 +35,7 @@ if __name__ == '__main__':
         ('in_no', 5),
         ('out_no', 1),
         ('device', 0),
-        ('epoch', 60),
+        ('epoch', 75),
         ('n_gifs', 20),
         ('reduction', 'mean'),
         ('img_type', 'greyscale'),
