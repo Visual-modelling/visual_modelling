@@ -38,7 +38,7 @@ python VM_train.py \
     --norm_layer layer_norm \
     --optimiser adam \
     --output_activation hardsigmoid-256 \
-    --pos_encoder Add \
+    --pos_encoder add \
     --mask \
     --loss sl1 \
     --lr 1e-5 \
