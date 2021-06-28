@@ -53,7 +53,7 @@ class TransformerEncoder(nn.Module):
 
     def forward(self, x):
         if self.masked:
-            mask = torch.torch.triu(torch.ones((x.shape[0], x.shape[0]), dtype=torch.bool), diagonal=1)
+            mask = torch.torch.triu(torch.ones((x.shape[0], x.shape[0]), dtype=torch.bool, device=x.device), diagonal=1)
         else:
             mask = None
         hidden_xs = []
@@ -121,7 +121,7 @@ class ImageTransformer(nn.Module):
                              f" number of bits to concatenate.")
 
         # transformer
-        self.transformer = TransformerEncoder(args.n_layers, self.d_model_adjusted, args.nhead, args.dim_feedforward, args.dropout)
+        self.transformer = TransformerEncoder(args.n_layers, self.d_model_adjusted, args.nhead, args.dim_feedforward, args.dropout, args.mask)
 
         # pixel regression layers
         pixel_regression_layers = []
