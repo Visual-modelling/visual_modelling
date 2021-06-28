@@ -80,9 +80,9 @@ def merge_two_dicts(x, y):
 def split_dict_ratio(dic, ratio):
     cutoff = round(len(dic)*ratio)
     items = list( dic.items())
+    items.sort()
     rng = np.random.PCG64(2667)
     gen =np.random.Generator(rng)
-    breakpoint()
     gen.shuffle(items)
     dic1, dic2 = dict(items[:cutoff]) , dict(items[cutoff:])
     return dic1, dic2
