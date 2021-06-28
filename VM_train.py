@@ -118,6 +118,23 @@ def plot_self_out(pl_system):
             ball_distance_image = torch.from_numpy(np.copy(ball_distance_image)).permute(2,0,1)#.unsqueeze(0)
             ball_distance_image = ball_distance_image.float().mean(0).byte()
 
+            # PSNR plot
+            plt.plot(gif_metrics['psnr'])
+            canvas = plt.gcf()
+            dpi = plt.gcf().get_dpi()
+            canvas.set_size_inches(2*img_h/dpi, 2*img_h/dpi)
+            canvas.suptitle(f"PSNR", fontsize=6)
+            plt.xticks(fontsize=5)
+            plt.yticks(fontsize=5)
+            canvas.tight_layout()
+            canvas = plt.gca().figure.canvas
+            canvas.draw()
+            data = np.frombuffer(canvas.tostring_rgb(), dtype=np.uint8)
+            psnr_image = data.reshape(canvas.get_width_height()[::-1] + (3,))
+            plt.clf()
+            psnr_image = torch.from_numpy(np.copy(psnr_image)).permute(2,0,1)#.unsqueeze(0)
+            psnr_image = psnr_image.float().mean(0).byte()
+
             # SSIM plot
             plt.plot(gif_metrics['ssim'])
             canvas = plt.gcf()
@@ -153,7 +170,7 @@ def plot_self_out(pl_system):
             sl1_image = sl1_image.float().mean(0).byte()
 
             # Gif
-            gif_frames = [ torch.cat( [torch.cat( [torch.stack(gif_frames)[n_frm], gt_frames[n_frm]], dim=0), ball_distance_image, ssim_image, sl1_image], dim=1)for n_frm in range(len(gif_frames)) ]
+            gif_frames = [ torch.cat( [torch.cat( [torch.stack(gif_frames)[n_frm], gt_frames[n_frm]], dim=0), ball_distance_image, psnr_image, ssim_image, sl1_image], dim=1)for n_frm in range(len(gif_frames)) ]
             gif_save_path = os.path.join(args.results_dir, f"{ngif}-{vid_name[0]}.gif") 
             # TODO gifs from different datasets with the same name will overwrite eachother. this is niche and not worth the time right now
             imageio.mimsave(gif_save_path, gif_frames)
@@ -180,17 +197,17 @@ def get_gif_metrics(gif_frames, gt_frames, metrics):
     #    #'FVD':metrics['FVD'](gif_frames[:utils.round_down(gif_frames.shape[0],16)], gt_frames[:utils.round_down(gt_frames.shape[0],16)] )
     #    #'FVD':metrics['FVD'](gif_frames, gt_frames)
     #}
-    #running_psnr = []
+    running_psnr = []
     running_ball_distance = []
     running_ssim = []
     running_sl1 = []
     for frame_idx in range(gif_frames.shape[0]):
-        #running_psnr.append( float(metrics['psnr']( gif_frames[frame_idx].float(), gt_frames[frame_idx].float())) )
+        running_psnr.append( float(metrics['psnr']( gif_frames[frame_idx].float(), gt_frames[frame_idx].float())) )
         running_ball_distance.append( metrics['ball_distance']( gif_frames[frame_idx], gt_frames[frame_idx]) )
         running_ssim.append( float(metrics['ssim']( gif_frames[frame_idx].unsqueeze(0).float(), gt_frames[frame_idx].unsqueeze(0).float())) )
         running_sl1.append( float(metrics['sl1']( gif_frames[frame_idx].float(), gt_frames[frame_idx].float())) )
     metric_vals = {
-        #'psnr':running_psnr,
+        'psnr':running_psnr,
         'ball_distance':running_ball_distance,
         'ssim':running_ssim,
         'sl1':running_sl1
@@ -416,9 +433,8 @@ if __name__ == "__main__":
         self_out_dset = self_out_list[0]
     pin_memory = args.device >= 0 and args.num_workers >= 1
     train_loader = DataLoader(train_dset, batch_size=args.bsz, num_workers=args.num_workers, shuffle=args.shuffle, pin_memory=pin_memory)#, drop_last=True)
-    valid_loader = DataLoader(valid_dset, batch_size=args.val_bsz, num_workers=args.num_workers, shuffle=args.shuffle, pin_memory=pin_memory)#, drop_last=True)
-    torch.manual_seed(2667)
-    self_out_loader = DataLoader(self_out_dset, batch_size=1, num_workers=args.num_workers, shuffle=args.shuffle, drop_last=True, pin_memory=pin_memory)
+    valid_loader = DataLoader(valid_dset, batch_size=args.val_bsz, num_workers=args.num_workers, shuffle=False, pin_memory=pin_memory)#, drop_last=True)
+    self_out_loader = DataLoader(self_out_dset, batch_size=1, num_workers=args.num_workers, shuffle=False, drop_last=True, pin_memory=pin_memory)
 
     #### Logging and Saving: If we're saving this run, prepare the neccesary directory for saving things
     wandb.init(entity=args.wandb_entity, project="visual-modelling", name=args.jobname)
