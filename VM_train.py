@@ -37,6 +37,7 @@ def plot_self_out(pl_system):
     # Remove all previous gifs
     [ os.remove(os.path.join(args.results_dir, file)) for file in os.listdir(args.results_dir) if file.endswith('.gif') ]
     self_out_loader = pl_system.self_out_loader
+    self_out_loader = iter(self_out_loader)
     wandb_frames = []
     gt_vs_pred = []
     wandb_metric_n_names = []
@@ -54,7 +55,8 @@ def plot_self_out(pl_system):
         for ngif in range(args.n_gifs):
             pbar.update(1)
             pbar.set_description(f"Self output: {ngif+1}/{args.n_gifs}")
-            start_frames, gt_frames, vid_name, _ = next(iter(self_out_loader))
+            breakpoint()
+            start_frames, gt_frames, vid_name, _ = next(self_out_loader)
             start_frames = start_frames.float().to(pl_system.device)
             og_frames = start_frames.clone().detach()
             out = pl_system(start_frames)
@@ -376,7 +378,7 @@ if __name__ == "__main__":
 
     parser.add_argument_group("Other things")
     parser.add_argument("--loss", type=str, default="mse", choices=["mse", "sl1", "focal", "ssim"], help="Loss function for the network")
-    parser.add_argument("--lr", type=float, default=3e-4, help="Setting default to what it was, it should likely be lower")
+    parser.add_argument("--lr", type=float, default=1e-5, help="Setting default to what it was, it should likely be lower")
     parser.add_argument("--optimiser", type=str, default="radam", choices=["radam","adam"], help="Optimiser differences seem to help the transformer")
     parser.add_argument("--reduction", type=str, choices=["mean", "sum", "none"], help="type of reduction to apply on loss")
 
@@ -431,7 +433,7 @@ if __name__ == "__main__":
         train_dset = train_list[0]
         valid_dset = valid_list[0]
         self_out_dset = self_out_list[0]
-    pin_memory = args.device >= 0 and args.num_workers >= 1
+    pin_memory = (args.device >= 0) and (args.num_workers >= 1)
     train_loader = DataLoader(train_dset, batch_size=args.bsz, num_workers=args.num_workers, shuffle=args.shuffle, pin_memory=pin_memory)#, drop_last=True)
     valid_loader = DataLoader(valid_dset, batch_size=args.val_bsz, num_workers=args.num_workers, shuffle=False, pin_memory=pin_memory)#, drop_last=True)
     self_out_loader = DataLoader(self_out_dset, batch_size=1, num_workers=args.num_workers, shuffle=False, drop_last=True, pin_memory=pin_memory)
