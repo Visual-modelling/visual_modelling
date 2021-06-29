@@ -62,7 +62,6 @@ def plot_self_out(pl_system):
         for ngif in range(args.n_gifs):
             pbar.update(1)
             pbar.set_description(f"Self output: {ngif+1}/{args.n_gifs}")
-            breakpoint()
             start_frames, gt_frames, vid_name, _ = next(self_out_loader)
             start_frames = start_frames.float().to(pl_system.device)
             og_frames = start_frames.clone().detach()
