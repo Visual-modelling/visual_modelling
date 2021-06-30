@@ -26,6 +26,7 @@ class PositionalEncoder(nn.Module):
         """
         super().__init__()
         # positional encodings
+        self.max_sequence_len = max_sequence_len
         positions = torch.arange(max_sequence_len)[:, None]
         positional_i = torch.arange(d_model)[None, :]
         positional_angle_rates = 1 / torch.pow(10000, (2 * (positional_i // 2)) / d_model)
@@ -38,6 +39,9 @@ class PositionalEncoder(nn.Module):
 
     def forward(self):
         return self.pos_encoding
+
+    def __len__(self):
+        return self.max_sequence_len
 
 
 class TransformerEncoder(nn.Module):
@@ -84,6 +88,7 @@ class ImageTransformer(nn.Module):
         args.output_activation: str = what activation function to use at the end of the network (linear-256, hardsigmoid-256, sigmoid-256)
         args.pos_encoder: str = 'none', 'add', or integer for concat mode
         args.mask: bool = whether to add a triangular attn_mask to the transformer attention
+        args.dataset_mode: str = 'consecutive' or 'overlap'
         """
         super().__init__()
         self.args = args
@@ -110,7 +115,7 @@ class ImageTransformer(nn.Module):
         if args.pos_encoder == 'none':
             self.d_model_adjusted = args.d_model
             self.pos_encoder = None
-        elif args.pos_encoder == 'add':
+        elif args.pos_encoder in ['add', 'add_runtime']:
             self.d_model_adjusted = args.d_model
             self.pos_encoder = PositionalEncoder(args.d_model, args.in_no)
         elif args.pos_encoder.isdigit():
@@ -149,15 +154,24 @@ class ImageTransformer(nn.Module):
             pass
         elif self.args.pos_encoder == 'add':
             x = x + self.pos_encoder()
+        elif self.args.pos_encoder == 'add_runtime':
+            if len(self.pos_encoder) < sequence_length:
+                self.pos_encoder = PositionalEncoder(self.args.d_model, sequence_length).to(x.device)
+            x = x + self.pos_encoder()[:x.shape[0]]
         else:
             x = torch.cat([x, self.pos_encoder().expand((-1, batchsize, -1))], dim=2)
 
         x, hidden_xs = self.transformer(x)
-        x = x[-self.args.out_no:, :, :imsize]  # (out_no, batch, imsize) cuts off concatenated pos_encoder values
+        if self.args.model == 'image_transformer':
+            x = x[-self.args.out_no:, :, :imsize]  # (out_no, batch, imsize) cuts off concatenated pos_encoder values
+        elif self.args.model == 'image_sequence_transformer':
+            pass
+        else:
+            raise ValueError(f"Unsupported model {self.args.model}")
         x = self.pixel_regression_layer(x)
         x = self.output_activation_function(x)
 
         # reshape
-        x = x.view(self.args.out_no, batchsize, height, width)
-        x = torch.transpose(x, 0, 1)  # (batch, out_no, imsize)
+        x = x.view(-1, batchsize, height, width)
+        x = torch.transpose(x, 0, 1)  # (batch, sequence, imsize)
         return x, hidden_xs

@@ -3,17 +3,18 @@ from collections import OrderedDict
 
 if __name__ == '__main__':
     restrict_to_titan = False
-    experiment_no = 10
-    dataset_names = ['2dBouncing', '3dBouncing']  # None for all
+    experiment_no = 12
+    dataset_names = ['2dBouncing']  # None for all
     # losses = ['mse', 'sl1', 'ssim']
-    losses = ['sl1', 'ssim']
+    losses = ['sl1']
     # learning_rates = ['2e-5', '1e-5', '5e-6']
     learning_rates = ['1e-5']
 
-    label = 'Comparison_'
+    label = 'sequence_feedback10_'
 
     params = OrderedDict([
-        ('model', 'image_transformer'),
+        ('model', 'image_sequence_transformer'),
+        ('dataset_mode', 'overlap'),
         ('d_model', 4096),
         ('n_layers', 2),
         ('nhead', 1),
@@ -23,8 +24,9 @@ if __name__ == '__main__':
         ('norm_layer', 'layer_norm'),
         ('optimiser', 'adam'),
         ('output_activation', 'hardsigmoid-256'),  # ['linear-256', 'hardsigmoid-256', 'sigmoid-256']
-        ('pos_encoder', 'add'),
-        # ('mask', None)  # enables mask
+        ('pos_encoder', 'add_runtime'),
+        ('mask', None),  # enables mask
+        ('feedback_training_iters', 10),
     ])
 
     common_params = OrderedDict([

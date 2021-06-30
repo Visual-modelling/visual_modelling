@@ -133,8 +133,6 @@ class Simulations(Dataset):
         :returns: A list of datapoints, each being an dict of the format:
             {vid_name=str, config=dict, image_paths=[str], i_in_start=int, i_in_end=int, i_out_start=int, i_out_end=int}
         """
-        if in_no is None and mode != 'overlap':
-            raise ValueError(f"in_no can only be None if mode=='overlap'")
         dataset_params = []
         for vid_params in vids_params:
             vid_name = vid_params['vid_name']
@@ -146,14 +144,9 @@ class Simulations(Dataset):
                 i_in_end = in_no
                 i_out_start = in_no
             elif mode == 'overlap':
-                if in_no is None:
-                    segment_length = vid_length
-                    i_in_end = vid_length - out_no
-                    i_out_start = out_no
-                else:
-                    segment_length = in_no + out_no
-                    i_in_end = in_no
-                    i_out_start = out_no
+                segment_length = vid_length
+                i_in_end = vid_length - 1
+                i_out_start = 1
             elif mode == 'full_out':
                 segment_length = vid_length
                 i_in_end = in_no

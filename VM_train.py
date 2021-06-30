@@ -65,7 +65,6 @@ def plot_self_out(pl_system):
             start_frames, gt_frames, vid_name, _ = next(self_out_loader)
             start_frames = start_frames.float().to(pl_system.device)
             og_frames = start_frames.clone().detach()
-            out = pl_system(start_frames)
             #start_frames = start_frames.cpu().detach().byte()
             #out = out.cpu().detach().byte()
             gif_frames = []
@@ -73,12 +72,21 @@ def plot_self_out(pl_system):
                 self_output_n = gt_frames.shape[1]
             else:
                 self_output_n = args.self_output_n
-            for itr in range(0, self_output_n, args.out_no):
-                start_frames = torch.cat([ start_frames[:,args.out_no:args.in_no] , out ], 1)
+            if args.model != 'image_sequence_transformer':
                 out = pl_system(start_frames)
-                for n in range(args.out_no):
-                    gif_frames.append(out[0][n].cpu().detach().byte())
-                # Add the ground truth frame side by side to generated frame
+                for itr in range(0, self_output_n, args.out_no):
+                    start_frames = torch.cat([ start_frames[:,args.out_no:args.in_no] , out ], 1)
+                    out = pl_system(start_frames)
+                    for n in range(args.out_no):
+                        gif_frames.append(out[0][n].cpu().detach().byte())
+                    # Add the ground truth frame side by side to generated frame
+            else:
+                out = pl_system(start_frames)[:, -1:, ...]
+                for itr in range(0, self_output_n):
+                    start_frames = torch.cat([start_frames, out], 1)
+                    out = pl_system(start_frames)[:, -1:, ...]
+                    gif_frames.append(out[0][0].cpu().detach().byte())
+                    # Add the ground truth frame side by side to generated frame
             gif_frames = gif_frames[:gt_frames.shape[1]]
             gif_metrics = get_gif_metrics(gif_frames, gt_frames, metrics)
             colour_gradients = [255,240,225,210,195,180,165,150,135,120,120,135,150,165,180,195,210,225,240,255]   # Make sure that white/grey backgrounds dont hinder the frame count
@@ -257,6 +265,8 @@ class ModellingSystem(pl.LightningModule):
             self.model = FCUpDown2D(args)
         elif args.model == "image_transformer":
             self.model = ImageTransformer(args)
+        elif args.model == "image_sequence_transformer":
+            self.model = ImageTransformer(args)
         elif args.model == "deans_transformer":
             self.model = DeansTransformer(in_dim=args.d_model, layers=args.n_layers, heads=args.nhead)
         else:
@@ -350,6 +360,47 @@ class ModellingSystem(pl.LightningModule):
             plot_self_out(self)  # Plot gifs and metrics
 
 
+class SequenceModellingSystem(ModellingSystem):
+    def __init__(self, args: argparse.Namespace, self_out_loader):
+        super().__init__(args, self_out_loader)
+
+    def training_step(self, train_batch, batch_idx):
+
+        frames, gt_frames, vid_names, _ = train_batch
+        frames, gt_frames = frames.float(), gt_frames.float()
+        out = self(frames)
+
+        # standard loss
+        sequence_loss = self.criterion(out, gt_frames)
+
+        if self.args.reduction == 'none':
+            raise NotImplementedError('none reduction')
+        if self.args.loss == "ssim":
+            sequence_loss = 1 - ((1 + sequence_loss) / 2)  # SSIM Range = (-1 -> 1) SSIM should be maximised => restructure as minimisation
+        self.log("train_loss", sequence_loss, prog_bar=True, on_step=False, on_epoch=True)
+
+        # calculate feedback sequence
+        if self.args.feedback_training_iters > 0:
+            with torch.no_grad():
+                current_frames = frames[:, 0:self.args.in_no, ...]
+                for i_feedback in range(0, self.args.feedback_training_iters - 1):
+                    out = self(current_frames)
+                    out = out[:, -1:, ...]
+                    current_frames = torch.cat([current_frames, out], dim=1)
+            # last forward pass with gradients
+            out = self(current_frames)
+            feedback_loss = self.criterion(out, gt_frames[:, :out.shape[1], ...])
+            if self.args.reduction == 'none':
+                raise NotImplementedError('none reduction')
+            if self.args.loss == "ssim":
+                feedback_loss = 1 - ((1 + feedback_loss) / 2)  # SSIM Range = (-1 -> 1) SSIM should be maximised => restructure as minimisation
+            self.log("train_feedback_loss", feedback_loss, prog_bar=True, on_step=False, on_epoch=True)
+        else:
+            feedback_loss = 0
+
+        return sequence_loss + feedback_loss
+
+
 if __name__ == "__main__":
     #torch.manual_seed(2667)
     parser = argparse.ArgumentParser()
@@ -383,7 +434,7 @@ if __name__ == "__main__":
     parser.add_argument("--shuffle", action="store_true", help="shuffle dataset")
 
     parser.add_argument_group("Shared Model argmuents")
-    parser.add_argument("--model", type=str, default="UpDown2D", choices=["UpDown2D", "UpDown3D", "image_transformer", "deans_transformer"], help="Type of model to run")
+    parser.add_argument("--model", type=str, default="UpDown2D", choices=["UpDown2D", "UpDown3D", "image_transformer", "image_sequence_transformer", "deans_transformer"], help="Type of model to run")
 
     parser.add_argument_group("2D and 3D CNN specific arguments")
     parser.add_argument("--img_type", type=str, default="binary", choices=["binary", "greyscale", "RGB"], help="Type of input image")
@@ -405,6 +456,7 @@ if __name__ == "__main__":
     parser.add_argument("--output_activation", type=str, default="linear", choices=["linear-256", "hardsigmoid-256", "sigmoid-256"], help="What activation function to use at the end of the network")
     parser.add_argument("--pos_encoder", type=str, default="add", help="What positional encoding to use. 'none', 'add' or an integer concatenation with the number of bits to concatenate.")
     parser.add_argument("--mask", action="store_true", help="Whether to add a triangular attn_mask to the transformer attention")
+    parser.add_argument("--feedback_training_iters", type=int, default=0, help="Maximum number of feedback frames to train with")
 
     parser.add_argument_group("Other things")
     parser.add_argument("--loss", type=str, default="mse", choices=["mse", "sl1", "focal", "ssim"], help="Loss function for the network")
@@ -435,9 +487,9 @@ if __name__ == "__main__":
     #### Make sure the dataset object is configured properly
     dataset_switch = {
         "simulations": Simulations,
-        "mmnist" : Simulations,  # This may change one day, but this works just fine
-        "mocap" : Simulations,
-        "hdmb51" : Simulations,
+        "mmnist": Simulations,  # This may change one day, but this works just fine
+        "mocap": Simulations,
+        "hdmb51": Simulations,
     }
     dataset_list = args.dataset_path
     train_list = []
@@ -485,6 +537,8 @@ if __name__ == "__main__":
         pl_system = ModellingSystem(args, self_out_loader)
     elif args.model == "image_transformer":
         pl_system = ModellingSystem(args, self_out_loader)
+    elif args.model == "image_sequence_transformer":
+        pl_system = SequenceModellingSystem(args, self_out_loader)
     elif args.model == "deans_transformer":
         pl_system = ModellingSystem(args, self_out_loader)
     else:
