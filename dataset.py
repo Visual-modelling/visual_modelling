@@ -93,9 +93,11 @@ class Simulations(Dataset):
                 data_paths_out[i] = os.path.join(head, 'mask', tail)
             frames_in = self.img_read_method(data_paths_in)
             frames_out = self.img_read_method(data_paths_out)
-
+            frames_in = torch.stack(frames_in, dim=0)
+            frames_out = torch.stack(frames_out, dim=0)
         else:
             frames = self.img_read_method(data_paths)
+            frames = torch.stack(frames, dim=0)
             frames_in = frames[data_params['i_in_start']:data_params['i_in_end']]
             frames_out = frames[data_params['i_out_start']:data_params['i_out_end']]
 
@@ -135,10 +137,10 @@ class Simulations(Dataset):
             raise ValueError(f"in_no can only be None if mode=='overlap'")
         dataset_params = []
         for vid_params in vids_params:
-            vid_length = len(vid_params['images'])
             vid_name = vid_params['vid_name']
             config = vid_params['config']
             image_paths = vid_params['image_paths']
+            vid_length = len(image_paths)
             if mode == 'consecutive':
                 segment_length = in_no + out_no
                 i_in_end = in_no
@@ -175,18 +177,23 @@ class Simulations(Dataset):
         return dataset_params
 
     @staticmethod
-    def train_val_split(data_params, condition):
+    def train_val_split(vids_params, condition):
         """
         Return train and validation data_params subsets
         """
-        # data.keys = ['vid', 'vid_path', 'frame_idxs', 'frame_paths', 'positions']
-        # data = dict( list( data.items()[self.args.dset_sze:] ) )
         # See the argparse in main for a description of splitting functions
         if condition[:8] == "tv_ratio":
             tv_ratio = condition[9:].split('-')
             tv_ratio = float(tv_ratio[0])/(float(tv_ratio[0]) + float(tv_ratio[1]))
-            train_dict, valid_dict = utils.split_list_ratio(data_params, tv_ratio)
-            return train_dict, valid_dict
+
+            # shuffle data_params in fixed manner
+            rng = np.random.Generator(np.random.PCG64(2667))
+            cutoff = round(len(vids_params) * tv_ratio)
+            vids_params.sort(key=lambda x: x['image_paths'][0])
+            rng.shuffle(vids_params)
+            train_dict, val_dict = vids_params[:cutoff], vids_params[cutoff:]
+
+            return train_dict, val_dict
         else:
             raise ValueError(f"Condition: {condition} not recognised")
 
@@ -213,7 +220,7 @@ class Simulations(Dataset):
                 image_paths = [os.path.join(root, image_name) for image_name in image_names]
 
                 # config
-                config_path = os.path.join(root, 'config.yaml')
+                config_path = os.path.join(root, 'config.yml')
                 if os.path.exists(config_path):
                     with open(config_path, 'r') as config_file:
                         config = yaml.load(config_file, Loader=yaml.Loader)
@@ -224,7 +231,7 @@ class Simulations(Dataset):
                 vid_features = {
                     'vid_name': os.path.basename(root),
                     'config': config,
-                    'images': image_paths
+                    'image_paths': image_paths
                 }
                 vids_features.append(vid_features)
         return vids_features
