@@ -1,21 +1,18 @@
-__author__ = "Jumperkables"
+__author__ = "Jumperkables, Daniel Kluvanec"
 
-import os, sys, random, math, argparse
+import os
 import getpass
-
+import cv2
+import yaml
 import numpy as np
 import torch
 from torch import nn
 import torch.nn.functional as F
-from torch.utils.data import DataLoader
+
 from torch.utils.data.dataset import Dataset
-from torchvision.transforms import ToTensor
-import cv2
-import pandas as pd
-import yaml
-from torchvision.utils import save_image
 
 import tools.utils as utils
+
 
 ###########################################################################################
 # Utility methods
@@ -23,21 +20,17 @@ import tools.utils as utils
 # Image reading methods
 def read_ims_binary(frames):
     raise Exception("Not implemented binary image read yet")
-    return frames
-    #old pillow version return([ (ToTensor()(Image.open(frame.replace('jumperkables', getpass.getuser()) ))>0).float() for frame in frames ])
+
 
 def read_ims_greyscale(frames):
     home_dir = os.path.expanduser("~").split("/")[1]
     frames_ret = []
     for frame in frames:
-        frame = torch.from_numpy(cv2.imread(frame.replace('jumperkables', getpass.getuser()).replace("/home/", f"/{home_dir}/" ), cv2.IMREAD_GRAYSCALE))
+        frame = torch.from_numpy(cv2.imread(frame.replace('jumperkables', getpass.getuser()).replace("/home/", f"/{home_dir}/"), cv2.IMREAD_GRAYSCALE))
         if frame.shape != (64, 64):
-            frame = F.interpolate(frame.unsqueeze(0).unsqueeze(0), (64,64)).squeeze(0).squeeze(0)
+            frame = F.interpolate(frame.unsqueeze(0).unsqueeze(0), (64, 64)).squeeze(0).squeeze(0)
         frames_ret.append(frame)
-    #old pillow version frames = [ (ToTensor()(Image.open(frame.replace('jumperkables', getpass.getuser()) ))>0).float() for frame in frames ]
     return frames_ret
-
-
 
 
 ###########################################################################################
@@ -47,471 +40,191 @@ class Simulations(Dataset):
     """
     root_dir -> clip_0,...clip_999 -> frame_00.png-frame_99.png AND positions.csv AND simulation.gif AND config.yml
     """
-    def __init__(self, dataset_path, args, segmentation_flag=False, yaml_return=None):
-        self.mode = "unset"
+    def __init__(self, dataset_path, subset, mode, args, segmentation_flag=False, yaml_return=None):
+        """
+        :param dataset_path: str
+        :param subset: 'train' or 'val'
+        :param mode: 'consecutive' input is in_no frames, output is out_no frames which follow after input
+                     'overlap' both input and output is in_no frames long, where the target sequence is shifted by out_no
+                     'full_out' input is the first in_no frames, output is all the remaining frames in the sequence
+        :param args: see VM_train.py
+        :param segmentation_flag: bool
+        :param yaml_return:
+        """
+        self.subset = subset
+        self.mode = mode
         self.args = args
         # Flags
         self.segmentation_flag = segmentation_flag
         self.yaml_return = yaml_return  # To control what the yaml file should output for our simulations
         # Data processing
-        data = self.read_frames(dataset_path)
-        self.train_dict, self.valid_dict = self.train_val_split(data, args.split_condition)
-        self.train_dict, self.valid_dict, self.self_out_dict = self.prepare_dicts(self.train_dict, self.valid_dict)
-        # Sort Image reading method
-        img_read_method_switch = {
-            'binary'    : read_ims_binary,
-            'greyscale' : read_ims_greyscale,
-            'RGB'       : None
-        }
-        if args.img_type == "RGB":
-            raise NotImplementedError("RGB image reading not implemented")
-        self.img_read_method = img_read_method_switch[args.img_type]
-
-    def set_mode(self, mode):
-        """
-        Pick between training/validation/self_output mode
-        """
-        self.mode = mode
-        if self.mode == 'train':
-            self.current_data_dict = self.train_dict
-            del self.valid_dict
-            del self.self_out_dict
-        elif self.mode == 'valid':
-            self.current_data_dict = self.valid_dict
-            del self.train_dict
-            del self.self_out_dict
-        elif self.mode == "self_out":
-            self.current_data_dict = self.self_out_dict
-            del self.train_dict
-            del self.valid_dict
+        vids_params = self.find_vids(dataset_path)
+        train_vids_params, val_vids_params = self.train_val_split(vids_params, args.split_condition)
+        if self.subset == 'train':
+            vids_params = train_vids_params
+        elif self.subset == 'val':
+            vids_params = val_vids_params
         else:
-            raise ValueError(f"Mode {mode} invalid")
+            raise ValueError(f"Unknown subset {self.subset}")
+
+        self.data_params = self.prepare_data(vids_params, mode, args.in_no, args.out_no)
+
+        if args.img_type == 'binary':
+            self.img_read_method = read_ims_binary
+        elif args.img_type == 'greyscale':
+            self.img_read_method = read_ims_greyscale
+        elif args.img_type == 'RGB':
+            raise NotImplementedError("RGB image reading not implemented")
+        else:
+            raise ValueError(f"Unknown img_type {args.img_type}")
 
     def __len__(self):
-        if self.mode == "unset":
-            print("Set the mode of this dataset. Train/Val/Self_out")
-        else:
-            return(len(self.current_data_dict))
+        return len(self.data_params)
 
-    def __getitem__(self, idx): # Indexs must count from 0
-        data = self.current_data_dict[idx] 
-        frames = []
-        for frm_idx, frm in enumerate(data.values()):
-            if (self.segmentation_flag) and (frm_idx > 0):  # Segmentation is in_no == out_no == 1
-                frms = frm['frame_paths'].split("/")
-                frames.append( f"{'/'.join(frms[:-1])}/mask/{frms[-1]}" )
-            else:
-                frames.append(frm['frame_paths'])
-        frames = self.img_read_method(frames)
-        frames = torch.stack(frames, dim=0)
-        if self.mode == "self_out":
-            start_frames, gt_frames = frames[:self.args.in_no], frames[self.args.in_no:]
+    def __getitem__(self, idx):
+        data_params = self.data_params[idx]
+        data_paths = data_params['image_paths']
+
+        if self.segmentation_flag:
+            data_paths_in = data_paths[data_params['i_in_start']:data_params['i_in_end']]
+            data_paths_out = data_paths[data_params['i_out_start']:data_params['i_out_end']]
+            for i in range(len(data_paths_out)):
+                head, tail = os.path.split(data_paths_out[i])
+                data_paths_out[i] = os.path.join(head, 'mask', tail)
+            frames_in = self.img_read_method(data_paths_in)
+            frames_out = self.img_read_method(data_paths_out)
+
         else:
-            start_frames, gt_frames = frames[:self.args.in_no], frames[self.args.in_no:self.args.in_no+self.args.out_no]
-        vid_name = [ frm['vid'] for frm in data.values() ][0]
-        d_idx = list(data.keys())[0]
-        if self.yaml_return == None:
+            frames = self.img_read_method(data_paths)
+            frames_in = frames[data_params['i_in_start']:data_params['i_in_end']]
+            frames_out = frames[data_params['i_out_start']:data_params['i_out_end']]
+
+        if self.yaml_return is None:
             yaml_return = 0
         elif self.yaml_return == "pendulum":    # Assuming pendulum predicts gravity
-            yaml_return = [data[d_idx]['config']['SIM.GRAVITY']]
+            yaml_return = [data_params['config']['SIM.GRAVITY']]
             yaml_return = torch.tensor(yaml_return).float()
         elif self.yaml_return == "bounces":
-            yaml_return = [data[d_idx]['config']['bounces']['ball-ball'],data[d_idx]['config']['bounces']['wall']]
+            yaml_return = [data_params['config']['bounces']['ball-ball'], data_params['config']['bounces']['wall']]
             yaml_return = torch.tensor(yaml_return).float()
         elif self.yaml_return == "grav":
-            yaml_return = [data[d_idx]['config']['gy']]
+            yaml_return = [data_params['config']['gy']]
             yaml_return = torch.tensor(yaml_return).float()
         elif self.yaml_return == "roller":
-            yaml_return = [data[d_idx]['config']['SIM.GRAVITY']]
+            yaml_return = [data_params['config']['SIM.GRAVITY']]
             yaml_return = torch.tensor(yaml_return).float()
         else:
             raise NotImplementedError(f"No yaml elements for {self.yaml_return} prepared for")
-        return (start_frames, gt_frames, vid_name, yaml_return)           
 
-    def prepare_dicts(self, train_dict, valid_dict):
-        # Training
-        iter_len = self.args.in_no + self.args.out_no
-        new_train = {}
-        counter = 0
-        for idx, clip in enumerate(train_dict.values()):
-            clip_len = len(clip.keys())
-            for x in range(0, clip_len-(clip_len % iter_len), iter_len):
-                new_train[counter] = { y:clip[y] for y in range(x,x+iter_len) }
-                counter+=1
-        #self.train_dict = new_train
+        return frames_in, frames_out, data_params['vid_name'], yaml_return
 
-        # Validation
-        new_valid = {}
-        new_self_output = {}
-        counter = 0
-        for idx, clip in enumerate(valid_dict.values()):
-            clip_len = len(clip.keys())
-            new_self_output[idx] = clip
-            for x in range(0, clip_len-(clip_len % iter_len), iter_len):
-                new_valid[counter] = { y:clip[y] for y in range(x,x+iter_len) }
-                counter+=1
-        return new_train, new_valid, new_self_output
-
-    def train_val_split(self, data, condition):
+    @staticmethod
+    def prepare_data(vids_params, mode, in_no, out_no):
         """
-        Return train and validation data dictionaries
+        Takes the vids params and creates input/output pairs using the correct self.mode
+        :param vids_params: returned from self.find_vids
+        :param mode: 'consecutive' input is in_no frames, output is out_no frames which follow after input
+                     'overlap' both input and output is in_no frames long, where the target sequence is shifted by out_no. If in_no is None, then the full length of the video is used
+                     'full_out' input is the first in_no frames, output is all the remaining frames in the sequence
+        :param in_no: changes function based on mode (can be None if mode is overlap)
+        :param out_no: changes function based on mode
+        :returns: A list of datapoints, each being an dict of the format:
+            {vid_name=str, config=dict, image_paths=[str], i_in_start=int, i_in_end=int, i_out_start=int, i_out_end=int}
         """
-        #data.keys = ['vid', 'vid_path', 'frame_idxs', 'frame_paths', 'positions']
-        #data = dict( list( data.items()[self.args.dset_sze:] ) )
-        # See the argparse in main for a description of splitting functions
-        if condition[:8] == "tv_ratio":
-            tv_ratio = condition[9:].split('-')
-            tv_ratio = float(tv_ratio[0])/( float(tv_ratio[0]) + float(tv_ratio[1]) )
-            train_dict, valid_dict = utils.split_dict_ratio(data, tv_ratio)
-            return train_dict, valid_dict
-        else:
-            raise ValueError(f"Condition: {condition} not recognised")
-
-    def read_frames(self, dataset_path):
-        """
-        Read in the raw images as frames into a dictionary
-        Returns:
-        {
-            'clip_name':{0: {frame_0_data}}
-            ...
-        }
-        """
-        frame_path = os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), dataset_path)
-        #vids = os.listdir(frame_path) # Remove
-
-        vids = []
-        path = os.path.normpath(frame_path)
-        for root,dirs,files in os.walk(frame_path, topdown=True):
-            if "mask" in dirs:
-                pass
+        if in_no is None and mode != 'overlap':
+            raise ValueError(f"in_no can only be None if mode=='overlap'")
+        dataset_params = []
+        for vid_params in vids_params:
+            vid_length = len(vid_params['images'])
+            vid_name = vid_params['vid_name']
+            config = vid_params['config']
+            image_paths = vid_params['image_paths']
+            if mode == 'consecutive':
+                segment_length = in_no + out_no
+                i_in_end = in_no
+                i_out_start = in_no
+            elif mode == 'overlap':
+                if in_no is None:
+                    segment_length = vid_length
+                    i_in_end = vid_length - out_no
+                    i_out_start = out_no
+                else:
+                    segment_length = in_no + out_no
+                    i_in_end = in_no
+                    i_out_start = out_no
+            elif mode == 'full_out':
+                segment_length = vid_length
+                i_in_end = in_no
+                i_out_start = in_no
             else:
-                for dyr in dirs:
-                    depth_test = os.listdir( os.path.join( root, dyr ) )
-                    if any( (fyle.endswith(".png") or fyle.endswith(".jpg") ) for fyle in depth_test):
-                        # TODO if other jpegs or pngs are in directory we have a problem
-                        vids.append( os.path.join(root, dyr) )
+                raise ValueError(f"Unknown mode: '{mode}'. Must be one of 'consecutive', 'overlap' or 'full_out'")
 
-       
-        total_data = { vid:os.path.join(frame_path, vid) for vid in vids }
-        return_dataset = {}
-        for vidx, vid_path in total_data.items():
-            vid_name = vid_path.split('/')[-1]
-            frames = os.listdir(vid_path)
-            frames.sort()
-            exclude = ['config.yml','config2.yml','positions.csv','simulation.gif',"mask", "timestep_data.csv"]
-            frames = [ os.path.join(vid_path, frame) for frame in frames if frame not in exclude]
-            frame_paths = frames
-            config_path = os.path.join(vid_path, "config.yml")
-            if os.path.exists(config_path):
-                with open(config_path, 'r') as file:
-                    config = yaml.load(file, Loader=yaml.Loader)
-            else:
-                print(f"CONFIG FILES DO NOT EXIST: {config_path}")
-                config = {}
-            return_dataset[vidx] = {x:{
-                            "vid":vid_name,
-                            "vid_path":vid_path,
-                            "frame_idx":x,
-                            "frame_paths":frame_paths[x],
-                            "frame":frames[x],
-                            "config":config} 
-                        for x in range(len(frames))}
-
-        return return_dataset
- 
-
-class MMNIST(Dataset):
-    """
-    # Code adapted from: https://gist.github.com/tencia/afb129122a64bde3bd0c
-    # script to generate moving mnist video dataset (frame by frame) as described in
-    # [1] arXiv:1502.04681 - Unsupervised Learning of Video Representations Using LSTMs
-    #     Srivastava et al
-    # by Tencia Lee
-    # saves in hdf5, npz, or jpg (individual frames) format
-    """
-    def __init__(self, dataset_path, args, generate_dset=False):
-        self.args = args
-        if generate_dset:
-            raise NotImplementedError("Haven't doubled checked if generating Moving MNIST works properly")
-            self.generate_moving_mnist((64,64), 100, [1000,2000,3000], 28, [1,2,3])
-            sys.exit()
-
-    #############################################################
-    # Saving dataset helper functions
-    def arr_from_img(self, im,shift=0):
-        w,h=im.size
-        arr=im.getdata()
-        c = int(np.product(arr.size) / (w*h))
-        return np.asarray(arr, dtype=np.float32).reshape((h,w,c)).transpose(2,1,0) / 255.0 - shift
-    
-    def get_picture_array(self, X, index, shift=0):
-        ch, w, h = X.shape[1], X.shape[2], X.shape[3]
-        ret = ((X[index]+shift)*255.).reshape(ch,w,h).transpose(2,1,0).clip(0,255).astype(np.uint8)
-        if ch == 1:
-            ret=ret.reshape(h,w)
-        return ret
-    
-    # loads mnist from web on demand
-    def load_dataset(self):
-        if sys.version_info[0] == 2:
-            from urllib import urlretrieve
-        else:
-            from urllib.request import urlretrieve
-        def download(filename, source='http://yann.lecun.com/exdb/mnist/'):
-            print("Downloading %s" % filename)
-            urlretrieve(source + filename, filename)
-        import gzip
-        def load_mnist_images(filename):
-            if not os.path.exists(filename):
-                download(filename)
-            with gzip.open(filename, 'rb') as f:
-                data = np.frombuffer(f.read(), np.uint8, offset=16)
-            data = data.reshape(-1, 1, 28, 28).transpose(0,1,3,2)
-            return data / np.float32(255)
-        return load_mnist_images('train-images-idx3-ubyte.gz')
-    
-    # generates and returns video frames in uint8 array
-    def generate_moving_mnist(self, shape, seq_len, seqss, num_sz, nums_per_images):
-        """
-        shape:          (int,int)   Shape of desired frames
-        seq_len:        int         How many frames in sequences
-        seqss:          [int,int..] How many gifs for each subset, ALIGN WITH nums_per_images
-        num_sz:         int         Cant remember
-        nums_per_images [int,int..] e.g. [2,3] = some videos with 2 MMNIST digits, and some with 3      
-        """
-        root_dir = "data/moving_mnist/variousTEMP"
-        root_dir = os.path.join(os.path.dirname(__file__), root_dir)
-        #root_dir = self.args.dataset_path
-        mnist = self.load_dataset()
-        width, height = shape
-        lims = (x_lim, y_lim) = width-num_sz, height-num_sz
-        for xx, nums_per_image in enumerate(nums_per_images):
-            seqs = seqss[xx]
-            sub_root_dir = os.path.join(root_dir, str(nums_per_image))
-            utils.mkdir_replc(sub_root_dir)
-            dataset = np.empty((seq_len*seqs, 1, width, height), dtype=np.uint8)
-            prcnt = round(seqs/100)
-            prcnt_cnt = 0
-            for seq_idx in range(seqs):
-                bounce_dict = {}    # TODO SORT OUT THE BOUNCE COUNTING
-                if seq_idx%prcnt == 0:
-                    print(f"{prcnt_cnt}% done!")
-                    prcnt_cnt += 1
-                sub_sub_root_dir = os.path.join(sub_root_dir, f"{seq_idx:05d}")
-                # randomly generate direc/speed/position, calculate velocity vector
-                utils.mkdir_replc(sub_sub_root_dir)
-                direcs = np.pi * (np.random.rand(nums_per_image)*2 - 1)
-                speeds = np.random.randint(5, size=nums_per_image)+2
-                veloc = [(v*math.cos(d), v*math.sin(d)) for d,v in tuple(zip(direcs, speeds))]
-                mnist_images = [Image.fromarray(self.get_picture_array(mnist,r,shift=0)).resize((num_sz,num_sz), Image.ANTIALIAS) \
-                       for r in np.random.randint(0, mnist.shape[0], nums_per_image)]
-                positions = [(np.random.rand()*x_lim, np.random.rand()*y_lim) for _ in range(nums_per_image)]
-                for frame_idx in range(seq_len):
-                    canvases = [Image.new('L', (width,height)) for _ in range(nums_per_image)]
-                    canvas = np.zeros((1,width,height), dtype=np.float32)
-                    for i,canv in enumerate(canvases):
-                        canv.paste(mnist_images[i], tuple(map(lambda p: int(round(p)), positions[i])))
-                        canvas += self.arr_from_img(canv, shift=0)
-                    # update positions based on velocity
-                    next_pos = [tuple(map(sum, tuple(zip(p,v)))) for p,v in tuple(zip(positions, veloc))]
-                    # bounce off wall if a we hit one
-                    for i, pos in enumerate(next_pos):
-                        for j, coord in enumerate(pos):
-                            if coord < -2 or coord > lims[j]+2:
-                                veloc[i] = tuple(list(veloc[i][:j]) + [-1 * veloc[i][j]] + list(veloc[i][j+1:]))
-                    positions = [tuple(map(sum, tuple(zip(p,v)))) for p,v in tuple(zip(positions, veloc))]
-                    # copy additive canvas to data array
-                    imgsv = (canvas * 255).astype(np.uint8).clip(0,255)
-                    imgsv = Image.fromarray(imgsv[0])
-                    imgsv.save(os.path.join(sub_sub_root_dir, f"frame_{frame_idx:03d}.png"))
-                    #save_image(torch.from_numpy(imgsv), os.path.join(sub_sub_root_dir, f"frame_{frame_idx:03d}.png"))
-                    # Save frame
-
-                    dataset[seq_idx*seq_len+frame_idx] = imgsv #(canvas * 255).astype(np.uint8).clip(0,255)
-        sys.exit()
-        return dataset
-    
-    def save_dataset(self, dest, filetype, frame_size, seq_len, seqs, num_sz, nums_per_image):
-        dat = self.generate_moving_mnist((frame_size,frame_size), seq_len, seqs, num_sz, nums_per_image)
-        dat = dat.reshape(seqs, seq_len, 1, frame_size, frame_size) # You will have to change the 1 for images with multiple channels
-        n = seqs * seq_len
-        if filetype == 'hdf5':
-            import h5py
-            raise Exception("Have not implemented for h5 extraction")
-            from fuel.datasets.hdf5 import H5PYDataset
-            def save_hd5py(dataset, destfile, indices_dict):
-                f = h5py.File(destfile, mode='w')
-                images = f.create_dataset('images', dataset.shape, dtype='uint8')
-                images[...] = dataset
-                split_dict = dict((k, {'images':v}) for k,v in indices_dict.iteritems())
-                f.attrs['split'] = H5PYDataset.create_split_array(split_dict)
-                f.flush()
-                f.close()
-            indices_dict = {'train': (0, n*9/10), 'test': (n*9/10, n)}
-            save_hd5py(dat, dest, indices_dict)
-        elif filetype == 'npz':
-            np.savez(dest, dat)
-        elif filetype == 'jpg':
-            for i in range(dat.shape[0]):
-                Image.fromarray(self.get_picture_array(dat, i, shift=0)).save(os.path.join(dest, '{}.jpg'.format(i)))
-
-
-
-
-class HDMB_classification(Dataset):
-    """
-    Designed to work with dataset of depth 3.
-    root_dir -> clip_0,...clip_999 -> frame_000.png, frame_001.png
-    """
-    def __init__(self, dataset_path, args):
-        self.args = args
-        data = self.read_frames(dataset_path)
-        self.train_dict, self.valid_dict = self.train_val_split(data, args.split_condition)
-        self.train_dict, self.valid_dict, self.self_out_dict = self.prepare_dicts(self.train_dict, self.valid_dict)
-        # Sort Image reading method
-        img_read_method_switch = {
-            'binary'    : read_ims_binary,
-            'greyscale' : read_ims_greyscale,
-            'RGB'       : None
-        }
-        if args.img_type == "RGB":
-            raise Exception("RGB image reading not implemented")
-        self.img_read_method = img_read_method_switch[args.img_type]
-
-    def set_mode(self, mode):
-        # MODE MUST BE SET BEFORE USE
-        """
-        Jump between training/validation mode
-        """
-        self.mode = mode
-        if self.mode == 'train':
-            self.current_data_dict = self.train_dict
-        elif self.mode == 'valid':
-            self.current_data_dict = self.valid_dict
-        elif self.mode == "self_out":
-            self.current_data_dict = self.self_out_dict
-        else:
-            raise ValueError(f"Mode {mode} invalid")
-
-    def __len__(self):
-        return(len(self.current_data_dict))
-
-    def __getitem__(self, idx): # Indexs must count from 0
-        if self.mode != "self_out":
-            #import ipdb; ipdb.set_trace()
-            data = self.current_data_dict[idx]  #data.keys = ['vid', 'vid_path', 'frame_idxs', 'frame_paths', 'positions']
-            positions = torch.stack([ pos['positions'] for pos in data.values() ])
-            positions, gt_positions = positions[:self.args.in_no], positions[self.args.in_no:]
-            frames = [ frm['frame_paths'] for frm in data.values() ]
-            if self.args.segmentation:
-                # If its a semgentation task, read the final ground_truth frame in its segmentation mask form instead
-                #import ipdb; ipdb.set_trace()
-                frames[-1] = frames[-2].replace("hudson_true_3d_default", "hudson_true_3d_default_mask")
-            frames = self.img_read_method(frames)
-            frames = torch.stack(frames, dim=0)
-            frames, gt_frames = frames[:self.args.in_no], frames[self.args.in_no:]
-            return (frames, gt_frames)
-        else:
-            data = self.current_data_dict[idx]  #data.keys = ['vid', 'vid_path', 'frame_idxs', 'frame_paths', 'positions']
-            frames = [ frm['frame_paths'] for frm in data.values() ]
-            frames = self.img_read_method(frames)
-            frames = torch.stack(frames, dim=0)
-            start_frames, gt_frames = frames[:self.args.in_no], frames[self.args.in_no:]
-            vid_name = [ frm['vid'] for frm in data.values() ][0] 
-            return (start_frames, gt_frames, vid_name)           
-
-    def prepare_dicts(self, train_dict, valid_dict):
-        # Training
-        iter_len = self.args.in_no + self.args.out_no
-        new_train = {}
-        counter = 0
-        for idx, clip in enumerate(train_dict.values()):
-            clip_len = len(clip.keys())
-            for x in range(0, clip_len-(clip_len % iter_len), iter_len):
-                new_train[counter] = { y:clip[y] for y in range(x,x+iter_len) }
-                counter+=1
-        #self.train_dict = new_train
-
-        # Validation
-        new_valid = {}
-        new_self_output = {}
-        counter = 0
-        for idx, clip in enumerate(valid_dict.values()):
-            clip_len = len(clip.keys())
-            new_self_output[idx] = clip
-            for x in range(0, clip_len-(clip_len % iter_len), iter_len):
-                new_valid[counter] = { y:clip[y] for y in range(x,x+iter_len) }
-                counter+=1
-        return new_train, new_valid, new_self_output
-
-    def train_val_split(self, data, condition):
-        """
-        Return train and validation data dictionaries
-        """
-        #data.keys = ['vid', 'vid_path', 'frame_idxs', 'frame_paths', 'positions']
-        if self.args.dset_sze != -1:
-            data = dict( list( data.items()[self.args.dset_sze:] ) )
-        # See the argparse in main for a description of splitting functions
-        if condition[:8] == "tv_ratio":
-            tv_ratio = condition[9:].split('-')
-            tv_ratio = float(tv_ratio[0])/( float(tv_ratio[0]) + float(tv_ratio[1]) )
-            train_dict, valid_dict = utils.split_dict_ratio(data, tv_ratio)
-            return train_dict, valid_dict
-        else:
-            raise ValueError(f"Condition: {condition} not recognised")
-
-    def read_frames(self, dataset_path):
-        """
-        Read in the raw images as frames into a dictionary
-        Returns:
-        {
-            'clip_name':{0: {frame_0_data}}
-            ...
-        }
-        """
-        frame_path = os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), dataset_path)
-        #vids = os.listdir(frame_path) # Remove
-
-        vids = []
-        path = os.path.normpath(frame_path)
-        for root,dirs,files in os.walk(frame_path, topdown=True):
-            for dyr in dirs:
-                depth_test = os.listdir( os.path.join( root, dyr ) )
-                if any( (fyle.startswith("frame") and (fyle.endswith(".png") or fyle.endswith(".jpg")) ) for fyle in depth_test):
-                    vids.append( os.path.join(root, dyr) )
-
-        total_data = { vid:os.path.join(frame_path, vid) for vid in vids }
-        return_dataset = {}
-        for vidx, vid_path in total_data.items():
-            print(vidx)
-            vid_name = vid_path.split('/')[-1]
-            try:
-                positions = utils.read_csv(os.path.join(vid_path, 'positions.csv'))
-            except FileNotFoundError:
-                print(f"{vid_path} not found.\nCreating dummy 'positions' information")
-                
-
-                frame_cnt = len(os.listdir(vid_path))
-                positions = {
-                    'timestep': [i for i in range(frame_cnt)],
-                    'x': [0]*frame_cnt,
-                    'y': [0]*frame_cnt
+            for idx in range(0, vid_length, segment_length):
+                if idx + segment_length > vid_length:
+                    break
+                data_params = {
+                    'vid_name': vid_name,
+                    'config': config,
+                    'image_paths': image_paths[idx:idx + segment_length],
+                    'i_in_start': 0,
+                    'i_in_end': i_in_end,
+                    'i_out_start': i_out_start,
+                    'i_out_end': segment_length
                 }
-                positions = pd.DataFrame(data=positions)
-            indexs = torch.tensor(positions.values)[:,:1].long()
-            positions = torch.tensor(positions.values)[:,1:]    # Remove the useless frame index for now
-            frames = os.listdir(vid_path)
-            frames.sort()
-            exclude = ['config.yml','config2.yml','positions.csv','simulation.gif','mask']
-            frames = [ os.path.join(vid_path, frame) for frame in frames if frame not in exclude]
-            frame_paths = frames
+                dataset_params.append(data_params)
+        return dataset_params
 
-            return_dataset[vidx] = {x:{
-                            "vid":vid_name,
-                            "vid_path":vid_path,
-                            "frame_idx":indexs[x],
-                            "frame_paths":frame_paths[x],
-                            "positions":positions[x],
-                            "frame":frames[x]} 
-                        for x in range(len(frames))}
-        return return_dataset
+    @staticmethod
+    def train_val_split(data_params, condition):
+        """
+        Return train and validation data_params subsets
+        """
+        # data.keys = ['vid', 'vid_path', 'frame_idxs', 'frame_paths', 'positions']
+        # data = dict( list( data.items()[self.args.dset_sze:] ) )
+        # See the argparse in main for a description of splitting functions
+        if condition[:8] == "tv_ratio":
+            tv_ratio = condition[9:].split('-')
+            tv_ratio = float(tv_ratio[0])/(float(tv_ratio[0]) + float(tv_ratio[1]))
+            train_dict, valid_dict = utils.split_list_ratio(data_params, tv_ratio)
+            return train_dict, valid_dict
+        else:
+            raise ValueError(f"Condition: {condition} not recognised")
+
+    @staticmethod
+    def find_vids(dataset_path):
+        """
+        Finds the directories and configs of all videos represented as directories of images
+        This is done recursively through the dataset path. Any directories and subdirectories named 'mask' are ignored
+        Returns:
+            [{vid_name=str, config=dict, image_paths=[str]}]
+        """
+        dataset_path = os.path.abspath(dataset_path)
+        # finds all subdirectories that contain
+        vids_features = []
+        for root, dirs, files in os.walk(dataset_path, topdown=True):
+            if 'mask' in root.split('/'):
+                continue
+            if any(filename[-3:] in ('png', 'jpg') for filename in files):
+                # root is now a subdirectory containing .png or .jpeg images
+
+                # image params
+                image_names = [filename for filename in files if filename[-3:] in ('png', 'jpg')]
+                image_names.sort()
+                image_paths = [os.path.join(root, image_name) for image_name in image_names]
+
+                # config
+                config_path = os.path.join(root, 'config.yaml')
+                if os.path.exists(config_path):
+                    with open(config_path, 'r') as config_file:
+                        config = yaml.load(config_file, Loader=yaml.Loader)
+                else:
+                    print(f"CONFIG FILES DO NOT EXIST: {config_path}")
+                    config = {}
+
+                vid_features = {
+                    'vid_name': os.path.basename(root),
+                    'config': config,
+                    'images': image_paths
+                }
+                vids_features.append(vid_features)
+        return vids_features

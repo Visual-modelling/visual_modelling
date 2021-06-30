@@ -77,15 +77,19 @@ def merge_two_dicts(x, y):
     return z
 
 
-def split_dict_ratio(dic, ratio):
-    cutoff = round(len(dic)*ratio)
-    items = list( dic.items())
-    items.sort()
-    rng = np.random.PCG64(2667)
-    gen =np.random.Generator(rng)
-    gen.shuffle(items)
-    dic1, dic2 = dict(items[:cutoff]) , dict(items[cutoff:])
-    return dic1, dic2
+def split_dict_ratio(data, ratio):
+    data_list = list(data)
+    list1, list2 = split_list_ratio(data_list, ratio)
+    return dict(list1), dict(list2)
+
+
+def split_list_ratio(data, ratio):
+    rng = np.random.Generator(np.random.PCG64(2667))
+    cutoff = round(len(data)*ratio)
+    data.sort()
+    rng.shuffle(data)
+    return data[:cutoff], data[cutoff:]
+
 
 def img_merge(imgs, mode, direction):
     """

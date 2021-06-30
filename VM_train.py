@@ -27,7 +27,7 @@ from tqdm import tqdm
 import tools.loss
 import tools.radam as radam
 import tools.utils as utils
-from dataset import MMNIST, Simulations
+from dataset import Simulations
 from tools.utils import model_fwd
 from tools.ball_distance_metric import calculate_metric
 from models.UpDown2D import FCUpDown2D
@@ -377,6 +377,7 @@ if __name__ == "__main__":
     ############# To combine multiple datasets together, align the dataset and dataset path arguments
     parser.add_argument("--dataset", type=str, nargs="+", required=True, choices=["mmnist", "simulations", "mocap", "hdmb51"], help="Type of dataset")
     parser.add_argument("--dataset_path", type=str, nargs="+", default=os.path.expanduser("~/"), help="Dataset paths")
+    parser.add_argument("--dataset_mode", type=str, default='consecutive', choices=['consecutive', 'overlap', 'full_out'])
     #############
     parser.add_argument("--split_condition", type=str, default="tv_ratio:4-1", help="Custom string deciding how to split datasets into train/test. Affiliated with a custom function in dataset")
     parser.add_argument("--shuffle", action="store_true", help="shuffle dataset")
@@ -444,16 +445,14 @@ if __name__ == "__main__":
     self_out_list = []
     print(f"\nProcessing {args.dataset_path} datasets...")
     for i in tqdm(range(len(args.dataset))):
-        train_dset = dataset_switch[args.dataset[i]](args.dataset_path[i], args)
-        valid_dset = copy.deepcopy(train_dset)
-        valid_dset.set_mode("valid")
-        valid_list.append(valid_dset)
-        self_out_dset = copy.deepcopy(train_dset)
-        self_out_dset.set_mode("self_out")
-        self_out_dset = torch.utils.data.Subset(self_out_dset, [i for i in range(args.n_gifs)]) # Only have the number of gifs required
-        self_out_list.append(self_out_dset)
-        train_dset.set_mode("train")
+        train_dset = dataset_switch[args.dataset[i]](args.dataset_path[i], 'train', args.dataset_mode, args)
         train_list.append(train_dset)
+        valid_dset = dataset_switch[args.dataset[i]](args.dataset_path[i], 'val', args.dataset_mode, args)
+        valid_list.append(valid_dset)
+        self_out_dset = dataset_switch[args.dataset[i]](args.dataset_path[i], 'val', 'full_out', args)
+        self_out_dset = torch.utils.data.Subset(self_out_dset, [i for i in range(args.n_gifs)])  # Only have the number of gifs required
+        self_out_list.append(self_out_dset)
+
     if len(args.dataset) > 1:
         train_dset = torch.utils.data.ConcatDataset(train_list)
         valid_dset = torch.utils.data.ConcatDataset(valid_list)

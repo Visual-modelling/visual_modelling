@@ -332,50 +332,40 @@ if __name__ == "__main__":
         """
         copy_args = copy.deepcopy(args)
         copy_args.in_no = 1
-        train_dset = Simulations(args.dataset_path[0], copy_args, segmentation_flag=True)
-        valid_dset = copy.deepcopy(train_dset)
-        train_dset.set_mode("train")
-        valid_dset.set_mode("valid")
+        train_dset = Simulations(args.dataset_path[0], 'train', 'consecutive', copy_args, segmentation_flag=True)
+        valid_dset = Simulations(args.dataset_path[0], 'val', 'consecutive', copy_args, segmentation_flag=True)
         pl_system = FCUpDown2D_2_Segmentation(args)
 
     ################################
     # Roller regression/prediction
     ################################   
     elif args.task in ["roller-regress","roller-pred"]:
-        train_dset = Simulations(args.dataset_path[0], args, yaml_return="roller")
-        valid_dset = copy.deepcopy(train_dset)
-        train_dset.set_mode("train")
-        valid_dset.set_mode("valid")
+        train_dset = Simulations(args.dataset_path[0], 'train', 'consecutive', args, yaml_return="roller")
+        valid_dset = Simulations(args.dataset_path[0], 'val', 'consecutive', args, yaml_return="roller")
         pl_system = FcUpDown2D2Scalars(args)
 
     ################################
     # Pendulum
     ################################   
     elif args.task == "pendulum":
-        train_dset = Simulations(args.dataset_path[0], args, yaml_return="pendulum")
-        valid_dset = copy.deepcopy(train_dset)
-        train_dset.set_mode("train")
-        valid_dset.set_mode("valid")
+        train_dset = Simulations(args.dataset_path[0], 'train', 'consecutive', args, yaml_return="pendulum")
+        valid_dset = Simulations(args.dataset_path[0], 'val', 'consecutive', args, yaml_return="pendulum")
         pl_system = FcUpDown2D2Scalars(args)
 
     ################################
     # Gravity regression/prediction
     ################################   
     elif args.task in ["grav-regress","grav-pred"]:
-        train_dset = Simulations(args.dataset_path[0], args, yaml_return="grav")
-        valid_dset = copy.deepcopy(train_dset)
-        train_dset.set_mode("train")
-        valid_dset.set_mode("valid")
+        train_dset = Simulations(args.dataset_path[0], 'train', 'consecutive', args, yaml_return="grav")
+        valid_dset = Simulations(args.dataset_path[0], 'val', 'consecutive', args, yaml_return="grav")
         pl_system = FcUpDown2D2Scalars(args)
 
     ################################
     # Ball bounces regression/prediction
     ################################   
     elif args.task in ["bounces-regress","bounces-pred"]:
-        train_dset = Simulations(args.dataset_path[0], args, yaml_return="bounces")
-        valid_dset = copy.deepcopy(train_dset)
-        train_dset.set_mode("train")
-        valid_dset.set_mode("valid")
+        train_dset = Simulations(args.dataset_path[0], 'train', 'consecutive', args, yaml_return="bounces")
+        valid_dset = Simulations(args.dataset_path[0], 'valid', 'consecutive', args, yaml_return="bounces")
         pl_system = FcUpDown2D2Scalars(args)
 
 
