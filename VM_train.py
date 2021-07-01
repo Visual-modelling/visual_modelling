@@ -400,6 +400,22 @@ class SequenceModellingSystem(ModellingSystem):
 
         return sequence_loss + feedback_loss
 
+    def validation_step(self, valid_batch, batch_idx):
+        frames, gt_frames, vid_names, _ = valid_batch
+        frames, gt_frames = frames.float(), gt_frames.float()
+        out = self(frames)[:, -self.args.out_no:, ...]
+        valid_loss = self.criterion(out, gt_frames)
+        if self.args.reduction == 'none':
+            valid_loss = valid_loss.mean(dim=(0,1,2,3))
+        if self.args.loss == "ssim":
+            valid_loss = 1-((1+valid_loss)/2)   # SSIM Range = (-1 -> 1) SSIM should be maximised => restructure as minimisation
+        self.log("valid_loss", valid_loss, prog_bar=True, on_step=False, on_epoch=True)
+        self.log("valid_PSNR", self.valid_PSNR(out, gt_frames), on_step=False, on_epoch=True)
+        self.log("valid_SSIM", self.valid_SSIM(out, gt_frames), on_step=False, on_epoch=True)
+        self.log("valid_sl1", self.valid_sl1(out, gt_frames), on_step=False, on_epoch=True)
+        #self.log("valid_focal", self.valid_focal(out, gt_frames), on_step=False, on_epoch=True)
+        return valid_loss
+
 
 if __name__ == "__main__":
     #torch.manual_seed(2667)
@@ -499,7 +515,7 @@ if __name__ == "__main__":
     for i in tqdm(range(len(args.dataset))):
         train_dset = dataset_switch[args.dataset[i]](args.dataset_path[i], 'train', args.dataset_mode, args)
         train_list.append(train_dset)
-        valid_dset = dataset_switch[args.dataset[i]](args.dataset_path[i], 'val', args.dataset_mode, args)
+        valid_dset = dataset_switch[args.dataset[i]](args.dataset_path[i], 'val', 'consecutive', args)
         valid_list.append(valid_dset)
         self_out_dset = dataset_switch[args.dataset[i]](args.dataset_path[i], 'val', 'full_out', args)
         self_out_dset = torch.utils.data.Subset(self_out_dset, [i for i in range(args.n_gifs)])  # Only have the number of gifs required
