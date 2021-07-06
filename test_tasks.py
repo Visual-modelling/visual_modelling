@@ -104,6 +104,9 @@ class FcUpDown2D2Scalars(pl.LightningModule):
         # Training metrics
         self.train_acc = torchmetrics.Accuracy()
 
+        # Test metrics
+        self.test_acc = torchmetrics.Accuracy()
+
         if args.task in ["mnist","grav-pred","bounces-pred","roller-pred"]:
             self.criterion = nn.CrossEntropyLoss()
         elif args.task in ["pendulum","bounces-regress","grav-regress","roller-regress"]:
@@ -112,8 +115,8 @@ class FcUpDown2D2Scalars(pl.LightningModule):
             raise NotImplementedError(f"Task: '{args.task}' has not got a specified criterion")
 
     def configure_optimizers(self):
-        model_opt = radam.RAdam([p for p in self.model.parameters()], lr=3e-6, weight_decay=1e-5)
-        probe_fc_opt = radam.RAdam([p for p in self.probe_fc.parameters()], lr=3e-4, weight_decay=1e-5)
+        model_opt = radam.RAdam([p for p in self.model.parameters()], lr=1e-6)#, weight_decay=1e-5)
+        probe_fc_opt = radam.RAdam([p for p in self.probe_fc.parameters()], lr=1e-5)#, weight_decay=1e-5)
         return model_opt, probe_fc_opt
 
     def forward(self, x):
@@ -144,9 +147,9 @@ class FcUpDown2D2Scalars(pl.LightningModule):
         elif self.args.task == "grav-pred":
             out = F.softmax(out, dim=1)
             label = ((label*10000)+3).round().long().squeeze(1) # Rescale the output to be appropriate for softmax [-0.0003,-0.0002,...,0.0003]
-        elif self.args.task == "bounces-pred":
+        elif self.args.task in ["bounces-pred", "bounces-regress"]:
             out = F.softmax(out, dim=1)
-            label = label.sum(dim=1).clamp(0,49).long() # Cap the sum of both bounce types at 49 for classification
+            label = label.clamp(0,49)   # Cap the sum of both bounce types at 49 for classification
         elif self.args.task == "roller-pred":
             out = F.softmax(out, dim=1)
             label = (label*2).long().squeeze(1)
@@ -171,21 +174,31 @@ class FcUpDown2D2Scalars(pl.LightningModule):
         elif self.args.task == "grav-pred":
             out = F.softmax(out, dim=1)
             label = ((label*10000)+3).round().long().squeeze(1) # Rescale the output to be appropriate for softmax [-0.0003,-0.0002,...,0.0003]
-        elif self.args.task == "bounces-pred":
+        elif self.args.task in ["bounces-pred","bounces-regress"]:
             out = F.softmax(out, dim=1)
-            label = label.sum(dim=1).clamp(0,49).long() # Cap the sum of both bounce types at 49 for classification
+            label = label.clamp(0,49)   # Cap the sum of both bounce types at 49 for classification
         elif self.args.task == "roller-pred":
             out = F.softmax(out, dim=1)
             label = (label*2).long().squeeze(1)
         valid_loss = self.criterion(out, label)
-        self.log("valid_loss", valid_loss, on_step=False, on_epoch=True)
+        if self.testing:    # TODO refine this. this is a quick workaround
+            self.log("test_loss", valid_loss, on_step=False, on_epoch=True)
+        else:
+            self.log("valid_loss", valid_loss, on_step=False, on_epoch=True)
         if self.args.task in ["mnist","mocap","hdmb51","grav-pred","bounces-pred","roller-pred"]:
-            self.log("valid_acc", self.valid_acc(out, label), prog_bar=True, on_step=False, on_epoch=True)
+            if self.testing:
+                self.log("test_acc", self.test_acc(out, label), prog_bar=True, on_step=False, on_epoch=True)
+            else:
+                self.log("valid_acc", self.valid_acc(out, label), prog_bar=True, on_step=False, on_epoch=True)
+
+    def test_step(self, test_batch, batch_idx):
+        self.validation_step(test_batch, batch_idx)
 
 
 class FCUpDown2D_2_Segmentation(pl.LightningModule):
     def __init__(self, args):
         super().__init__()
+
         self.args = args
         self.model = FCUpDown2D(args)
 
@@ -214,7 +227,7 @@ class FCUpDown2D_2_Segmentation(pl.LightningModule):
         self.criterion = tools.loss.Smooth_L1_pl(reduction="mean")
 
     def configure_optimizers(self):
-        optimizer = radam.RAdam([p for p in self.parameters() if p.requires_grad], lr=3e-4, weight_decay=1e-5)
+        optimizer = radam.RAdam([p for p in self.parameters() if p.requires_grad], lr=1e-6)#, weight_decay=1e-5)
         return optimizer
 
     def forward(self, x):
@@ -427,7 +440,10 @@ if __name__ == "__main__":
         #print(label_dict)
 
     train_loader = DataLoader(train_dset, batch_size=args.bsz, num_workers=args.num_workers, shuffle=args.shuffle)
-    valid_loader = DataLoader(valid_dset, batch_size=args.val_bsz, num_workers=args.num_workers, shuffle=args.shuffle)
+    half = len(valid_dset)//2
+    valid_dset, test_dset = torch.utils.data.random_split(valid_dset, [half, len(valid_dset)-half])
+    valid_loader = DataLoader(valid_dset, batch_size=args.val_bsz, num_workers=args.num_workers, shuffle=False)
+    test_loader = DataLoader(valid_dset, batch_size=args.val_bsz, num_workers=args.num_workers, shuffle=False)
 
     # Checkpointing and running
     if args.task in ["mnist","mocap","hdmb51","grav-pred","bounces-pred","roller-pred"]:   # Accuracy tasks
@@ -452,9 +468,12 @@ if __name__ == "__main__":
         )
     else:
         raise NotImplementedError(f"Task: {args.task} is not handled")
-
+    
+    pl_system.testing = False
     trainer = pl.Trainer(callbacks=[checkpoint_callback], logger=wandb_logger, gpus=gpus, max_epochs=args.epoch)
     trainer.fit(pl_system, train_loader, valid_loader)
+    pl_system.testing = True
+    trainer.test(test_dataloaders=test_loader, ckpt_path='best')
 
 
 
