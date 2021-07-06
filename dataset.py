@@ -59,11 +59,13 @@ class Simulations(Dataset):
         self.yaml_return = yaml_return  # To control what the yaml file should output for our simulations
         # Data processing
         vids_params = self.find_vids(dataset_path)
-        train_vids_params, val_vids_params = self.train_val_split(vids_params, args.split_condition)
+        train_vids_params, val_vids_params, test_vids_params = self.train_val_test_split(vids_params, args.split_condition)
         if self.subset == 'train':
             vids_params = train_vids_params
         elif self.subset == 'val':
             vids_params = val_vids_params
+        elif self.subset == 'test':
+            vids_params = test_vids_params
         else:
             raise ValueError(f"Unknown subset {self.subset}")
 
@@ -170,7 +172,7 @@ class Simulations(Dataset):
         return dataset_params
 
     @staticmethod
-    def train_val_split(vids_params, condition):
+    def train_val_test_split(vids_params, condition):
         """
         Return train and validation data_params subsets
         """
@@ -184,9 +186,15 @@ class Simulations(Dataset):
             cutoff = round(len(vids_params) * tv_ratio)
             vids_params.sort(key=lambda x: x['image_paths'][0])
             rng.shuffle(vids_params)
-            train_dict, val_dict = vids_params[:cutoff], vids_params[cutoff:]
 
-            return train_dict, val_dict
+            len_valid_test = len(vids_params) - cutoff
+            len_valid = len_valid_test // 2
+
+            train_dict = vids_params[:cutoff]
+            val_dict = vids_params[cutoff:cutoff+len_valid]
+            test_dict = vids_params[cutoff+len_valid:]
+
+            return train_dict, val_dict, test_dict
         else:
             raise ValueError(f"Condition: {condition} not recognised")
 
