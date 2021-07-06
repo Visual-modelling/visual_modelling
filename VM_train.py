@@ -398,7 +398,7 @@ class SequenceModellingSystem(ModellingSystem):
         else:
             feedback_loss = 0
 
-        return sequence_loss + feedback_loss
+        return sequence_loss * args.sequence_loss_factor + feedback_loss
 
     def validation_step(self, valid_batch, batch_idx):
         frames, gt_frames, vid_names, _ = valid_batch
@@ -473,6 +473,7 @@ if __name__ == "__main__":
     parser.add_argument("--pos_encoder", type=str, default="add", help="What positional encoding to use. 'none', 'add' or an integer concatenation with the number of bits to concatenate.")
     parser.add_argument("--mask", action="store_true", help="Whether to add a triangular attn_mask to the transformer attention")
     parser.add_argument("--feedback_training_iters", type=int, default=0, help="Maximum number of feedback frames to train with")
+    parser.add_argument("--sequence_loss_factor", type=float, default=1, help="How much to weigh the sequence loss by when adding it to the feedback loss")
 
     parser.add_argument_group("Other things")
     parser.add_argument("--loss", type=str, default="mse", choices=["mse", "sl1", "focal", "ssim"], help="Loss function for the network")

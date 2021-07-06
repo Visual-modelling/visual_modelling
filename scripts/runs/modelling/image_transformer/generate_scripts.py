@@ -3,21 +3,21 @@ from collections import OrderedDict
 
 if __name__ == '__main__':
     restrict_to_titan = False
-    experiment_no = 12
+    experiment_no = 13
     dataset_names = ['2dBouncing']  # None for all
     # losses = ['mse', 'sl1', 'ssim']
     losses = ['sl1']
     # learning_rates = ['2e-5', '1e-5', '5e-6']
     learning_rates = ['1e-5']
 
-    label = 'sequence_feedback10_'
+    label = 'sequence_feedback10_only_4head'
 
     params = OrderedDict([
         ('model', 'image_sequence_transformer'),
         ('dataset_mode', 'overlap'),
         ('d_model', 4096),
         ('n_layers', 2),
-        ('nhead', 1),
+        ('nhead', 4),
         ('dim_feedforward', 4096),
         ('dropout', 0.0),
         ('pixel_regression_layers', 1),
@@ -27,6 +27,7 @@ if __name__ == '__main__':
         ('pos_encoder', 'add_runtime'),
         ('mask', None),  # enables mask
         ('feedback_training_iters', 10),
+        ('sequence_loss_factor', 0)
     ])
 
     common_params = OrderedDict([
