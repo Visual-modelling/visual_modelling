@@ -441,7 +441,8 @@ if __name__ == "__main__":
 
     train_loader = DataLoader(train_dset, batch_size=args.bsz, num_workers=args.num_workers, shuffle=args.shuffle)
     half = len(valid_dset)//2
-    valid_dset, test_dset = torch.utils.data.random_split(valid_dset, [half, len(valid_dset)-half])
+    breakpoint()
+    valid_dset, test_dset = torch.utils.data.Subset(valid_dset, list(range(0, half))), torch.utils.data.Subset(valid_dset, list(range(half, len(valid_dset))))
     valid_loader = DataLoader(valid_dset, batch_size=args.val_bsz, num_workers=args.num_workers, shuffle=False)
     test_loader = DataLoader(valid_dset, batch_size=args.val_bsz, num_workers=args.num_workers, shuffle=False)
 
