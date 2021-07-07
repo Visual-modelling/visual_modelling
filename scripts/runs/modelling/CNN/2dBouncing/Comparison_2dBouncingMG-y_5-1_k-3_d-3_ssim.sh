@@ -15,7 +15,7 @@ python VM_train.py \
     --bsz 64 \
     --val_bsz 100 \
     --lr 1e-5 \
-    --num_workers 6 \
+    --num_workers 1 \
     --in_no 5 \
     --out_no 1 \
     --depth 3 \
