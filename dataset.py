@@ -58,8 +58,12 @@ class Simulations(Dataset):
         self.segmentation_flag = segmentation_flag
         self.yaml_return = yaml_return  # To control what the yaml file should output for our simulations
         # Data processing
-        vids_params = self.find_vids(dataset_path)
-        train_vids_params, val_vids_params, test_vids_params = self.train_val_test_split(vids_params, args.split_condition)
+        self.all_vids_params = self.find_vids(dataset_path)
+        self.init_part_2()
+
+    def init_part_2(self):
+        """ Second half of init function that needs to be re-run when cloning"""
+        train_vids_params, val_vids_params, test_vids_params = self.train_val_test_split(self.all_vids_params, self.args.split_condition)
         if self.subset == 'train':
             vids_params = train_vids_params
         elif self.subset == 'val':
@@ -69,16 +73,21 @@ class Simulations(Dataset):
         else:
             raise ValueError(f"Unknown subset {self.subset}")
 
-        self.data_params = self.prepare_data(vids_params, mode, args.in_no, args.out_no)
+        self.data_params = self.prepare_data(vids_params, self.mode, self.args.in_no, self.args.out_no)
 
-        if args.img_type == 'binary':
+        if self.args.img_type == 'binary':
             self.img_read_method = read_ims_binary
-        elif args.img_type == 'greyscale':
+        elif self.args.img_type == 'greyscale':
             self.img_read_method = read_ims_greyscale
-        elif args.img_type == 'RGB':
+        elif self.args.img_type == 'RGB':
             raise NotImplementedError("RGB image reading not implemented")
         else:
-            raise ValueError(f"Unknown img_type {args.img_type}")
+            raise ValueError(f"Unknown img_type {self.args.img_type}")
+
+    def clone(self, subset, mode):
+        self.subset = subset
+        self.mode = mode
+        self.init_part_2()
 
     def __len__(self):
         return len(self.data_params)
@@ -179,20 +188,21 @@ class Simulations(Dataset):
         # See the argparse in main for a description of splitting functions
         if condition[:8] == "tv_ratio":
             tv_ratio = condition[9:].split('-')
-            tv_ratio = float(tv_ratio[0])/(float(tv_ratio[0]) + float(tv_ratio[1]))
+            assert len(tv_ratio) == 3
+            tv_ratio_sum = sum(tv_ratio)
+            tv_fraction = [float(ratio) / float(tv_ratio_sum) for ratio in tv_ratio]
+
+            val_start = int(tv_fraction[0] * len(vids_params))
+            test_start = int((tv_fraction[0] + tv_fraction[1]) * len(vids_params))
 
             # shuffle data_params in fixed manner
-            rng = np.random.Generator(np.random.PCG64(2667))
-            cutoff = round(len(vids_params) * tv_ratio)
             vids_params.sort(key=lambda x: x['image_paths'][0])
+            rng = np.random.Generator(np.random.PCG64(2667))
             rng.shuffle(vids_params)
 
-            len_valid_test = len(vids_params) - cutoff
-            len_valid = len_valid_test // 2
-
-            train_dict = vids_params[:cutoff]
-            val_dict = vids_params[cutoff:cutoff+len_valid]
-            test_dict = vids_params[cutoff+len_valid:]
+            train_dict = vids_params[:val_start]
+            val_dict = vids_params[val_start:test_start]
+            test_dict = vids_params[test_start:]
 
             return train_dict, val_dict, test_dict
         else:

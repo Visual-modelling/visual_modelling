@@ -15,7 +15,7 @@ python test_tasks.py \
     --dataset_path data/myphysicslab/Pendulum_1200_bigger \
     --bsz 64 \
     --val_bsz 100 \
-    --num_workers 6 \
+    --num_workers 4 \
     --in_no 5 \
     --out_no 1 \
     --depth 3 \

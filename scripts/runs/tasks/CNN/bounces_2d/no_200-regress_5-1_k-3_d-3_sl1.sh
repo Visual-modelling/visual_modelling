@@ -26,4 +26,4 @@ python test_tasks.py \
     --model UpDown2D \
     --model_path '' \
     --shuffle \
-    --wandb 
+    #--wandb 

@@ -446,7 +446,7 @@ if __name__ == "__main__":
     parser.add_argument("--dataset_path", type=str, nargs="+", default=os.path.expanduser("~/"), help="Dataset paths")
     parser.add_argument("--dataset_mode", type=str, default='consecutive', choices=['consecutive', 'overlap', 'full_out'])
     #############
-    parser.add_argument("--split_condition", type=str, default="tv_ratio:4-1", help="Custom string deciding how to split datasets into train/test. Affiliated with a custom function in dataset")
+    parser.add_argument("--split_condition", type=str, default="tv_ratio:8-1-1", help="Custom string deciding how to split datasets into train/val/test. Affiliated with a custom function in dataset")
     parser.add_argument("--shuffle", action="store_true", help="shuffle dataset")
 
     parser.add_argument_group("Shared Model argmuents")
@@ -516,10 +516,10 @@ if __name__ == "__main__":
     for i in tqdm(range(len(args.dataset))):
         train_dset = dataset_switch[args.dataset[i]](args.dataset_path[i], 'train', args.dataset_mode, args)
         train_list.append(train_dset)
-        valid_dset = dataset_switch[args.dataset[i]](args.dataset_path[i], 'val', 'consecutive', args)
+        valid_dset = train_dset.clone('val', 'consecutive')
         valid_list.append(valid_dset)
-        self_out_dset = dataset_switch[args.dataset[i]](args.dataset_path[i], 'val', 'full_out', args)
-        self_out_dset = torch.utils.data.Subset(self_out_dset, [i for i in range(args.n_gifs)])  # Only have the number of gifs required
+        self_out_dset = train_dset.clone('val', 'full_out')
+        self_out_dset = torch.utils.data.Subset(self_out_dset, list(range(args.n_gifs)))  # Only have the number of gifs required
         self_out_list.append(self_out_dset)
 
     if len(args.dataset) > 1:

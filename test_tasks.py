@@ -104,6 +104,9 @@ class FcUpDown2D2Scalars(pl.LightningModule):
         # Training metrics
         self.train_acc = torchmetrics.Accuracy()
 
+        # Test metrics
+        self.test_acc = torchmetrics.Accuracy()
+
         if args.task in ["mnist","grav-pred","bounces-pred","roller-pred"]:
             self.criterion = nn.CrossEntropyLoss()
         elif args.task in ["pendulum","bounces-regress","grav-regress","roller-regress"]:
@@ -112,8 +115,8 @@ class FcUpDown2D2Scalars(pl.LightningModule):
             raise NotImplementedError(f"Task: '{args.task}' has not got a specified criterion")
 
     def configure_optimizers(self):
-        model_opt = radam.RAdam([p for p in self.model.parameters()], lr=3e-6, weight_decay=1e-5)
-        probe_fc_opt = radam.RAdam([p for p in self.probe_fc.parameters()], lr=3e-4, weight_decay=1e-5)
+        model_opt = radam.RAdam([p for p in self.model.parameters()], lr=1e-6)#, weight_decay=1e-5)
+        probe_fc_opt = radam.RAdam([p for p in self.probe_fc.parameters()], lr=1e-5)#, weight_decay=1e-5)
         return model_opt, probe_fc_opt
 
     def forward(self, x):
@@ -144,9 +147,9 @@ class FcUpDown2D2Scalars(pl.LightningModule):
         elif self.args.task == "grav-pred":
             out = F.softmax(out, dim=1)
             label = ((label*10000)+3).round().long().squeeze(1) # Rescale the output to be appropriate for softmax [-0.0003,-0.0002,...,0.0003]
-        elif self.args.task == "bounces-pred":
+        elif self.args.task in ["bounces-pred", "bounces-regress"]:
             out = F.softmax(out, dim=1)
-            label = label.sum(dim=1).clamp(0,49).long() # Cap the sum of both bounce types at 49 for classification
+            label = label.clamp(0,49)   # Cap the sum of both bounce types at 49 for classification
         elif self.args.task == "roller-pred":
             out = F.softmax(out, dim=1)
             label = (label*2).long().squeeze(1)
@@ -171,21 +174,31 @@ class FcUpDown2D2Scalars(pl.LightningModule):
         elif self.args.task == "grav-pred":
             out = F.softmax(out, dim=1)
             label = ((label*10000)+3).round().long().squeeze(1) # Rescale the output to be appropriate for softmax [-0.0003,-0.0002,...,0.0003]
-        elif self.args.task == "bounces-pred":
+        elif self.args.task in ["bounces-pred","bounces-regress"]:
             out = F.softmax(out, dim=1)
-            label = label.sum(dim=1).clamp(0,49).long() # Cap the sum of both bounce types at 49 for classification
+            label = label.clamp(0,49)   # Cap the sum of both bounce types at 49 for classification
         elif self.args.task == "roller-pred":
             out = F.softmax(out, dim=1)
             label = (label*2).long().squeeze(1)
         valid_loss = self.criterion(out, label)
-        self.log("valid_loss", valid_loss, on_step=False, on_epoch=True)
+        if self.testing:    # TODO refine this. this is a quick workaround
+            self.log("test_loss", valid_loss, on_step=False, on_epoch=True)
+        else:
+            self.log("valid_loss", valid_loss, on_step=False, on_epoch=True)
         if self.args.task in ["mnist","mocap","hdmb51","grav-pred","bounces-pred","roller-pred"]:
-            self.log("valid_acc", self.valid_acc(out, label), prog_bar=True, on_step=False, on_epoch=True)
+            if self.testing:
+                self.log("test_acc", self.test_acc(out, label), prog_bar=True, on_step=False, on_epoch=True)
+            else:
+                self.log("valid_acc", self.valid_acc(out, label), prog_bar=True, on_step=False, on_epoch=True)
+
+    def test_step(self, test_batch, batch_idx):
+        self.validation_step(test_batch, batch_idx)
 
 
 class FCUpDown2D_2_Segmentation(pl.LightningModule):
     def __init__(self, args):
         super().__init__()
+
         self.args = args
         self.model = FCUpDown2D(args)
 
@@ -214,7 +227,7 @@ class FCUpDown2D_2_Segmentation(pl.LightningModule):
         self.criterion = tools.loss.Smooth_L1_pl(reduction="mean")
 
     def configure_optimizers(self):
-        optimizer = radam.RAdam([p for p in self.parameters() if p.requires_grad], lr=3e-4, weight_decay=1e-5)
+        optimizer = radam.RAdam([p for p in self.parameters() if p.requires_grad], lr=1e-6)#, weight_decay=1e-5)
         return optimizer
 
     def forward(self, x):
@@ -320,7 +333,11 @@ if __name__ == "__main__":
         You don't need to set a dataset or dataset path for MNIST. Its all handled here since its so small and easy to load
        """
         train_dset = MNIST(train=True, transform=transforms.Compose([transforms.Pad(18,0), transforms.ToTensor()]), root=os.path.join(os.path.dirname(os.path.realpath(__file__)), "data"))
-        valid_dset = MNIST(train=False, transform=transforms.Compose([transforms.Pad(18,0), transforms.ToTensor()]), root=os.path.join(os.path.dirname(os.path.realpath(__file__)), "data"))
+        valid_test_dset = MNIST(train=False, transform=transforms.Compose([transforms.Pad(18,0), transforms.ToTensor()]), root=os.path.join(os.path.dirname(os.path.realpath(__file__)), "data"))
+        valid_dset = torch.utils.data.Subset(valid_test_dset, list(range(0, len(valid_test_dset)//2)))
+        test_dset = torch.utils.data.Subset(valid_test_dset, list(range(len(valid_test_dset)//2, len(valid_test_dset))))
+        print("Iterate over valid_dset and test_dset and check that they return different data")
+        breakpoint()
         pl_system = FcUpDown2D2Scalars(args)
 
     ################################
@@ -333,7 +350,8 @@ if __name__ == "__main__":
         copy_args = copy.deepcopy(args)
         copy_args.in_no = 1
         train_dset = Simulations(args.dataset_path[0], 'train', 'consecutive', copy_args, segmentation_flag=True)
-        valid_dset = Simulations(args.dataset_path[0], 'val', 'consecutive', copy_args, segmentation_flag=True)
+        valid_dset = train_dset.clone('val', 'consecutive')
+        test_dset = train_dset.clone('test', 'consecutive')
         pl_system = FCUpDown2D_2_Segmentation(args)
 
     ################################
@@ -341,7 +359,8 @@ if __name__ == "__main__":
     ################################   
     elif args.task in ["roller-regress","roller-pred"]:
         train_dset = Simulations(args.dataset_path[0], 'train', 'consecutive', args, yaml_return="roller")
-        valid_dset = Simulations(args.dataset_path[0], 'val', 'consecutive', args, yaml_return="roller")
+        valid_dset = train_dset.clone('val', 'consecutive')
+        test_dset = train_dset.clone('test', 'consecutive')
         pl_system = FcUpDown2D2Scalars(args)
 
     ################################
@@ -349,7 +368,8 @@ if __name__ == "__main__":
     ################################   
     elif args.task == "pendulum":
         train_dset = Simulations(args.dataset_path[0], 'train', 'consecutive', args, yaml_return="pendulum")
-        valid_dset = Simulations(args.dataset_path[0], 'val', 'consecutive', args, yaml_return="pendulum")
+        valid_dset = train_dset.clone('val', 'consecutive')
+        test_dset = train_dset.clone('test', 'consecutive')
         pl_system = FcUpDown2D2Scalars(args)
 
     ################################
@@ -357,7 +377,8 @@ if __name__ == "__main__":
     ################################   
     elif args.task in ["grav-regress","grav-pred"]:
         train_dset = Simulations(args.dataset_path[0], 'train', 'consecutive', args, yaml_return="grav")
-        valid_dset = Simulations(args.dataset_path[0], 'val', 'consecutive', args, yaml_return="grav")
+        valid_dset = train_dset.clone('val', 'consecutive')
+        test_dset = train_dset.clone('test', 'consecutive')
         pl_system = FcUpDown2D2Scalars(args)
 
     ################################
@@ -365,7 +386,8 @@ if __name__ == "__main__":
     ################################   
     elif args.task in ["bounces-regress","bounces-pred"]:
         train_dset = Simulations(args.dataset_path[0], 'train', 'consecutive', args, yaml_return="bounces")
-        valid_dset = Simulations(args.dataset_path[0], 'valid', 'consecutive', args, yaml_return="bounces")
+        valid_dset = train_dset.clone('val', 'consecutive')
+        test_dset = train_dset.clone('test', 'consecutive')
         pl_system = FcUpDown2D2Scalars(args)
 
 
@@ -417,7 +439,8 @@ if __name__ == "__main__":
         #print(label_dict)
 
     train_loader = DataLoader(train_dset, batch_size=args.bsz, num_workers=args.num_workers, shuffle=args.shuffle)
-    valid_loader = DataLoader(valid_dset, batch_size=args.val_bsz, num_workers=args.num_workers, shuffle=args.shuffle)
+    valid_loader = DataLoader(valid_dset, batch_size=args.val_bsz, num_workers=args.num_workers, shuffle=False)
+    test_loader = DataLoader(test_dset, batch_size=args.val_bsz, num_workers=args.num_workers, shuffle=False)
 
     # Checkpointing and running
     if args.task in ["mnist","mocap","hdmb51","grav-pred","bounces-pred","roller-pred"]:   # Accuracy tasks
@@ -442,9 +465,12 @@ if __name__ == "__main__":
         )
     else:
         raise NotImplementedError(f"Task: {args.task} is not handled")
-
+    
+    pl_system.testing = False
     trainer = pl.Trainer(callbacks=[checkpoint_callback], logger=wandb_logger, gpus=gpus, max_epochs=args.epoch)
     trainer.fit(pl_system, train_loader, valid_loader)
+    pl_system.testing = True
+    trainer.test(test_dataloaders=test_loader, ckpt_path='best')
 
 
 
