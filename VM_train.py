@@ -27,7 +27,7 @@ from tqdm import tqdm
 import tools.loss
 import tools.radam as radam
 import tools.utils as utils
-from dataset import Simulations
+from dataset import SimulationsPreloaded
 from tools.utils import model_fwd
 from tools.ball_distance_metric import calculate_metric
 from models.UpDown2D import FCUpDown2D
@@ -503,10 +503,10 @@ if __name__ == "__main__":
 
     #### Make sure the dataset object is configured properly
     dataset_switch = {
-        "simulations": Simulations,
-        "mmnist": Simulations,  # This may change one day, but this works just fine
-        "mocap": Simulations,
-        "hdmb51": Simulations,
+        "simulations": SimulationsPreloaded,
+        "mmnist": SimulationsPreloaded,  # This may change one day, but this works just fine
+        "mocap": SimulationsPreloaded,
+        "hdmb51": SimulationsPreloaded,
     }
     dataset_list = args.dataset_path
     train_list = []

@@ -12,7 +12,7 @@ import torch.nn as nn
 import pytorch_lightning as pl
 import torchmetrics
 
-from dataset import Simulations
+from dataset import SimulationsPreloaded
 from models.UpDown2D import FCUpDown2D
 import tools.radam as radam
 import tools.loss
@@ -349,7 +349,7 @@ if __name__ == "__main__":
         """
         copy_args = copy.deepcopy(args)
         copy_args.in_no = 1
-        train_dset = Simulations(args.dataset_path[0], 'train', 'consecutive', copy_args, segmentation_flag=True)
+        train_dset = SimulationsPreloaded(args.dataset_path[0], 'train', 'consecutive', copy_args, segmentation_flag=True)
         valid_dset = train_dset.clone('val', 'consecutive')
         test_dset = train_dset.clone('test', 'consecutive')
         pl_system = FCUpDown2D_2_Segmentation(args)
@@ -358,7 +358,7 @@ if __name__ == "__main__":
     # Roller regression/prediction
     ################################   
     elif args.task in ["roller-regress","roller-pred"]:
-        train_dset = Simulations(args.dataset_path[0], 'train', 'consecutive', args, yaml_return="roller")
+        train_dset = SimulationsPreloaded(args.dataset_path[0], 'train', 'consecutive', args, yaml_return="roller")
         valid_dset = train_dset.clone('val', 'consecutive')
         test_dset = train_dset.clone('test', 'consecutive')
         pl_system = FcUpDown2D2Scalars(args)
@@ -367,7 +367,7 @@ if __name__ == "__main__":
     # Pendulum
     ################################   
     elif args.task == "pendulum":
-        train_dset = Simulations(args.dataset_path[0], 'train', 'consecutive', args, yaml_return="pendulum")
+        train_dset = SimulationsPreloaded(args.dataset_path[0], 'train', 'consecutive', args, yaml_return="pendulum")
         valid_dset = train_dset.clone('val', 'consecutive')
         test_dset = train_dset.clone('test', 'consecutive')
         pl_system = FcUpDown2D2Scalars(args)
@@ -376,7 +376,7 @@ if __name__ == "__main__":
     # Gravity regression/prediction
     ################################   
     elif args.task in ["grav-regress","grav-pred"]:
-        train_dset = Simulations(args.dataset_path[0], 'train', 'consecutive', args, yaml_return="grav")
+        train_dset = SimulationsPreloaded(args.dataset_path[0], 'train', 'consecutive', args, yaml_return="grav")
         valid_dset = train_dset.clone('val', 'consecutive')
         test_dset = train_dset.clone('test', 'consecutive')
         pl_system = FcUpDown2D2Scalars(args)
@@ -385,7 +385,7 @@ if __name__ == "__main__":
     # Ball bounces regression/prediction
     ################################   
     elif args.task in ["bounces-regress","bounces-pred"]:
-        train_dset = Simulations(args.dataset_path[0], 'train', 'consecutive', args, yaml_return="bounces")
+        train_dset = SimulationsPreloaded(args.dataset_path[0], 'train', 'consecutive', args, yaml_return="bounces")
         valid_dset = train_dset.clone('val', 'consecutive')
         test_dset = train_dset.clone('test', 'consecutive')
         pl_system = FcUpDown2D2Scalars(args)

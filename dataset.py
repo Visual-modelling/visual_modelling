@@ -250,3 +250,21 @@ class Simulations(Dataset):
                 }
                 vids_features.append(vid_features)
         return vids_features
+
+
+class SimulationsPreloaded(Simulations):
+    def __init__(self, dataset_path, subset, mode, args, segmentation_flag=False, yaml_return=None, all_vids_params=None):
+        super().__init__(dataset_path, subset, mode, args, segmentation_flag, yaml_return, all_vids_params)
+        self.all_data = []
+
+        for idx in range(self.__len__()):
+            data = super().__getitem__(idx)
+            self.all_data.append(data)
+
+    def clone(self, subset, mode):
+        new_dataset = SimulationsPreloaded(self.dataset_path, subset, mode, self.args, self.segmentation_flag, self.yaml_return, self.all_vids_params.copy())
+        return new_dataset
+
+    def __getitem__(self, idx):
+        return self.all_data[idx]
+
