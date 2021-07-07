@@ -11,7 +11,7 @@ export PYTHONBREAKPOINT=ipdb.set_trace
 python VM_train.py \
     --dataset simulations \
     --dataset_path data/2dBouncing/2dMultiGrav-Y_regen/raw_masked \
-    --split_condition tv_ratio:4-1 \
+    --split_condition tv_ratio:8-1-1 \
     --bsz 64 \
     --val_bsz 100 \
     --num_workers 2 \

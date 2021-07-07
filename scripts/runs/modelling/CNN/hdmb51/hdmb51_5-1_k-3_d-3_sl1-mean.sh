@@ -12,7 +12,7 @@ export PYTHONBREAKPOINT=ipdb.set_trace
 python VM_train.py \
     --dataset hdmb51 \
     --dataset_path data/HDMB-51/grey_64x64_frames \
-    --split_condition tv_ratio:4-1 \
+    --split_condition tv_ratio:8-1-1 \
     --bsz 64 \
     --val_bsz 100 \
     --num_workers 4 \

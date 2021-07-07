@@ -15,7 +15,7 @@ export PYTHONBREAKPOINT=ipdb.set_trace
 python VM_train.py \
     --dataset simulations \
     --dataset_path data/3dBouncing/3dRegen \
-    --split_condition tv_ratio:4-1 \
+    --split_condition tv_ratio:8-1-1 \
     --bsz 4 \
     --val_bsz 100 \
     --lr 1e-5 \

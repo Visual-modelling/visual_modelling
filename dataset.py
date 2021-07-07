@@ -189,7 +189,7 @@ class Simulations(Dataset):
         if condition[:8] == "tv_ratio":
             tv_ratio = condition[9:].split('-')
             assert len(tv_ratio) == 3
-            tv_ratio_sum = sum(tv_ratio)
+            tv_ratio_sum = sum([int(ratio) for ratio in tv_ratio])
             tv_fraction = [float(ratio) / float(tv_ratio_sum) for ratio in tv_ratio]
 
             val_start = int(tv_fraction[0] * len(vids_params))
@@ -203,7 +203,6 @@ class Simulations(Dataset):
             train_dict = vids_params[:val_start]
             val_dict = vids_params[val_start:test_start]
             test_dict = vids_params[test_start:]
-
             return train_dict, val_dict, test_dict
         else:
             raise ValueError(f"Condition: {condition} not recognised")

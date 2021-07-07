@@ -11,7 +11,7 @@ export PYTHONBREAKPOINT=ipdb.set_trace
 python VM_train.py \
     --dataset simulations simulations simulations simulations simulations simulations \
     --dataset_path data/myphysicslab/DEMO_double_pendulum data/3d_bouncing/hudson_true_3d_default data/2d_bouncing/hudsons_multi_ygrav/10000 data/moving_mnist/1_2_3 data/mocap/grey_64x64_frames data/HDMB-51/grey_64x64_frames \
-    --split_condition tv_ratio:4-1 \
+    --split_condition tv_ratio:8-1-1 \
     --bsz 16 \
     --val_bsz 100 \
     --num_workers 4 \

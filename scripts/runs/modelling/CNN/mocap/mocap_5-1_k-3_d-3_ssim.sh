@@ -12,7 +12,7 @@ export PYTHONBREAKPOINT=ipdb.set_trace
 python VM_train.py \
     --dataset mocap \
     --dataset_path data/mocap/grey_64x64_frames \
-    --split_condition tv_ratio:4-1 \
+    --split_condition tv_ratio:8-1-1 \
     --bsz 64 \
     --val_bsz 100 \
     --num_workers 2 \
