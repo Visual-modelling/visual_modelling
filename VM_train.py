@@ -425,7 +425,7 @@ if __name__ == "__main__":
     parser.add_argument("--early_stopping", type=int, default=2, help="number of epochs after no improvement before stopping")
     """
     Guide to split_condition:
-        'tv_ratio:4-1' : Simply split all videos into train:validation ratio of 4:1
+        'tv_ratio:4-1' : Simply split all videos into train:validation:tests ratio of 8:1:1
 
     """
     parser.add_argument("--device", type=int, default=-1, help="-1 for CPU, 0, 1 for appropriate device")

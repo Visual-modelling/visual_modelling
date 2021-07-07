@@ -12,7 +12,7 @@ source python_venvs/vm/bin/activate
 python test_tasks.py \
     --task pendulum \
     --dataset simulations  \
-    --dataset_path data/myphysicslab/Pendulum_1200_bigger \
+    --dataset_path data/myphysicslab/Pendulum_1200 \
     --bsz 64 \
     --val_bsz 100 \
     --num_workers 4 \

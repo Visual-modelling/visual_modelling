@@ -269,7 +269,7 @@ if __name__ == "__main__":
     parser.add_argument("--jobname", type=str, default="jobname", help="jobname")
 
     parser.add_argument_group("Dataset specific arguments")
-    parser.add_argument("--split_condition", type=str, default="tv_ratio:4-1", help="Custom string deciding how to split datasets into train/test. Affiliated with a custom function in dataset")
+    parser.add_argument("--split_condition", type=str, default="tv_ratio:8-1-1", help="Custom string deciding how to split datasets into train/test. Affiliated with a custom function in dataset")
     parser.add_argument("--dataset", type=str, nargs="+", choices=["mmnist", "simulations", "mocap", "hdmb51"], help="Type of dataset")
     parser.add_argument("--dataset_path", type=str, nargs="+", default=os.path.expanduser("~/"), help="Dataset paths")
     parser.add_argument("--shuffle", action="store_true", help="shuffle dataset")
