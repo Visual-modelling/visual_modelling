@@ -31,7 +31,7 @@ if __name__ == '__main__':
     ])
 
     common_params = OrderedDict([
-        ('split_condition', 'tv_ratio,4-1'),
+        ('split_condition', 'tv_ratio:8-1-1'),
         ('bsz', 16),
         ('val_bsz', 64),
         ('num_workers', 4),

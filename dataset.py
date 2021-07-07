@@ -40,7 +40,7 @@ class Simulations(Dataset):
     """
     root_dir -> clip_0,...clip_999 -> frame_00.png-frame_99.png AND positions.csv AND simulation.gif AND config.yml
     """
-    def __init__(self, dataset_path, subset, mode, args, segmentation_flag=False, yaml_return=None):
+    def __init__(self, dataset_path, subset, mode, args, segmentation_flag=False, yaml_return=None, all_vids_params=None):
         """
         :param dataset_path: str
         :param subset: 'train' or 'val'
@@ -50,19 +50,24 @@ class Simulations(Dataset):
         :param args: see VM_train.py
         :param segmentation_flag: bool
         :param yaml_return:
+        :param all_vids_params: Pre-loaded all_vids_params object. The init method will not walk through the directories
+                                if this object is not None.
         """
+        self.dataset_path = dataset_path
         self.subset = subset
         self.mode = mode
         self.args = args
         # Flags
         self.segmentation_flag = segmentation_flag
         self.yaml_return = yaml_return  # To control what the yaml file should output for our simulations
-        # Data processing
-        self.all_vids_params = self.find_vids(dataset_path)
-        self.init_part_2()
 
-    def init_part_2(self):
-        """ Second half of init function that needs to be re-run when cloning"""
+        # Find files
+        if all_vids_params is not None:
+            self.all_vids_params = all_vids_params
+        else:
+            self.all_vids_params = self.find_vids(dataset_path)
+
+        # Separate into train val test
         train_vids_params, val_vids_params, test_vids_params = self.train_val_test_split(self.all_vids_params, self.args.split_condition)
         if self.subset == 'train':
             vids_params = train_vids_params
@@ -73,6 +78,7 @@ class Simulations(Dataset):
         else:
             raise ValueError(f"Unknown subset {self.subset}")
 
+        # separate whole videos into smaller
         self.data_params = self.prepare_data(vids_params, self.mode, self.args.in_no, self.args.out_no)
 
         if self.args.img_type == 'binary':
@@ -85,9 +91,8 @@ class Simulations(Dataset):
             raise ValueError(f"Unknown img_type {self.args.img_type}")
 
     def clone(self, subset, mode):
-        self.subset = subset
-        self.mode = mode
-        self.init_part_2()
+        new_dataset = Simulations(self.dataset_path, subset, mode, self.args, self.segmentation_flag, self.yaml_return, self.all_vids_params.copy())
+        return new_dataset
 
     def __len__(self):
         return len(self.data_params)
