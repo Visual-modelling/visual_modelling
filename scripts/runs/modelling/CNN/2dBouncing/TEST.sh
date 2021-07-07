@@ -20,7 +20,7 @@ python VM_train.py \
     --depth 3 \
     --krnl_size 3 \
     --padding 1 \
-    --device -1 \
+    --device 0 \
     --epoch 75 \
     --n_gifs 12 \
     --jobname TEST \
