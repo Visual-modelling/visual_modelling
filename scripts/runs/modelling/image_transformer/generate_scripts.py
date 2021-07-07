@@ -3,14 +3,14 @@ from collections import OrderedDict
 
 if __name__ == '__main__':
     restrict_to_titan = False
-    experiment_no = 13
-    dataset_names = ['2dBouncing']  # None for all
+    experiment_no = 14
+    dataset_names = ['2dBouncing', '3dBouncing']  # None for all
     # losses = ['mse', 'sl1', 'ssim']
     losses = ['sl1']
     # learning_rates = ['2e-5', '1e-5', '5e-6']
     learning_rates = ['1e-5']
 
-    label = 'sequence_feedback10_only_4head'
+    label = 'sequence_4_head_'
 
     params = OrderedDict([
         ('model', 'image_sequence_transformer'),
@@ -27,12 +27,12 @@ if __name__ == '__main__':
         ('pos_encoder', 'add_runtime'),
         ('mask', None),  # enables mask
         ('feedback_training_iters', 10),
-        ('sequence_loss_factor', 0)
+        ('sequence_loss_factor', 0.2)
     ])
 
     common_params = OrderedDict([
         ('split_condition', 'tv_ratio,4-1'),
-        ('bsz', 64),
+        ('bsz', 16),
         ('val_bsz', 64),
         ('num_workers', 4),
         ('in_no', 5),
