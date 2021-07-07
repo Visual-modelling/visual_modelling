@@ -34,7 +34,7 @@ if __name__ == '__main__':
         ('split_condition', 'tv_ratio:8-1-1'),
         ('bsz', 16),
         ('val_bsz', 64),
-        ('num_workers', 4),
+        ('num_workers', 1),
         ('in_no', 5),
         ('out_no', 1),
         ('device', 0),
@@ -97,7 +97,7 @@ if __name__ == '__main__':
                     f.write('#SBATCH -N 1\n')
                     f.write('#SBATCH -c 4\n')
                     f.write('#SBATCH -t 2-00:00\n')
-                    f.write('#SBATCH --mem 12G\n')
+                    f.write('#SBATCH --mem 28G\n')
                     f.write('#SBATCH -p res-gpu-small\n')
                     if restrict_to_titan:
                         f.write('#SBATCH -x gpu[0-6]\n')

@@ -3,7 +3,7 @@
 #SBATCH -N 1
 #SBATCH -c 4
 #SBATCH -t 2-00:00
-#SBATCH --mem 12G
+#SBATCH --mem 28G
 #SBATCH -p res-gpu-small
 #SBATCH --job-name 2dBouncing_transformer_lr3e-5_hardsigmoid-256_sl1_000 
 #SBATCH --gres gpu:1 
