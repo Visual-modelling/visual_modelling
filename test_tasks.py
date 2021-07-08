@@ -336,8 +336,6 @@ if __name__ == "__main__":
         valid_test_dset = MNIST(train=False, transform=transforms.Compose([transforms.Pad(18,0), transforms.ToTensor()]), root=os.path.join(os.path.dirname(os.path.realpath(__file__)), "data"))
         valid_dset = torch.utils.data.Subset(valid_test_dset, list(range(0, len(valid_test_dset)//2)))
         test_dset = torch.utils.data.Subset(valid_test_dset, list(range(len(valid_test_dset)//2, len(valid_test_dset))))
-        print("Iterate over valid_dset and test_dset and check that they return different data")
-        breakpoint()
         pl_system = FcUpDown2D2Scalars(args)
 
     ################################
