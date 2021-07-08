@@ -3,18 +3,18 @@ from collections import OrderedDict
 
 if __name__ == '__main__':
     restrict_to_titan = False
-    experiment_no = 14
+    experiment_no = 15
     dataset_names = ['2dBouncing', '3dBouncing']  # None for all
     # losses = ['mse', 'sl1', 'ssim']
     losses = ['sl1']
     # learning_rates = ['2e-5', '1e-5', '5e-6']
     learning_rates = ['1e-5']
 
-    label = 'sequence_4_head_'
+    label = 'none_reduction_'
 
     params = OrderedDict([
-        ('model', 'image_sequence_transformer'),
-        ('dataset_mode', 'overlap'),
+        ('model', 'image_transformer'),
+        ('dataset_mode', 'consecutive'),
         ('d_model', 4096),
         ('n_layers', 2),
         ('nhead', 4),
@@ -32,7 +32,7 @@ if __name__ == '__main__':
 
     common_params = OrderedDict([
         ('split_condition', 'tv_ratio:8-1-1'),
-        ('bsz', 16),
+        ('bsz', 64),
         ('val_bsz', 64),
         ('num_workers', 1),
         ('in_no', 5),
@@ -40,7 +40,7 @@ if __name__ == '__main__':
         ('device', 0),
         ('epoch', 75),
         ('n_gifs', 20),
-        ('reduction', 'mean'),
+        ('reduction', 'none'),
         ('img_type', 'greyscale'),
         ('shuffle', None),
         ('wandb', None),
