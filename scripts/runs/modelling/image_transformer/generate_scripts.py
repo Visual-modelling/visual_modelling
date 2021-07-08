@@ -3,14 +3,14 @@ from collections import OrderedDict
 
 if __name__ == '__main__':
     restrict_to_titan = False
-    experiment_no = 15
-    dataset_names = ['2dBouncing', '3dBouncing']  # None for all
+    experiment_no = 16
+    dataset_names = ['2dBouncing', '3dBouncing', 'mmnist', 'roller']  # None for all
     # losses = ['mse', 'sl1', 'ssim']
-    losses = ['sl1']
+    losses = ['sl1', 'ssim']
     # learning_rates = ['2e-5', '1e-5', '5e-6']
     learning_rates = ['1e-5']
 
-    label = 'none_reduction_'
+    label = ''
 
     params = OrderedDict([
         ('model', 'image_transformer'),
@@ -24,7 +24,7 @@ if __name__ == '__main__':
         ('norm_layer', 'layer_norm'),
         ('optimiser', 'adam'),
         ('output_activation', 'hardsigmoid-256'),  # ['linear-256', 'hardsigmoid-256', 'sigmoid-256']
-        ('pos_encoder', 'add_runtime'),
+        ('pos_encoder', 'add'),
         ('mask', None),  # enables mask
         ('feedback_training_iters', 10),
         ('sequence_loss_factor', 0.2)
@@ -38,9 +38,10 @@ if __name__ == '__main__':
         ('in_no', 5),
         ('out_no', 1),
         ('device', 0),
-        ('epoch', 75),
+        ('epoch', 500),
+        ('early_stopping', 10),
         ('n_gifs', 20),
-        ('reduction', 'none'),
+        ('reduction', 'mean'),
         ('img_type', 'greyscale'),
         ('shuffle', None),
         ('wandb', None),
