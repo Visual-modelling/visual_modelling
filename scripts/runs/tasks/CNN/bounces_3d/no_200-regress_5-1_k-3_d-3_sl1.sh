@@ -15,7 +15,7 @@ python test_tasks.py \
     --dataset_path data/3dBouncing/3dRegen \
     --bsz 64 \
     --val_bsz 100 \
-    --num_workers 6 \
+    --num_workers 1 \
     --in_no 59 \
     --out_no 1 \
     --depth 3 \

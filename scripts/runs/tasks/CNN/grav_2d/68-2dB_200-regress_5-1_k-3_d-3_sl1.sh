@@ -1,6 +1,10 @@
 #!/bin/bash
-#SBATCH --ntasks 6
-#SBATCH -p part0
+#SBATCH --qos short
+#SBATCH -N 1
+#SBATCH -c 4
+#SBATCH -t 2-00:00
+#SBATCH --mem 28G
+#SBATCH -p res-gpu-small
 #SBATCH --job-name 68-2dB_200_grav_2d-regress_5-1_k-3_d-3_sl1  
 #SBATCH --gres gpu:1
 #SBATCH -o ../../../../../.results/68-2dB_200_grav_2d-regress_5-1_k-3_d-3_sl1.out
@@ -15,7 +19,7 @@ python test_tasks.py \
     --dataset_path data/2dBouncing/2dMultiGrav-Y_regen/raw \
     --bsz 64 \
     --val_bsz 100 \
-    --num_workers 6 \
+    --num_workers 1 \
     --in_no 5 \
     --out_no 1 \
     --depth 3 \
