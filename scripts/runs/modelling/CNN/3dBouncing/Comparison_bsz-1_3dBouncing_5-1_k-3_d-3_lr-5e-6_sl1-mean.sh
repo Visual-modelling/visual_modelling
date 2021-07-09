@@ -27,7 +27,7 @@ python VM_train.py \
     --padding 1 \
     --lr 5e-6 \
     --device 0 \
-    --epoch 125 \
+    --epoch 150 \
     --n_gifs 20 \
     --jobname Comparison_bsz-1_3dBouncing_5-1_k-3_d-3_lr-5e-6_sl1-mean \
     --loss sl1 \
