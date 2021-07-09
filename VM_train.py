@@ -582,7 +582,7 @@ if __name__ == "__main__":
         filename=f"{args.jobname}"+'-{epoch:02d}',#-{valid_loss:.2f}',
         save_top_k=1,
         mode=max_or_min,
-    )
+    )   
     if args.early_stopping >= 0:
         early_stopping_callback = pl.callbacks.early_stopping.EarlyStopping(monitor=monitoring, patience=args.early_stopping)
         callbacks = [checkpoint_callback, early_stopping_callback]
