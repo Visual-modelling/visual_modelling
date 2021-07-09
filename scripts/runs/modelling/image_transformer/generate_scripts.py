@@ -3,12 +3,13 @@ from collections import OrderedDict
 
 if __name__ == '__main__':
     restrict_to_titan = False
-    experiment_no = 16
-    dataset_names = ['2dBouncing', '3dBouncing', 'mmnist', 'roller']  # None for all
+    experiment_no = 17
+    # dataset_names = ['2dBouncing', '3dBouncing', 'mmnist', 'roller']  # None for all
+    dataset_names = ['mmnist']
     # losses = ['mse', 'sl1', 'ssim']
     losses = ['sl1', 'ssim']
     # learning_rates = ['2e-5', '1e-5', '5e-6']
-    learning_rates = ['1e-5']
+    learning_rates = ['1e-6', '3e-6']
 
     label = ''
 
