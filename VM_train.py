@@ -422,7 +422,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument_group("Run specific arguments")
     parser.add_argument("--epoch", type=int, default=1)
-    parser.add_argument("--early_stopping", type=int, default=2, help="number of epochs after no improvement before stopping")
+    parser.add_argument("--early_stopping", type=int, default=-1, help="number of epochs after no improvement before stopping, -1 to disable")
     """
     Guide to split_condition:
         'tv_ratio:4-1' : Simply split all videos into train:validation:tests ratio of 8:1:1
@@ -583,5 +583,11 @@ if __name__ == "__main__":
         save_top_k=1,
         mode=max_or_min,
     )
-    trainer = pl.Trainer(callbacks=[checkpoint_callback], logger=wandb_logger, gpus=gpus, max_epochs=args.epoch)
+    if args.early_stopping >= 0:
+        early_stopping_callback = pl.callbacks.early_stopping.EarlyStopping(monitor=monitoring, patience=args.early_stopping)
+        callbacks = [checkpoint_callback, early_stopping_callback]
+    else:
+        callbacks = [checkpoint_callback]
+
+    trainer = pl.Trainer(callbacks=callbacks, logger=wandb_logger, gpus=gpus, max_epochs=args.epoch)
     trainer.fit(pl_system, train_loader, valid_loader)

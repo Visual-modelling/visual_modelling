@@ -3,18 +3,19 @@ from collections import OrderedDict
 
 if __name__ == '__main__':
     restrict_to_titan = False
-    experiment_no = 14
-    dataset_names = ['2dBouncing', '3dBouncing']  # None for all
+    experiment_no = 17
+    # dataset_names = ['2dBouncing', '3dBouncing', 'mmnist', 'roller']  # None for all
+    dataset_names = ['mmnist']
     # losses = ['mse', 'sl1', 'ssim']
-    losses = ['sl1']
+    losses = ['sl1', 'ssim']
     # learning_rates = ['2e-5', '1e-5', '5e-6']
-    learning_rates = ['1e-5']
+    learning_rates = ['1e-6', '3e-6']
 
-    label = 'sequence_4_head_'
+    label = ''
 
     params = OrderedDict([
-        ('model', 'image_sequence_transformer'),
-        ('dataset_mode', 'overlap'),
+        ('model', 'image_transformer'),
+        ('dataset_mode', 'consecutive'),
         ('d_model', 4096),
         ('n_layers', 2),
         ('nhead', 4),
@@ -24,7 +25,7 @@ if __name__ == '__main__':
         ('norm_layer', 'layer_norm'),
         ('optimiser', 'adam'),
         ('output_activation', 'hardsigmoid-256'),  # ['linear-256', 'hardsigmoid-256', 'sigmoid-256']
-        ('pos_encoder', 'add_runtime'),
+        ('pos_encoder', 'add'),
         ('mask', None),  # enables mask
         ('feedback_training_iters', 10),
         ('sequence_loss_factor', 0.2)
@@ -32,13 +33,14 @@ if __name__ == '__main__':
 
     common_params = OrderedDict([
         ('split_condition', 'tv_ratio:8-1-1'),
-        ('bsz', 16),
+        ('bsz', 64),
         ('val_bsz', 64),
         ('num_workers', 1),
         ('in_no', 5),
         ('out_no', 1),
         ('device', 0),
-        ('epoch', 75),
+        ('epoch', 500),
+        ('early_stopping', 10),
         ('n_gifs', 20),
         ('reduction', 'mean'),
         ('img_type', 'greyscale'),
