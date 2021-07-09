@@ -21,7 +21,7 @@ python VM_train.py \
     --krnl_size 5 \
     --padding 2 \
     --device 0 \
-    --epoch 75 \
+    --epoch 100 \
     --n_gifs 12 \
     --jobname 2dBouncingMG-y_5-1_k-5_d-3_ssim \
     --loss ssim \

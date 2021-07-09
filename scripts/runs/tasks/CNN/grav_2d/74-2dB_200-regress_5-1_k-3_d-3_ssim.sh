@@ -1,10 +1,7 @@
 #!/bin/bash
-#SBATCH --qos short
-#SBATCH -N 1
-#SBATCH -c 4
-#SBATCH -t 2-00:00
+#SBATCH --ntasks 6
 #SBATCH --mem 28G
-#SBATCH -p res-gpu-small
+#SBATCH -p part0
 #SBATCH --job-name 74-2dB_200_grav_2d-regress_5-1_k-3_d-3_ssim  
 #SBATCH --gres gpu:1
 #SBATCH -o ../../../../../.results/74-2dB_200_grav_2d-regress_5-1_k-3_d-3_ssim.out
@@ -28,7 +25,7 @@ python test_tasks.py \
     --jobname 74-2dB_200_grav_2d-regress_5-1_k-3_d-3_ssim \
     --img_type greyscale \
     --model UpDown2D \
-    --model_path '.results/2dBouncingMG-y_5-1_k-3_d-3_ssim-epoch=74-valid_loss=0.01.ckpt' \
+    --model_path '.results/2dBouncingMG-y_5-1_k-3_d-3_ssim-epoch=74' \
     --encoder_freeze \
     --linear_probes \
     --shuffle \

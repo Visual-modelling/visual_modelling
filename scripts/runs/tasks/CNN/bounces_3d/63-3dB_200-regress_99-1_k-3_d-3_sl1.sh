@@ -24,7 +24,7 @@ python test_tasks.py \
     --jobname 63-3dB_200_bounces-regress_3d_99-1_k-3_d-3_sl1 \
     --img_type greyscale \
     --model UpDown2D \
-    --model_path '.results/3dBouncing_99-1_k-3_d-3_sl1-mean-epoch=63-valid_loss=1.32.ckpt' \
+    --model_path '.results/3dBouncing_99-1_k-3_d-3_sl1-mean-epoch=63' \
     --encoder_freeze \
     --linear_probes \
     --shuffle \

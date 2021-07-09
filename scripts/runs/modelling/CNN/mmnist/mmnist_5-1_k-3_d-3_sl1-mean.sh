@@ -1,6 +1,10 @@
 #!/bin/bash
-#SBATCH --ntasks 6
-#SBATCH -p part0
+#SBATCH --qos short
+#SBATCH -N 1
+#SBATCH -c 4
+#SBATCH -t 2-00:00
+#SBATCH --mem 22G
+#SBATCH -p res-gpu-small
 #SBATCH --job-name mmnist_5-1_k-3_d-3_sl1-mean 
 #SBATCH --gres gpu:1
 #SBATCH -o ../../../../../.results/mmnist_5-1_k-3_d-3_sl1-mean.out
@@ -21,7 +25,7 @@ python VM_train.py \
     --krnl_size 3 \
     --padding 1 \
     --device 0 \
-    --epoch 75 \
+    --epoch 100 \
     --n_gifs 20 \
     --jobname mmnist_5-1_k-3_d-3_sl1-mean \
     --loss sl1 \

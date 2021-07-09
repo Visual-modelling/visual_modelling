@@ -116,7 +116,7 @@ class FcUpDown2D2Scalars(pl.LightningModule):
 
     def configure_optimizers(self):
         model_opt = radam.RAdam([p for p in self.model.parameters()], lr=1e-6)#, weight_decay=1e-5)
-        probe_fc_opt = radam.RAdam([p for p in self.probe_fc.parameters()], lr=1e-5)#, weight_decay=1e-5)
+        probe_fc_opt = radam.RAdam([p for p in self.probe_fc.parameters()], lr=1e-6)#, weight_decay=1e-5)
         return model_opt, probe_fc_opt
 
     def forward(self, x):

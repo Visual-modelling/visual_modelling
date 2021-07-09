@@ -477,7 +477,7 @@ if __name__ == "__main__":
 
     parser.add_argument_group("Other things")
     parser.add_argument("--loss", type=str, default="mse", choices=["mse", "sl1", "focal", "ssim"], help="Loss function for the network")
-    parser.add_argument("--lr", type=float, default=1e-5, help="Setting default to what it was, it should likely be lower")
+    parser.add_argument("--lr", type=float, default=1e-6, help="Setting default to what it was, it should likely be lower")
     parser.add_argument("--optimiser", type=str, default="radam", choices=["radam","adam"], help="Optimiser differences seem to help the transformer")
     parser.add_argument("--reduction", type=str, choices=["mean", "sum", "none"], help="type of reduction to apply on loss")
 
@@ -579,7 +579,7 @@ if __name__ == "__main__":
     checkpoint_callback = pl.callbacks.ModelCheckpoint(
         monitor=monitoring,
         dirpath=os.path.join(os.path.dirname(os.path.realpath(__file__)), ".results"),
-        filename=f"{args.jobname}"+'-{epoch:02d}-{valid_loss:.2f}',
+        filename=f"{args.jobname}"+'-{epoch:02d}',#-{valid_loss:.2f}',
         save_top_k=1,
         mode=max_or_min,
     )
