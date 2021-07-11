@@ -1,5 +1,6 @@
 #!/bin/bash
 #SBATCH --ntasks 6
+#SBATCH --mem 21G
 #SBATCH -p part0
 #SBATCH --job-name 2dBouncingMG-y_5-1_k-3_d-3_lr-1e-4_ssim 
 #SBATCH --gres gpu:1
