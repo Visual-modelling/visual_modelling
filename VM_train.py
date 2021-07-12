@@ -34,7 +34,9 @@ from models.UpDown2D import FCUpDown2D
 from models.transformer import ImageTransformer
 from models.deans_transformer import VMDecoder as DeansTransformer
 
-
+# From 
+#from models.patch_transformer import MixVisionTransformer
+#from models.mmseg.models.backbones.mix_transformer import MixVisionTransformer
 
 ################################################################################
 #### UTILITY FUNCTIONS
@@ -269,6 +271,8 @@ class ModellingSystem(pl.LightningModule):
             self.model = ImageTransformer(args)
         elif args.model == "deans_transformer":
             self.model = DeansTransformer(in_dim=args.d_model, layers=args.n_layers, heads=args.nhead)
+        elif args.model == "PatchTrans":
+            self.model = MixVisionTransformer(img_size=64)
         else:
             raise ValueError(f"Unknown model: {args.model}")
 
@@ -450,7 +454,7 @@ if __name__ == "__main__":
     parser.add_argument("--shuffle", action="store_true", help="shuffle dataset")
 
     parser.add_argument_group("Shared Model argmuents")
-    parser.add_argument("--model", type=str, default="UpDown2D", choices=["UpDown2D", "UpDown3D", "image_transformer", "image_sequence_transformer", "deans_transformer"], help="Type of model to run")
+    parser.add_argument("--model", type=str, default="UpDown2D", choices=["UpDown2D", "UpDown3D", "image_transformer", "image_sequence_transformer", "deans_transformer", "PatchTrans"], help="Type of model to run")
 
     parser.add_argument_group("2D and 3D CNN specific arguments")
     parser.add_argument("--img_type", type=str, default="binary", choices=["binary", "greyscale", "RGB"], help="Type of input image")
@@ -556,6 +560,8 @@ if __name__ == "__main__":
         pl_system = ModellingSystem(args, self_out_loader)
     elif args.model == "image_sequence_transformer":
         pl_system = SequenceModellingSystem(args, self_out_loader)
+    elif args.model == "PatchTrans":
+        pl_system = ModellingSystem(args, self_out_loader)
     elif args.model == "deans_transformer":
         pl_system = ModellingSystem(args, self_out_loader)
     else:
