@@ -3,13 +3,13 @@ from collections import OrderedDict
 
 if __name__ == '__main__':
     restrict_to_titan = False
-    experiment_no = 17
+    experiment_no = 18
     # dataset_names = ['2dBouncing', '3dBouncing', 'mmnist', 'roller']  # None for all
-    dataset_names = ['mmnist']
+    dataset_names = ['roller', 'mutual_attract']
     # losses = ['mse', 'sl1', 'ssim']
     losses = ['sl1', 'ssim']
     # learning_rates = ['2e-5', '1e-5', '5e-6']
-    learning_rates = ['1e-6', '3e-6']
+    learning_rates = ['1e-5']
 
     label = ''
 
@@ -52,27 +52,21 @@ if __name__ == '__main__':
         '2dBouncing': {
             'dataset': 'simulations',
             'dataset_path': 'data/2dBouncing/2dMultiGrav-Y_regen/raw'},
-        '2dBouncing-masked': {
-            'dataset': 'simulations',
-            'dataset_path': 'data/2dBouncing/2dMultiGrav-Y_regen/raw_masked'},
         '3dBouncing': {
             'dataset': 'simulations',
             'dataset_path': 'data/3dBouncing/3dRegen'},
-        'hdmb51': {
-            'dataset': 'hdmb51',
-            'dataset_path': 'data/HDMB-51/grey_64x64_frames'},
         'mmnist': {
             'dataset': 'simulations',
             'dataset_path': 'data/moving_mnist/1_2_3'},
-        'mocap': {
-            'dataset': 'mocap',
-            'dataset_path': 'data/mocap/grey_64x64_frames'},
         'pendulum': {
             'dataset': 'simulations',
-            'dataset_path': 'data/myphysicslab/Pendulum_1200_bigger'},
+            'dataset_path': 'data/myphysicslab/Pendulum_10000'},
         'roller': {
             'dataset': 'simulations',
             'dataset_path': 'data/myphysicslab/RollerFlight_10000_bigger'},
+        'mutual_attract': {
+            'dataset': 'simulations',
+            'dataset_path': 'data/myphysicslab/mutualAttract_10000'},
         'mixed': {
             'dataset': 'simulations simulations simulations simulations simulations simulations',
             'dataset_path': 'data/myphysicslab/DEMO_double_pendulum '
