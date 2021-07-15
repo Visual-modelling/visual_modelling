@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH --ntasks 6
 #SBATCH -p part0
-#SBATCH --job-name 40-3dB_200_bounces-regress_3d_5-1_k-3_d-3_sl1  
+#SBATCH --job-name 148-3dB_200_bounces-regress_3d_99-1_k-3_d-3_ssim  
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../../.results/40-3dB_200_bounces-regress_3d_5-1_k-3_d-3_sl1.out
+#SBATCH -o ../../../../../.results/148-3dB_200_bounces-regress_3d_99-1_k-3_d-3_ssim.out
 cd ../../../../..
 export PYTHONBREAKPOINT=ipdb.set_trace
 source python_venvs/vm/bin/activate
@@ -15,16 +15,17 @@ python test_tasks.py \
     --dataset_path data/3dBouncing/3dRegen \
     --bsz 64 \
     --val_bsz 100 \
-    --num_workers 4 \
-    --in_no 59 \
+    --num_workers 1 \
+    --in_no 99 \
     --out_no 1 \
     --depth 3 \
     --device 0 \
+    --lr 1e-4 \
     --epoch 200 \
-    --jobname 40-3dB_200_bounces-regress_3d_5-1_k-3_d-3_sl1 \
+    --jobname 148-3dB_200_bounces-regress_3d_99-1_k-3_d-3_ssim \
     --img_type greyscale \
     --model UpDown2D \
-    --model_path '.results/3dBouncing_5-1_k-3_d-3_sl1-epoch=40' \
+    --model_path '.results/3dBouncing_99-1_k-3_d-3_lr-1e-4_ssim-epoch=148.ckpt' \
     --encoder_freeze \
     --linear_probes \
     --shuffle \

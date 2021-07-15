@@ -20,10 +20,11 @@ python test_tasks.py \
     --out_no 1 \
     --depth 3 \
     --device 0 \
+    --lr 1e-4 \
     --epoch 200 \
     --jobname 49-3dB_200_segmentation_3d_bouncing_1-1_k-3_d-3_ssim \
     --img_type greyscale \
     --model UpDown2D \
-    --model_path '.results/3dBouncing_5-1_k-3_d-3_ssim-epoch=49' \
+    --model_path '.results/3dBouncing_5-1_k-3_d-3_lr-1e-4_ssim-epoch=49' \
     --shuffle \
     --wandb 

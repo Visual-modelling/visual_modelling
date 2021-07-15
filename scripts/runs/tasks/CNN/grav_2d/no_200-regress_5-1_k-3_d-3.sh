@@ -1,31 +1,30 @@
 #!/bin/bash
 #SBATCH --ntasks 6
 #SBATCH -p part0
-#SBATCH --job-name 68-2dB_200_bounces-regress_2d_5-1_k-3_d-3_sl1  
+#SBATCH --job-name no_200_grav_2d-regress_5-1_k-3_d-3  
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../../.results/68-2dB_200_bounces-regress_2d_5-1_k-3_d-3_sl1.out
+#SBATCH -o ../../../../../.results/no_200_grav_2d-regress_5-1_k-3_d-3.out
 cd ../../../../..
 export PYTHONBREAKPOINT=ipdb.set_trace
 source python_venvs/vm/bin/activate
 
-# bounces-regress_2d Task
+# grav_2d-regress Task
 python test_tasks.py \
-    --task bounces-regress \
+    --task grav-regress \
     --dataset simulations  \
     --dataset_path data/2dBouncing/2dMultiGrav-Y_regen/raw \
     --bsz 64 \
     --val_bsz 100 \
     --num_workers 1 \
-    --in_no 59 \
+    --in_no 5 \
     --out_no 1 \
     --depth 3 \
     --device 0 \
+    --lr 1e-4 \
     --epoch 200 \
-    --jobname 68-2dB_200_bounces-regress_2d_5-1_k-3_d-3_sl1 \
+    --jobname no_200_grav_2d-regress_5-1_k-3_d-3 \
     --img_type greyscale \
     --model UpDown2D \
-    --model_path '.results/2dBouncingMG-y_5-1_k-3_d-3_sl1-mean-epoch=68' \
-    --encoder_freeze \
-    --linear_probes \
+    --model_path '' \
     --shuffle \
     --wandb 

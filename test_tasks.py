@@ -63,7 +63,7 @@ class FcUpDown2D2Scalars(pl.LightningModule):
         # Different tasks will be expecting different output numbers
         if args.task == "mnist":
             n_outputs = 10
-        elif args.task == "pendulum":
+        elif args.task == "pendulum-regress":
             n_outputs = 1
         elif args.task == "roller-regress":
             n_outputs = 1
@@ -109,14 +109,14 @@ class FcUpDown2D2Scalars(pl.LightningModule):
 
         if args.task in ["mnist","grav-pred","bounces-pred","roller-pred"]:
             self.criterion = nn.CrossEntropyLoss()
-        elif args.task in ["pendulum","bounces-regress","grav-regress","roller-regress"]:
+        elif args.task in ["pendulum-regress","bounces-regress","grav-regress","roller-regress"]:
             self.criterion = nn.SmoothL1Loss()
         else:
             raise NotImplementedError(f"Task: '{args.task}' has not got a specified criterion")
 
     def configure_optimizers(self):
-        model_opt = radam.RAdam([p for p in self.model.parameters()], lr=1e-6)#, weight_decay=1e-5)
-        probe_fc_opt = radam.RAdam([p for p in self.probe_fc.parameters()], lr=1e-6)#, weight_decay=1e-5)
+        model_opt = radam.RAdam([p for p in self.model.parameters()], lr=self.args.lr)#, weight_decay=1e-5)
+        probe_fc_opt = radam.RAdam([p for p in self.probe_fc.parameters()], lr=self.args.lr)#, weight_decay=1e-5)
         return model_opt, probe_fc_opt
 
     def forward(self, x):
@@ -257,11 +257,12 @@ if __name__ == "__main__":
     torch.manual_seed(2667)
     parser = argparse.ArgumentParser()
     parser.add_argument_group("Run specific arguments")
-    parser.add_argument("--task", type=str, choices=["mnist","mocap","hdmb51","pendulum","roller-regress","roller-pred","segmentation","bounces-regress","bounces-pred","grav-regress","grav-pred"], help="Which task, classification or otherwise, to apply")
+    parser.add_argument("--task", type=str, choices=["mnist","mocap","hdmb51","pendulum-regress","roller-regress","roller-pred","segmentation","bounces-regress","bounces-pred","grav-regress","grav-pred"], help="Which task, classification or otherwise, to apply")
     parser.add_argument("--epoch", type=int, default=10)
     parser.add_argument("--device", type=int, default=-1, help="-1 for CPU, 0, 1 for appropriate device")
     parser.add_argument("--bsz", type=int, default=32)
     parser.add_argument("--val_bsz", type=int, default=100)
+    parser.add_argument("--lr", type=float, default=1e-6, help="Setting default to what it was, it should likely be lower")
     parser.add_argument("--num_workers", type=int, default=0, help="Pytorch dataloader workers")
     parser.add_argument("--in_no", type=int, default=5, help="number of frames to use for forward pass")
     parser.add_argument("--out_no", type=int, default=1, help="number of frames to use for ground_truth")
@@ -364,7 +365,7 @@ if __name__ == "__main__":
     ################################
     # Pendulum
     ################################   
-    elif args.task == "pendulum":
+    elif args.task == "pendulum-regress":
         train_dset = SimulationsPreloaded(args.dataset_path[0], 'train', 'consecutive', args, yaml_return="pendulum")
         valid_dset = train_dset.clone('val', 'consecutive')
         test_dset = train_dset.clone('test', 'consecutive')
@@ -451,7 +452,7 @@ if __name__ == "__main__":
             save_top_k=1,
             mode=max_or_min,
         )
-    elif args.task in ["segmentation","pendulum","bounces-regress","grav-regress","roller-regress"]:
+    elif args.task in ["segmentation","pendulum-regress","bounces-regress","grav-regress","roller-regress"]:
         max_or_min = "min"
         monitoring = "valid_loss"
         checkpoint_callback = pl.callbacks.ModelCheckpoint(
