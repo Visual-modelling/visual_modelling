@@ -17,6 +17,45 @@ from mmseg.utils import get_root_logger
 from mmcv.runner import load_checkpoint
 import math
 
+####################
+# Our additions and wrapper class
+from mmseg.models.backbones.unet import DeconvModule
+class VM_MixSeg(nn.Module):
+    def __init__(self, img_size=64, in_chans=5, out_chans=1):
+        self.trans = MixVisionTransformer(img_size=img_size, in_chans=in_chans)
+        self.deconv0 = nn.Sequential(
+            DeconvModule(64,4),
+            DeconvModule(4,out_chans)
+        )
+        self.deconv1 = nn.Sequential(
+            DeconvModule(128,64),
+            DeconvModule(64,4),
+            DeconvModule(4,out_chans)
+        )
+        self.deconv2 = nn.Sequential(
+            DeconvModule(256,128),
+            DeconvModule(128,64),
+            DeconvModule(64,4),
+            DeconvModule(4,out_chans)
+        )
+        self.deconv3 = nn.Sequential(
+            DeconvModule(512,256),
+            DeconvModule(256,128),
+            DeconvModule(128,64),
+            DeconvModule(64,4),
+            DeconvModule(4,out_chans)
+        )
+    def forward(self, x):
+        out0 = deconv0(x[0])
+        out1 = deconv1(x[1])
+        out2 = deconv2(x[2])
+        out3 = deconv3(x[3])
+        probe_ret = [x[0],x[1],x[2],x[3]]
+        out = out0 + out1 + out2 + out3
+        return out, probe_ret
+
+####################
+
 
 class Mlp(nn.Module):
     def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.):
@@ -312,7 +351,6 @@ class MixVisionTransformer(nn.Module):
         self.head = nn.Linear(self.embed_dim, num_classes) if num_classes > 0 else nn.Identity()
 
     def forward_features(self, x):
-        import ipdb; ipdb.set_trace()
         B = x.shape[0]
         outs = []
 

@@ -23,7 +23,7 @@ python test_tasks.py \
     --lr 1e-4 \
     --img_type greyscale \
     --model UpDown2D \
-    --model_path '.results/mmnist_5-1_k-3_d-3_lr-1e-4_ssim-epoch=77' \
+    --model_path '.results/mmnist_5-1_k-3_d-3_lr-1e-4_ssim-epoch=77.ckpt' \
     --encoder_freeze \
     --linear_probes \
     --shuffle \

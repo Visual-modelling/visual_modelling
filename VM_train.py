@@ -35,7 +35,7 @@ from models.transformer import ImageTransformer
 from models.deans_transformer import VMDecoder as DeansTransformer
 
 # From 
-#from models.patch_transformer import MixVisionTransformer
+from models.patch_transformer import VM_MixSeg
 #from models.mmseg.models.backbones.mix_transformer import MixVisionTransformer
 
 ################################################################################
@@ -272,7 +272,7 @@ class ModellingSystem(pl.LightningModule):
         elif args.model == "deans_transformer":
             self.model = DeansTransformer(in_dim=args.d_model, layers=args.n_layers, heads=args.nhead)
         elif args.model == "PatchTrans":
-            self.model = MixVisionTransformer(img_size=64)
+            self.model = VM_MixSeg(img_size=64, in_chans=args.in_no, out_chans=args.out_no)
         else:
             raise ValueError(f"Unknown model: {args.model}")
 
