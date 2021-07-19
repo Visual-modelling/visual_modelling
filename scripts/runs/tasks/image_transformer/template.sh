@@ -32,7 +32,6 @@ python test_tasks.py \
     --shuffle \
     --wandb \
     --model image_transformer \
-    --dataset_mode consecutive \
     --d_model 4096 \
     --n_layers 2 \
     --nhead 4 \
