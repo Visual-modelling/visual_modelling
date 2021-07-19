@@ -3,18 +3,19 @@ from collections import OrderedDict
 
 if __name__ == '__main__':
     restrict_to_titan = False
-    experiment_no = 14
-    dataset_names = ['2dBouncing', '3dBouncing']  # None for all
+    experiment_no = 18
+    # dataset_names = ['2dBouncing', '3dBouncing', 'mmnist', 'roller']  # None for all
+    dataset_names = ['roller', 'mutual_attract']
     # losses = ['mse', 'sl1', 'ssim']
-    losses = ['sl1']
+    losses = ['sl1', 'ssim']
     # learning_rates = ['2e-5', '1e-5', '5e-6']
     learning_rates = ['1e-5']
 
-    label = 'sequence_4_head_'
+    label = ''
 
     params = OrderedDict([
-        ('model', 'image_sequence_transformer'),
-        ('dataset_mode', 'overlap'),
+        ('model', 'image_transformer'),
+        ('dataset_mode', 'consecutive'),
         ('d_model', 4096),
         ('n_layers', 2),
         ('nhead', 4),
@@ -24,7 +25,7 @@ if __name__ == '__main__':
         ('norm_layer', 'layer_norm'),
         ('optimiser', 'adam'),
         ('output_activation', 'hardsigmoid-256'),  # ['linear-256', 'hardsigmoid-256', 'sigmoid-256']
-        ('pos_encoder', 'add_runtime'),
+        ('pos_encoder', 'add'),
         ('mask', None),  # enables mask
         ('feedback_training_iters', 10),
         ('sequence_loss_factor', 0.2)
@@ -32,13 +33,14 @@ if __name__ == '__main__':
 
     common_params = OrderedDict([
         ('split_condition', 'tv_ratio:8-1-1'),
-        ('bsz', 16),
+        ('bsz', 64),
         ('val_bsz', 64),
         ('num_workers', 1),
         ('in_no', 5),
         ('out_no', 1),
         ('device', 0),
-        ('epoch', 75),
+        ('epoch', 500),
+        ('early_stopping', 10),
         ('n_gifs', 20),
         ('reduction', 'mean'),
         ('img_type', 'greyscale'),
@@ -50,27 +52,21 @@ if __name__ == '__main__':
         '2dBouncing': {
             'dataset': 'simulations',
             'dataset_path': 'data/2dBouncing/2dMultiGrav-Y_regen/raw'},
-        '2dBouncing-masked': {
-            'dataset': 'simulations',
-            'dataset_path': 'data/2dBouncing/2dMultiGrav-Y_regen/raw_masked'},
         '3dBouncing': {
             'dataset': 'simulations',
             'dataset_path': 'data/3dBouncing/3dRegen'},
-        'hdmb51': {
-            'dataset': 'hdmb51',
-            'dataset_path': 'data/HDMB-51/grey_64x64_frames'},
         'mmnist': {
             'dataset': 'simulations',
             'dataset_path': 'data/moving_mnist/1_2_3'},
-        'mocap': {
-            'dataset': 'mocap',
-            'dataset_path': 'data/mocap/grey_64x64_frames'},
         'pendulum': {
             'dataset': 'simulations',
-            'dataset_path': 'data/myphysicslab/Pendulum_1200_bigger'},
+            'dataset_path': 'data/myphysicslab/Pendulum_10000'},
         'roller': {
             'dataset': 'simulations',
             'dataset_path': 'data/myphysicslab/RollerFlight_10000_bigger'},
+        'mutual_attract': {
+            'dataset': 'simulations',
+            'dataset_path': 'data/myphysicslab/mutualAttract_10000'},
         'mixed': {
             'dataset': 'simulations simulations simulations simulations simulations simulations',
             'dataset_path': 'data/myphysicslab/DEMO_double_pendulum '

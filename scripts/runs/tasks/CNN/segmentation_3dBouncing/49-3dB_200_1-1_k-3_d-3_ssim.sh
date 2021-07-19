@@ -15,15 +15,16 @@ python test_tasks.py \
     --dataset_path data/3dBouncing/3dOld \
     --bsz 64 \
     --val_bsz 100 \
-    --num_workers 6 \
+    --num_workers 1 \
     --in_no 1 \
     --out_no 1 \
     --depth 3 \
     --device 0 \
+    --lr 1e-4 \
     --epoch 200 \
     --jobname 49-3dB_200_segmentation_3d_bouncing_1-1_k-3_d-3_ssim \
     --img_type greyscale \
     --model UpDown2D \
-    --model_path '.results/3dBouncing_5-1_k-3_d-3_ssim-epoch=49-valid_loss=0.01.ckpt' \
+    --model_path '.results/3dBouncing_5-1_k-3_d-3_lr-1e-4_ssim-epoch=49' \
     --shuffle \
     --wandb 

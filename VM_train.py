@@ -34,7 +34,9 @@ from models.UpDown2D import FCUpDown2D
 from models.transformer import ImageTransformer
 from models.deans_transformer import VMDecoder as DeansTransformer
 
-
+# From 
+from models.patch_transformer import VM_MixSeg
+#from models.mmseg.models.backbones.mix_transformer import MixVisionTransformer
 
 ################################################################################
 #### UTILITY FUNCTIONS
@@ -269,6 +271,8 @@ class ModellingSystem(pl.LightningModule):
             self.model = ImageTransformer(args)
         elif args.model == "deans_transformer":
             self.model = DeansTransformer(in_dim=args.d_model, layers=args.n_layers, heads=args.nhead)
+        elif args.model == "PatchTrans":
+            self.model = VM_MixSeg(img_size=64, in_chans=args.in_no, out_chans=args.out_no)
         else:
             raise ValueError(f"Unknown model: {args.model}")
 
@@ -422,7 +426,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument_group("Run specific arguments")
     parser.add_argument("--epoch", type=int, default=1)
-    parser.add_argument("--early_stopping", type=int, default=2, help="number of epochs after no improvement before stopping")
+    parser.add_argument("--early_stopping", type=int, default=-1, help="number of epochs after no improvement before stopping, -1 to disable")
     """
     Guide to split_condition:
         'tv_ratio:4-1' : Simply split all videos into train:validation:tests ratio of 8:1:1
@@ -450,7 +454,7 @@ if __name__ == "__main__":
     parser.add_argument("--shuffle", action="store_true", help="shuffle dataset")
 
     parser.add_argument_group("Shared Model argmuents")
-    parser.add_argument("--model", type=str, default="UpDown2D", choices=["UpDown2D", "UpDown3D", "image_transformer", "image_sequence_transformer", "deans_transformer"], help="Type of model to run")
+    parser.add_argument("--model", type=str, default="UpDown2D", choices=["UpDown2D", "UpDown3D", "image_transformer", "image_sequence_transformer", "deans_transformer", "PatchTrans"], help="Type of model to run")
 
     parser.add_argument_group("2D and 3D CNN specific arguments")
     parser.add_argument("--img_type", type=str, default="binary", choices=["binary", "greyscale", "RGB"], help="Type of input image")
@@ -477,7 +481,7 @@ if __name__ == "__main__":
 
     parser.add_argument_group("Other things")
     parser.add_argument("--loss", type=str, default="mse", choices=["mse", "sl1", "focal", "ssim"], help="Loss function for the network")
-    parser.add_argument("--lr", type=float, default=1e-5, help="Setting default to what it was, it should likely be lower")
+    parser.add_argument("--lr", type=float, default=1e-6, help="Setting default to what it was, it should likely be lower")
     parser.add_argument("--optimiser", type=str, default="radam", choices=["radam","adam"], help="Optimiser differences seem to help the transformer")
     parser.add_argument("--reduction", type=str, choices=["mean", "sum", "none"], help="type of reduction to apply on loss")
 
@@ -556,6 +560,8 @@ if __name__ == "__main__":
         pl_system = ModellingSystem(args, self_out_loader)
     elif args.model == "image_sequence_transformer":
         pl_system = SequenceModellingSystem(args, self_out_loader)
+    elif args.model == "PatchTrans":
+        pl_system = ModellingSystem(args, self_out_loader)
     elif args.model == "deans_transformer":
         pl_system = ModellingSystem(args, self_out_loader)
     else:
@@ -579,9 +585,15 @@ if __name__ == "__main__":
     checkpoint_callback = pl.callbacks.ModelCheckpoint(
         monitor=monitoring,
         dirpath=os.path.join(os.path.dirname(os.path.realpath(__file__)), ".results"),
-        filename=f"{args.jobname}"+'-{epoch:02d}-{valid_loss:.2f}',
+        filename=f"{args.jobname}"+'-{epoch:02d}',#-{valid_loss:.2f}',
         save_top_k=1,
         mode=max_or_min,
-    )
-    trainer = pl.Trainer(callbacks=[checkpoint_callback], logger=wandb_logger, gpus=gpus, max_epochs=args.epoch)
+    )   
+    if args.early_stopping >= 0:
+        early_stopping_callback = pl.callbacks.early_stopping.EarlyStopping(monitor=monitoring, patience=args.early_stopping)
+        callbacks = [checkpoint_callback, early_stopping_callback]
+    else:
+        callbacks = [checkpoint_callback]
+
+    trainer = pl.Trainer(callbacks=callbacks, logger=wandb_logger, gpus=gpus, max_epochs=args.epoch)
     trainer.fit(pl_system, train_loader, valid_loader)
