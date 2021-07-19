@@ -5,16 +5,16 @@
 #SBATCH -t 2-00:00
 #SBATCH --mem 28G
 #SBATCH -p res-gpu-small
-#SBATCH --job-name pendulum_transformer_lr1e-5_sl1_018 
+#SBATCH --job-name 3dBouncing_transformer_lr1e-5_sl1_018 
 #SBATCH --gres gpu:1 
-#SBATCH -o ../../../../../.results/pendulum_transformer_lr1e-5_sl1_018.out
+#SBATCH -o ../../../../../.results/3dBouncing_transformer_lr1e-5_sl1_018.out
 cd ../../../../..
 source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 python VM_train.py \
     --dataset simulations \
-    --dataset_path data/myphysicslab/Pendulum_10000 \
-    --jobname pendulum_transformer_lr1e-5_sl1_018 \
+    --dataset_path data/3dBouncing/3dRegen \
+    --jobname 3dBouncing_transformer_lr1e-5_sl1_018 \
     --split_condition tv_ratio:8-1-1 \
     --bsz 64 \
     --val_bsz 64 \

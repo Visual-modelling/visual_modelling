@@ -24,6 +24,7 @@ python VM_train.py \
     --device 0 \
     --epoch 500 \
     --early_stopping 10 \
+    --min_epochs 40 \
     --n_gifs 20 \
     --reduction mean \
     --img_type greyscale \
