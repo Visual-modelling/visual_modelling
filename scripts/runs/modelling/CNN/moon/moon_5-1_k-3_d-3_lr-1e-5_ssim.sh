@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH --ntasks 6
 #SBATCH -p part0
-#SBATCH --job-name moon_5-1_k-3_d-3_lr-1e-4_sl1-mean 
+#SBATCH --job-name moon_5-1_k-3_d-3_lr-1e-5_ssim 
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../../.results/moon_5-1_k-3_d-3_lr-1e-4_sl1-mean.out
+#SBATCH -o ../../../../../.results/moon_5-1_k-3_d-3_lr-1e-5_ssim.out
 cd ../../../../..
 source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
@@ -21,11 +21,11 @@ python VM_train.py \
     --krnl_size 3 \
     --padding 1 \
     --device 0 \
-    --lr 1e-4 \
+    --lr 1e-5 \
     --epoch 150 \
     --n_gifs 20 \
-    --jobname moon_5-1_k-3_d-3_lr-1e-4_sl1-mean \
-    --loss sl1 \
+    --jobname moon_5-1_k-3_d-3_lr-1e-5_ssim \
+    --loss ssim \
     --reduction mean \
     --img_type greyscale \
     --model UpDown2D \

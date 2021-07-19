@@ -21,42 +21,33 @@ import math
 # Our additions and wrapper class
 from mmseg.models.backbones.unet import DeconvModule
 from mmseg.models.backbones.mix_transformer import MixVisionTransformer
+from mmseg.models.decode_heads.segformer_head import SegFormerHead
+
 class VM_MixSeg(nn.Module):
     def __init__(self, img_size=64, in_chans=5, out_chans=1):
         super().__init__()
         # THE PATCH TRANSFORMER ITSELF
         self.trans = MixVisionTransformer(img_size=img_size, in_chans=in_chans)
-        # A SERIES OF DECONVOLUTIONS TO GET THE VARIOUS OUTPUTS TO APPROPRIATE IMAGE DIMENSIOSN
-        self.deconv0 = nn.Sequential(
-            DeconvModule(64,4),
-            DeconvModule(4,out_chans)
+        norm_cfg = dict(requires_grad=True)
+        decode_head=dict(
+            in_channels=[64, 128, 256, 512],
+            in_index=[0, 1, 2, 3],
+            feature_strides=[4, 8, 16, 32],
+            channels=128,
+            dropout_ratio=0.1,
+            num_classes=19,
+            norm_cfg=norm_cfg,
+            align_corners=False,
+            decoder_params=dict(embed_dim=256),
+            loss_decode=dict(type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
         )
-        self.deconv1 = nn.Sequential(
-            DeconvModule(128,64),
-            DeconvModule(64,4),
-            DeconvModule(4,out_chans)
-        )
-        self.deconv2 = nn.Sequential(
-            DeconvModule(256,128),
-            DeconvModule(128,64),
-            DeconvModule(64,4),
-            DeconvModule(4,out_chans)
-        )
-        self.deconv3 = nn.Sequential(
-            DeconvModule(512,256),
-            DeconvModule(256,128),
-            DeconvModule(128,64),
-            DeconvModule(64,4),
-            DeconvModule(4,out_chans)
-        )
+        self.decode_head = SegFormerHead(**decode_head)
+
     def forward(self, x):
         x = self.trans(x)       # (B, in_no, 64, 64) -> list of 4 tensors (see below)
-        out0 = self.deconv0(x[0])    # (B, 64, 16, 16) -> (B, out_no, 64, 64)
-        out1 = self.deconv1(x[1])    # (B, 128, 8, 8) -> (B, out_no, 64, 64)
-        out2 = self.deconv2(x[2])    # (B, 256, 4, 4) -> (B, out_no, 64, 64)
-        out3 = self.deconv3(x[3])    # (B, 512, 2, 2) -> (B, out_no, 64, 64)
-        probe_ret = [x[0],x[1],x[2],x[3]]   # To be returned for linear probes (not perfect and ignores the patch transformer itself)
-        out = out0 + out1 + out2 + out3     # (B, out_no, 64, 64)
+        import ipdb; ipdb.set_trace()
+        out = self.decode_head(x)
+        probe_ret = [x[0],x[1],x[2],x[3]]   # To be returned for linear probes
         return out, probe_ret
 ####################
 
@@ -466,3 +457,12 @@ class mit_b5(MixVisionTransformer):
             patch_size=4, embed_dims=[64, 128, 320, 512], num_heads=[1, 2, 5, 8], mlp_ratios=[4, 4, 4, 4],
             qkv_bias=True, norm_layer=partial(nn.LayerNorm, eps=1e-6), depths=[3, 6, 40, 3], sr_ratios=[8, 4, 2, 1],
             drop_rate=0.0, drop_path_rate=0.1)
+
+
+if __name__ == "__main__":
+    imgs = torch.ones(32,5,64,64)
+    imgs = imgs.cuda()
+    pt = VM_MixSeg()
+    pt.cuda()
+    out, probe_ret = pt(imgs)
+    print("Done")
