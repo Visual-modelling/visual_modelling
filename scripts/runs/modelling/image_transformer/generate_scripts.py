@@ -4,8 +4,8 @@ from collections import OrderedDict
 if __name__ == '__main__':
     restrict_to_titan = False
     experiment_no = 18
-    # dataset_names = ['2dBouncing', '3dBouncing', 'mmnist', 'roller']  # None for all
-    dataset_names = ['roller', 'mutual_attract']
+    # dataset_names = ['2dBouncing', '3dBouncing', 'mmnist', 'pendulum', 'roller', 'mutual_attract']  # None for all
+    dataset_names = ['2dBouncing', '3dBouncing', 'mmnist', 'pendulum', 'roller', 'mutual_attract']
     # losses = ['mse', 'sl1', 'ssim']
     losses = ['sl1', 'ssim']
     # learning_rates = ['2e-5', '1e-5', '5e-6']
@@ -41,6 +41,7 @@ if __name__ == '__main__':
         ('device', 0),
         ('epoch', 500),
         ('early_stopping', 10),
+        ('min_epochs', 40),
         ('n_gifs', 20),
         ('reduction', 'mean'),
         ('img_type', 'greyscale'),

@@ -171,6 +171,9 @@ class ImageTransformer(nn.Module):
         x = self.pixel_regression_layer(x)
         x = self.output_activation_function(x)
 
+        # add output for linear probes
+        hidden_xs.append(x)
+
         # reshape
         x = x.view(-1, batchsize, height, width)
         x = torch.transpose(x, 0, 1)  # (batch, sequence, imsize)

@@ -14,6 +14,7 @@ import torchmetrics
 
 from dataset import SimulationsPreloaded
 from models.UpDown2D import FCUpDown2D
+from models.transformer import ImageTransformer
 import tools.radam as radam
 import tools.loss
 import tools.utils as utils
@@ -34,26 +35,37 @@ class FcUpDown2D2Scalars(pl.LightningModule):
     def __init__(self, args):
         super().__init__()
         self.args = args
-        self.model = FCUpDown2D(args)
-        
-        # Checkpointing
-        if args.model_path != "":   # Empty string implies no loading
-            checkpoint = torch.load(args.model_path)
-            state_dict = checkpoint['state_dict']
-            state_dict = {".".join(mod_name.split(".")[1:]):mod for mod_name, mod in state_dict.items()}
-            # handle differences in inputs by repeating or removing input layers
-            if args.in_no != state_dict['UDChain.layers.0.maxpool_conv.1.double_conv.0.weight'].shape[1]:
-                increase_ratio = math.ceil(args.in_no / state_dict['UDChain.layers.0.maxpool_conv.1.double_conv.0.weight'].shape[1])
-                state_dict['UDChain.layers.0.maxpool_conv.1.double_conv.0.weight'] = state_dict['UDChain.layers.0.maxpool_conv.1.double_conv.0.weight'].repeat(1,increase_ratio,1,1)[:,:args.in_no]
-                # Figure out the position of the final layer with depth
-                final_layer = (2*args.depth)+2-1    # -1 for python indexing
-                increase_ratio = math.ceil(args.out_no / state_dict[f"UDChain.layers.{final_layer}.conv.weight"].shape[0])
-                state_dict[f"UDChain.layers.{final_layer}.conv.weight"] = state_dict[f"UDChain.layers.{final_layer}.conv.weight"].repeat(increase_ratio,1,1,1)[:args.out_no]
-                state_dict[f"UDChain.layers.{final_layer}.conv.bias"] = state_dict[f"UDChain.layers.{final_layer}.conv.bias"].repeat(increase_ratio)[:args.out_no]
-            # need to change the names of the state_dict keys from preloaded model
-            self.model.load_state_dict(state_dict)
+        if args.model == 'UpDown2D':
+            self.model = FCUpDown2D(args)
 
-            # If we are loading a checkpoint, the we are freezing the rest of the pretrained layers
+            # Checkpointing
+            if args.model_path != "":   # Empty string implies no loading
+                checkpoint = torch.load(args.model_path)
+                state_dict = checkpoint['state_dict']
+                state_dict = {".".join(mod_name.split(".")[1:]):mod for mod_name, mod in state_dict.items()}
+                # handle differences in inputs by repeating or removing input layers
+                if args.in_no != state_dict['UDChain.layers.0.maxpool_conv.1.double_conv.0.weight'].shape[1]:
+                    increase_ratio = math.ceil(args.in_no / state_dict['UDChain.layers.0.maxpool_conv.1.double_conv.0.weight'].shape[1])
+                    state_dict['UDChain.layers.0.maxpool_conv.1.double_conv.0.weight'] = state_dict['UDChain.layers.0.maxpool_conv.1.double_conv.0.weight'].repeat(1,increase_ratio,1,1)[:,:args.in_no]
+                    # Figure out the position of the final layer with depth
+                    final_layer = (2*args.depth)+2-1    # -1 for python indexing
+                    increase_ratio = math.ceil(args.out_no / state_dict[f"UDChain.layers.{final_layer}.conv.weight"].shape[0])
+                    state_dict[f"UDChain.layers.{final_layer}.conv.weight"] = state_dict[f"UDChain.layers.{final_layer}.conv.weight"].repeat(increase_ratio,1,1,1)[:args.out_no]
+                    state_dict[f"UDChain.layers.{final_layer}.conv.bias"] = state_dict[f"UDChain.layers.{final_layer}.conv.bias"].repeat(increase_ratio)[:args.out_no]
+                # need to change the names of the state_dict keys from preloaded model
+                self.model.load_state_dict(state_dict)
+        elif args.model == 'image_transformer':
+            self.model = ImageTransformer(args)
+            if args.model_path != "":  # Empty string implies no loading
+                checkpoint = torch.load(args.model_path)
+                state_dict = checkpoint['state_dict']
+                for old_key in list(state_dict.keys()):
+                    state_dict[old_key[6:]] = state_dict.pop(old_key)
+                self.model.load_state_dict(state_dict)
+        else:
+            raise ValueError(f"Unknown model: {args.model}")
+
+        # If we are loading a checkpoint, the we are freezing the rest of the pretrained layers
 
         # Freeze the CNN weights
         if args.encoder_freeze:
@@ -81,10 +93,19 @@ class FcUpDown2D2Scalars(pl.LightningModule):
             raise NotImplementedError("Task has not been implemented yet")
 
         # Probe classifier
-        probe_len = (args.out_no*64*64) # Final layer
-        for i in range(args.depth):
-            probe_len +=  2 * args.channel_factor * (2**i)  * (64/(2**(i+1))) * (64/(2**(i+1)))  # once on the way up and back down
-        probe_len += args.channel_factor * (2**args.depth) * (64/(2**(args.depth+1))) * (64/(2**(args.depth+1)))
+        if args.model == 'UpDown2D':
+            probe_len = (args.out_no*64*64) # Final layer
+            for i in range(args.depth):
+                probe_len +=  2 * args.channel_factor * (2**i)  * (64/(2**(i+1))) * (64/(2**(i+1)))  # once on the way up and back down
+            probe_len += args.channel_factor * (2**args.depth) * (64/(2**(args.depth+1))) * (64/(2**(args.depth+1)))
+        elif args.model == 'image_transformer':
+            dummy_input = torch.zeros((1, args.in_no, 64, 64), device=self.device)
+            _, hidden_xs = self.model(dummy_input)
+            probe_len = sum(torch.numel(hidden_x) for hidden_x in hidden_xs)
+            del dummy_input, hidden_xs
+        else:
+            raise ValueError(f"Unknown model: {args.model}")
+
         if self.args.linear_probes:
             self.probe_fc = nn.Linear(int(probe_len), n_outputs)
         else:
@@ -255,12 +276,14 @@ class FCUpDown2D_2_Segmentation(pl.LightningModule):
         self.log("valid_loss", valid_loss, on_step=False, on_epoch=True)
         return valid_loss
 
+
 if __name__ == "__main__":
     torch.manual_seed(2667)
     parser = argparse.ArgumentParser()
     parser.add_argument_group("Run specific arguments")
     parser.add_argument("--task", type=str, choices=["mnist","mocap","hdmb51","pendulum-regress","roller-regress","roller-pred","segmentation","bounces-regress","bounces-pred","grav-regress","grav-pred","moon-regress"], help="Which task, classification or otherwise, to apply")
     parser.add_argument("--epoch", type=int, default=10)
+    parser.add_argument("--early_stopping", type=int, default=-1, help="number of epochs after no improvement before stopping, -1 to disable")
     parser.add_argument("--device", type=int, default=-1, help="-1 for CPU, 0, 1 for appropriate device")
     parser.add_argument("--bsz", type=int, default=32)
     parser.add_argument("--val_bsz", type=int, default=100)
@@ -269,6 +292,7 @@ if __name__ == "__main__":
     parser.add_argument("--in_no", type=int, default=5, help="number of frames to use for forward pass")
     parser.add_argument("--out_no", type=int, default=1, help="number of frames to use for ground_truth")
     parser.add_argument("--wandb", action="store_true", help="Save models/validation things to checkpoint location")
+    parser.add_argument("--wandb_entity", type=str, default="visual-modelling", help="wandb entity to save project and run in")
     parser.add_argument("--jobname", type=str, default="jobname", help="jobname")
 
     parser.add_argument_group("Dataset specific arguments")
@@ -277,20 +301,34 @@ if __name__ == "__main__":
     parser.add_argument("--dataset_path", type=str, nargs="+", default=os.path.expanduser("~/"), help="Dataset paths")
     parser.add_argument("--shuffle", action="store_true", help="shuffle dataset")
 
-    parser.add_argument_group("Model specific arguments")
-    parser.add_argument("--encoder_freeze", action="store_true", help="freeze the CNN/transformer layers and only train the linear cls layer afterwards")
-    parser.add_argument("--linear_probes", action="store_true", help="Use linear probes as output instead")
-    parser.add_argument("--model", type=str, default="UpDown2D", choices=["UpDown2D", "UpDown3D", "transformer"], help="Type of model to run")
+    parser.add_argument_group("Shared Model arguments")
+    parser.add_argument("--model", type=str, default="UpDown2D", choices=["UpDown2D", "UpDown3D", "image_transformer"], help="Type of model to run")
     parser.add_argument("--model_path", type=str, default="", help="path of saved model")
+    parser.add_argument("--linear_probes", action="store_true", help="Use linear probes as output instead")
     parser.add_argument("--img_type", type=str, default="binary", choices=["binary", "greyscale", "RGB"], help="Type of input image")
+    parser.add_argument("--loss", type=str, default="MSE", choices=["mse", "sl1", "focal", "ssim", "mnist"], help="Loss function for the network")
+    parser.add_argument("--reduction", type=str, choices=["mean", "sum"], help="type of reduction to apply on loss")
+
+    parser.add_argument_group("2D and 3D CNN specific arguments")
+    parser.add_argument("--encoder_freeze", action="store_true", help="freeze the CNN/transformer layers and only train the linear cls layer afterwards")
     parser.add_argument("--krnl_size", type=int, default=3, help="Height and width kernel size")
     parser.add_argument("--krnl_size_t", type=int, default=3, help="Temporal kernel size")
     parser.add_argument("--padding", type=int, default=1, help="Height and width Padding")
     parser.add_argument("--padding_t", type=int, default=1, help="Temporal Padding")
     parser.add_argument("--depth", type=int, default=2, help="depth of the updown")
     parser.add_argument("--channel_factor", type=int, default=64, help="channel scale factor for up down network")
-    parser.add_argument("--loss", type=str, default="MSE", choices=["mse", "sl1", "focal", "ssim", "mnist"], help="Loss function for the network")
-    parser.add_argument("--reduction", type=str, choices=["mean", "sum"], help="type of reduction to apply on loss")
+
+    parser.add_argument_group("Transformer model specific arguments")
+    parser.add_argument("--d_model", type=int, default=4096, help="The number of features in the input (flattened image dimensions)")
+    parser.add_argument("--n_layers", type=int, default=6, help="Number of transformer layers to use")
+    parser.add_argument("--nhead", type=int, default=8, help="The number of heads in the multiheadattention models")
+    parser.add_argument("--dim_feedforward", type=int, default=16384, help="The dimension of the linear layers after each attention")
+    parser.add_argument("--dropout", type=float, default=0.1, help="The dropout value")
+    parser.add_argument("--pixel_regression_layers", type=int, default=1, help="How many layers to add after transformers")
+    parser.add_argument("--norm_layer", type=str, default="layer_norm", choices=["layer_norm", "batch_norm"], help="What normalisation layer to use")
+    parser.add_argument("--output_activation", type=str, default="linear", choices=["linear-256", "hardsigmoid-256", "sigmoid-256"], help="What activation function to use at the end of the network")
+    parser.add_argument("--pos_encoder", type=str, default="add", help="What positional encoding to use. 'none', 'add', 'add_runtime', or an integer concatenation with the number of bits to concatenate.")
+    parser.add_argument("--mask", action="store_true", help="Whether to add a triangular attn_mask to the transformer attention")
 
     args = parser.parse_args()
     print(args)
@@ -319,7 +357,8 @@ if __name__ == "__main__":
         gpus = [args.device]  # TODO Implement multi GPU support
 
     # Logging and Saving: If we're saving this run, prepare the neccesary directory for saving things
-    wandb_logger = pl.loggers.WandbLogger(project="visual-modelling", name=args.jobname, offline=not args.wandb)#, resume="allow")
+    wandb.init(entity=args.wandb_entity, project="visual-modelling", name=args.jobname)
+    wandb_logger = pl.loggers.WandbLogger(offline=not args.wandb)#, resume="allow")
     wandb_logger.log_hyperparams(args)
     repo_rootdir = os.path.dirname(os.path.realpath(sys.argv[0]))
     results_dir = os.path.join(repo_rootdir, ".results", args.jobname )
@@ -475,9 +514,15 @@ if __name__ == "__main__":
         )
     else:
         raise NotImplementedError(f"Task: {args.task} is not handled")
-    
+
+    if args.early_stopping >= 0:
+        early_stopping_callback = pl.callbacks.early_stopping.EarlyStopping(monitor=monitoring, patience=args.early_stopping)
+        callbacks = [checkpoint_callback, early_stopping_callback]
+    else:
+        callbacks = [checkpoint_callback]
+
     pl_system.testing = False
-    trainer = pl.Trainer(callbacks=[checkpoint_callback], logger=wandb_logger, gpus=gpus, max_epochs=args.epoch)
+    trainer = pl.Trainer(callbacks=callbacks, logger=wandb_logger, gpus=gpus, max_epochs=args.epoch)
     trainer.fit(pl_system, train_loader, valid_loader)
     pl_system.testing = True
     trainer.test(test_dataloaders=test_loader, ckpt_path='best')
