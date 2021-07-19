@@ -455,9 +455,10 @@ if __name__ == "__main__":
 
     parser.add_argument_group("Shared Model argmuents")
     parser.add_argument("--model", type=str, default="UpDown2D", choices=["UpDown2D", "UpDown3D", "image_transformer", "image_sequence_transformer", "deans_transformer", "PatchTrans"], help="Type of model to run")
+    parser.add_argument("--img_type", type=str, default="binary", choices=["binary", "greyscale", "RGB"], help="Type of input image")
+
 
     parser.add_argument_group("2D and 3D CNN specific arguments")
-    parser.add_argument("--img_type", type=str, default="binary", choices=["binary", "greyscale", "RGB"], help="Type of input image")
     parser.add_argument("--krnl_size", type=int, default=3, help="Height and width kernel size")
     parser.add_argument("--krnl_size_t", type=int, default=3, help="Temporal kernel size")
     parser.add_argument("--padding", type=int, default=1, help="Height and width Padding")
