@@ -287,6 +287,7 @@ if __name__ == "__main__":
     parser.add_argument("--in_no", type=int, default=5, help="number of frames to use for forward pass")
     parser.add_argument("--out_no", type=int, default=1, help="number of frames to use for ground_truth")
     parser.add_argument("--wandb", action="store_true", help="Save models/validation things to checkpoint location")
+    parser.add_argument("--wandb_entity", type=str, default="visual-modelling", help="wandb entity to save project and run in")
     parser.add_argument("--jobname", type=str, default="jobname", help="jobname")
 
     parser.add_argument_group("Dataset specific arguments")
@@ -351,7 +352,8 @@ if __name__ == "__main__":
         gpus = [args.device]  # TODO Implement multi GPU support
 
     # Logging and Saving: If we're saving this run, prepare the neccesary directory for saving things
-    wandb_logger = pl.loggers.WandbLogger(project="visual-modelling", name=args.jobname, offline=not args.wandb)#, resume="allow")
+    wandb.init(entity=args.wandb_entity, project="visual-modelling", name=args.jobname)
+    wandb_logger = pl.loggers.WandbLogger(offline=not args.wandb)#, resume="allow")
     wandb_logger.log_hyperparams(args)
     repo_rootdir = os.path.dirname(os.path.realpath(sys.argv[0]))
     results_dir = os.path.join(repo_rootdir, ".results", args.jobname )
