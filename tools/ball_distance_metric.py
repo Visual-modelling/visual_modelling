@@ -18,9 +18,13 @@ def get_circle(image):
     if circles is not None:
         circles = np.round(circles[0, :]).astype("int")
         for (x, y, r) in circles:
-            if image[y, x] > 20:
-                cur_x = x
-                cur_y = y
+            try:
+                if image[y, x] > 20:
+                    cur_x = x
+                    cur_y = y
+            except IndexError:
+                cur_x = None
+                cur_y = None
     else:
         #print("No circles")
         pass

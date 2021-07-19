@@ -1,4 +1,5 @@
 absl-py==0.13.0
+addict==2.4.0
 aiohttp==3.7.4.post0
 async-timeout==3.0.1
 attrs==21.2.0
@@ -28,6 +29,9 @@ kiwisolver==1.3.1
 Markdown==3.3.4
 matplotlib==3.4.2
 matplotlib-inline==0.1.2
+mmcv==1.3.0
+mmcv-full==1.3.9
+-e git+git@github.com:Visual-modelling/visual_modelling.git@3e4f0835d0b641f174a28162c61b0d0a8c328bbf#egg=mmsegmentation&subdirectory=../../../../projects/Visual-modelling/visual_modelling/models/SegFormer
 multidict==5.1.0
 numpy==1.20.3
 oauthlib==3.1.1
@@ -65,6 +69,8 @@ smmap==4.0.0
 subprocess32==3.5.4
 tensorboard==2.4.1
 tensorboard-plugin-wit==1.8.0
+terminaltables==3.1.0
+timm==0.4.12
 toml==0.10.2
 torch==1.8.1
 torchmetrics==0.3.2
@@ -76,4 +82,5 @@ urllib3==1.26.5
 wandb==0.10.32
 wcwidth==0.2.5
 Werkzeug==2.0.1
+yapf==0.31.0
 yarl==1.6.3
