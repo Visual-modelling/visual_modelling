@@ -58,10 +58,12 @@ class FcUpDown2D2Scalars(pl.LightningModule):
             self.model = ImageTransformer(args)
             if args.model_path != "":  # Empty string implies no loading
                 checkpoint = torch.load(args.model_path)
-                self.model.load_state_dict(checkpoint['state_dict'])
+                state_dict = checkpoint['state_dict']
+                for old_key in list(state_dict.keys()):
+                    state_dict[old_key[6:]] = state_dict.pop(old_key)
+                self.model.load_state_dict(state_dict)
         else:
             raise ValueError(f"Unknown model: {args.model}")
-
 
         # If we are loading a checkpoint, the we are freezing the rest of the pretrained layers
 
