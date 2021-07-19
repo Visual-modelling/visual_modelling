@@ -5,19 +5,17 @@
 #SBATCH -t 2-00:00
 #SBATCH --mem 28G
 #SBATCH -p res-gpu-small
-#SBATCH --job-name 3dBouncing_bounces-regress_transformer_lr1e-5_sl1_016.sh
+#SBATCH --job-name pendulum_pendulum-regress_transformer_untrained_018.sh
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../../.results/3dBouncing_bounces-regress_transformer_lr1e-5_sl1_016.out
+#SBATCH -o ../../../../../.results/pendulum_pendulum-regress_transformer_untrained_018.out
 cd ../../../../..
 source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 python test_tasks.py \
-    --task bounces-regress \
-    --dataset_path data/3dBouncing/3dRegen \
-    --model_path .results/TODO.ckpt\
-    --linear_probes \
-    --encoder_freeze \
-    --jobname 3dBouncing_bounces-regress_transformer_lr1e-5_sl1_016 \
+    --task pendulum-regress \
+    --dataset_path data/myphysicslab/Pendulum_10000 \
+    --model_path '' \
+    --jobname pendulum_pendulum-regress_transformer_untrained_018 \
     --dataset simulations \
     --split_condition tv_ratio:8-1-1 \
     --bsz 64 \

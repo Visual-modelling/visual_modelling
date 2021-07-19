@@ -5,19 +5,19 @@
 #SBATCH -t 2-00:00
 #SBATCH --mem 28G
 #SBATCH -p res-gpu-small
-#SBATCH --job-name 3dBouncing_bounces-regress_transformer_lr1e-5_sl1_016.sh
+#SBATCH --job-name roller_roller-regress_transformer_lr1e-5_ssim_016.sh
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../../.results/3dBouncing_bounces-regress_transformer_lr1e-5_sl1_016.out
+#SBATCH -o ../../../../../.results/roller_roller-regress_transformer_lr1e-5_ssim_016.out
 cd ../../../../..
 source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 python test_tasks.py \
-    --task bounces-regress \
-    --dataset_path data/3dBouncing/3dRegen \
+    --task roller-regress \
+    --dataset_path data/myphysicslab/RollerFlight_10000_bigger \
     --model_path .results/TODO.ckpt\
     --linear_probes \
     --encoder_freeze \
-    --jobname 3dBouncing_bounces-regress_transformer_lr1e-5_sl1_016 \
+    --jobname roller_roller-regress_transformer_lr1e-5_ssim_016 \
     --dataset simulations \
     --split_condition tv_ratio:8-1-1 \
     --bsz 64 \

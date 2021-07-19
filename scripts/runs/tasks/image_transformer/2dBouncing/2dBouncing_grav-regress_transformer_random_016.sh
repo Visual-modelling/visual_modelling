@@ -5,19 +5,19 @@
 #SBATCH -t 2-00:00
 #SBATCH --mem 28G
 #SBATCH -p res-gpu-small
-#SBATCH --job-name 3dBouncing_bounces-regress_transformer_lr1e-5_sl1_016.sh
+#SBATCH --job-name 2dBouncing_grav-regress_transformer_random_016.sh
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../../.results/3dBouncing_bounces-regress_transformer_lr1e-5_sl1_016.out
+#SBATCH -o ../../../../../.results/2dBouncing_grav-regress_transformer_random_016.out
 cd ../../../../..
 source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 python test_tasks.py \
-    --task bounces-regress \
-    --dataset_path data/3dBouncing/3dRegen \
-    --model_path .results/TODO.ckpt\
+    --task grav-regress \
+    --dataset_path data/2dBouncing/2dMultiGrav-Y_regen/raw \
+    --model_path '' \
     --linear_probes \
     --encoder_freeze \
-    --jobname 3dBouncing_bounces-regress_transformer_lr1e-5_sl1_016 \
+    --jobname 2dBouncing_grav-regress_transformer_random_016 \
     --dataset simulations \
     --split_condition tv_ratio:8-1-1 \
     --bsz 64 \

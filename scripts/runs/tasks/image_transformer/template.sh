@@ -40,7 +40,6 @@ python test_tasks.py \
     --pixel_regression_layers 1 \
     --norm_layer layer_norm \
     --output_activation hardsigmoid-256 \
-    --pos_encoder add \
+    --pos_encoder add_runtime \
     --mask \
-    --loss sl1 \
     --lr 1e-5 \
