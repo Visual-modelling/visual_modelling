@@ -131,6 +131,9 @@ class Simulations(Dataset):
         elif self.yaml_return == "roller":
             yaml_return = [data_params['config']['SIM.GRAVITY']]
             yaml_return = torch.tensor(yaml_return).float()
+        elif self.yaml_return == "moon":
+            yaml_return = [data_params['config']['SIM.GRAVITY']]
+            yaml_return = torch.tensor(yaml_return).float()
         else:
             raise NotImplementedError(f"No yaml elements for {self.yaml_return} prepared for")
 

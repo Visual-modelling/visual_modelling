@@ -1,20 +1,20 @@
 #!/bin/bash
 #SBATCH --ntasks 6
 #SBATCH -p part0
-#SBATCH --job-name pt_2dBouncingMG-y_5-1_k-3_d-3_lr-1e-4_sl1-mean 
+#SBATCH --job-name moon_5-1_k-3_d-3_lr-1e-4_sl1-mean 
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../../.results/pt_2dBouncingMG-y_5-1_k-3_d-3_lr-1e-4_sl1-mean.out
+#SBATCH -o ../../../../../.results/moon_5-1_k-3_d-3_lr-1e-4_sl1-mean.out
 cd ../../../../..
 source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 # Pretrain
 python VM_train.py \
     --dataset simulations \
-    --dataset_path data/2dBouncing/2dMultiGrav-Y_regen/raw \
+    --dataset_path data/myphysicslab/Moon_10000 \
     --split_condition tv_ratio:8-1-1 \
     --bsz 64 \
     --val_bsz 100 \
-    --num_workers 0 \
+    --num_workers 1 \
     --in_no 5 \
     --out_no 1 \
     --depth 3 \
@@ -23,11 +23,11 @@ python VM_train.py \
     --device 0 \
     --lr 1e-4 \
     --epoch 150 \
-    --n_gifs 12 \
-    --jobname pt_2dBouncingMG-y_5-1_k-3_d-3_lr-1e-4_sl1-mean \
+    --n_gifs 20 \
+    --jobname moon_5-1_k-3_d-3_lr-1e-4_sl1-mean \
     --loss sl1 \
     --reduction mean \
     --img_type greyscale \
-    --model PatchTrans \
+    --model UpDown2D \
     --shuffle \
     --wandb

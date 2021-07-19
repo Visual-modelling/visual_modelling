@@ -23,6 +23,7 @@ from mmseg.models.backbones.unet import DeconvModule
 from mmseg.models.backbones.mix_transformer import MixVisionTransformer
 class VM_MixSeg(nn.Module):
     def __init__(self, img_size=64, in_chans=5, out_chans=1):
+        super().__init__()
         # THE PATCH TRANSFORMER ITSELF
         self.trans = MixVisionTransformer(img_size=img_size, in_chans=in_chans)
         # A SERIES OF DECONVOLUTIONS TO GET THE VARIOUS OUTPUTS TO APPROPRIATE IMAGE DIMENSIOSN
@@ -50,10 +51,10 @@ class VM_MixSeg(nn.Module):
         )
     def forward(self, x):
         x = self.trans(x)       # (B, in_no, 64, 64) -> list of 4 tensors (see below)
-        out0 = deconv0(x[0])    # (B, 64, 16, 16) -> (B, out_no, 64, 64)
-        out1 = deconv1(x[1])    # (B, 128, 8, 8) -> (B, out_no, 64, 64)
-        out2 = deconv2(x[2])    # (B, 256, 4, 4) -> (B, out_no, 64, 64)
-        out3 = deconv3(x[3])    # (B, 512, 2, 2) -> (B, out_no, 64, 64)
+        out0 = self.deconv0(x[0])    # (B, 64, 16, 16) -> (B, out_no, 64, 64)
+        out1 = self.deconv1(x[1])    # (B, 128, 8, 8) -> (B, out_no, 64, 64)
+        out2 = self.deconv2(x[2])    # (B, 256, 4, 4) -> (B, out_no, 64, 64)
+        out3 = self.deconv3(x[3])    # (B, 512, 2, 2) -> (B, out_no, 64, 64)
         probe_ret = [x[0],x[1],x[2],x[3]]   # To be returned for linear probes (not perfect and ignores the patch transformer itself)
         out = out0 + out1 + out2 + out3     # (B, out_no, 64, 64)
         return out, probe_ret
