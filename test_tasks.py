@@ -81,6 +81,8 @@ class FcUpDown2D2Scalars(pl.LightningModule):
             n_outputs = 1
         elif args.task == "moon-regress":
             n_outputs = 1
+        elif args.task == "blocks-regress":
+            n_outputs = 1
         elif args.task == "roller-pred":
             n_outputs = 201 # [0,0.5,1.0,....,99.5,100]
         elif args.task == "bounces-regress":
@@ -132,7 +134,7 @@ class FcUpDown2D2Scalars(pl.LightningModule):
 
         if args.task in ["mnist","grav-pred","bounces-pred","roller-pred"]:
             self.criterion = nn.CrossEntropyLoss()
-        elif args.task in ["pendulum-regress","bounces-regress","grav-regress","roller-regress","moon-regress"]:
+        elif args.task in ["pendulum-regress","bounces-regress","grav-regress","roller-regress","moon-regress","blocks-regress"]:
             self.criterion = nn.SmoothL1Loss()
         else:
             raise NotImplementedError(f"Task: '{args.task}' has not got a specified criterion")
@@ -281,7 +283,7 @@ if __name__ == "__main__":
     torch.manual_seed(2667)
     parser = argparse.ArgumentParser()
     parser.add_argument_group("Run specific arguments")
-    parser.add_argument("--task", type=str, choices=["mnist","mocap","hdmb51","pendulum-regress","roller-regress","roller-pred","segmentation","bounces-regress","bounces-pred","grav-regress","grav-pred","moon-regress"], help="Which task, classification or otherwise, to apply")
+    parser.add_argument("--task", type=str, choices=["mnist","mocap","hdmb51","pendulum-regress","roller-regress","roller-pred","segmentation","bounces-regress","bounces-pred","grav-regress","grav-pred","moon-regress","blocks-regress"], help="Which task, classification or otherwise, to apply")
     parser.add_argument("--epoch", type=int, default=10)
     parser.add_argument("--early_stopping", type=int, default=-1, help="number of epochs after no improvement before stopping, -1 to disable")
     parser.add_argument("--device", type=int, default=-1, help="-1 for CPU, 0, 1 for appropriate device")
@@ -413,6 +415,15 @@ if __name__ == "__main__":
         pl_system = FcUpDown2D2Scalars(args)
 
     ################################
+    # Block mass ratio regression
+    ################################   
+    elif args.task in ["blocks-regress"]:
+        train_dset = SimulationsPreloaded(args.dataset_path[0], 'train', 'consecutive', args, yaml_return="blocks")
+        valid_dset = train_dset.clone('val', 'consecutive')
+        test_dset = train_dset.clone('test', 'consecutive')
+        pl_system = FcUpDown2D2Scalars(args)
+
+    ################################
     # Pendulum
     ################################   
     elif args.task == "pendulum-regress":
@@ -502,7 +513,7 @@ if __name__ == "__main__":
             save_top_k=1,
             mode=max_or_min,
         )
-    elif args.task in ["segmentation","pendulum-regress","bounces-regress","grav-regress","roller-regress","moon-regress"]:
+    elif args.task in ["segmentation","pendulum-regress","bounces-regress","grav-regress","roller-regress","moon-regress","blocks-regress"]:
         max_or_min = "min"
         monitoring = "valid_loss"
         checkpoint_callback = pl.callbacks.ModelCheckpoint(

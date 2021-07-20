@@ -134,6 +134,10 @@ class Simulations(Dataset):
         elif self.yaml_return == "moon":
             yaml_return = [data_params['config']['MOON_MASS']]
             yaml_return = torch.tensor(yaml_return).float()
+        elif self.yaml_return == "blocks":
+            yaml_return = [data_params['config']['SIM.MASS_1'],data_params['config']['SIM.MASS_2']]
+            yaml_return = [yaml_return[0]/yaml_return[1]]# Return the ratio of mass 1 to 2 of blocks
+            yaml_return = torch.tensor(yaml_return).float()
         else:
             raise NotImplementedError(f"No yaml elements for {self.yaml_return} prepared for")
 
