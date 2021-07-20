@@ -1,6 +1,10 @@
 #!/bin/bash
-#SBATCH --ntasks 6
-#SBATCH -p part0
+#SBATCH --qos short
+#SBATCH -N 1
+#SBATCH -c 4
+#SBATCH -t 2-00:00
+#SBATCH --mem 21G
+#SBATCH -p res-gpu-small
 #SBATCH --job-name 140-roll_200_roller-regress_5-1_k-3_d-3_ssim  
 #SBATCH --gres gpu:1
 #SBATCH -o ../../../../../.results/140-roll_200_roller-regress_5-1_k-3_d-3_ssim.out
@@ -27,5 +31,6 @@ python test_tasks.py \
     --model UpDown2D \
     --model_path '.results/rollerFlightBigger_5-1_k-3_d-3_lr-1e-4_ssim-epoch=140.ckpt' \
     --encoder_freeze \
+    --linear_probes \
     --shuffle \
     --wandb 

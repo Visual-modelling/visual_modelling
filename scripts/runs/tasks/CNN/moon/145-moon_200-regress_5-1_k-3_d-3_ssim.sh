@@ -1,9 +1,13 @@
 #!/bin/bash
-#SBATCH --ntasks 6
-#SBATCH -p part0
-#SBATCH --job-name XX-moon_200_moon-regress_5-1_k-3_d-3_ssim  
+#SBATCH --qos short
+#SBATCH -N 1
+#SBATCH -c 4
+#SBATCH -t 2-00:00
+#SBATCH --mem 21G
+#SBATCH -p res-gpu-small
+#SBATCH --job-name 145-moon_200_moon-regress_5-1_k-3_d-3_ssim  
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../../.results/XX-moon_200_moon-regress_5-1_k-3_d-3_ssim.out
+#SBATCH -o ../../../../../.results/145-moon_200_moon-regress_5-1_k-3_d-3_ssim.out
 cd ../../../../..
 export PYTHONBREAKPOINT=ipdb.set_trace
 source python_venvs/vm/bin/activate
@@ -22,10 +26,11 @@ python test_tasks.py \
     --device 0 \
     --lr 1e-4 \
     --epoch 200 \
-    --jobname XX-moon_200_moon-regress_5-1_k-3_d-3_ssim \
+    --jobname 145-moon_200_moon-regress_5-1_k-3_d-3_ssim \
     --img_type greyscale \
     --model UpDown2D \
-    --model_path '.results/' \
+    --model_path '.results/moon_5-1_k-3_d-3_lr-1e-5_ssim-epoch=145.ckpt' \
     --encoder_freeze \
+    --linear_probes \
     --shuffle \
     --wandb 

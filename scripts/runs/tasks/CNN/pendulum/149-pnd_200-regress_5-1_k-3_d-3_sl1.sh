@@ -1,6 +1,10 @@
 #!/bin/bash
-#SBATCH --ntasks 6
-#SBATCH -p part0
+#SBATCH --qos short
+#SBATCH -N 1
+#SBATCH -c 4
+#SBATCH -t 2-00:00
+#SBATCH --mem 21G
+#SBATCH -p res-gpu-small
 #SBATCH --job-name 149-pnd_200_pendulum-regress_5-1_k-3_d-3_sl1  
 #SBATCH --gres gpu:1
 #SBATCH -o ../../../../../.results/149-pnd_200_pendulum-regress_5-1_k-3_d-3_sl1.out
@@ -27,5 +31,6 @@ python test_tasks.py \
     --model UpDown2D \
     --model_path '.results/pendulumSingleBigger_5-1_k-3_d-3_lr-1e-4_sl1-mean-epoch=149.ckpt' \
     --encoder_freeze \
+    --linear_probes \
     --shuffle \
     --wandb 
