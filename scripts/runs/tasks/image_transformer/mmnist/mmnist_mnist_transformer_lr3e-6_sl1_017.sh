@@ -5,19 +5,19 @@
 #SBATCH -t 2-00:00
 #SBATCH --mem 28G
 #SBATCH -p res-gpu-small
-#SBATCH --job-name mmnist_mnist_transformer_lr1e-5_sl1_018.sh
+#SBATCH --job-name mmnist_mnist_transformer_lr3e-6_sl1_017.sh
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../../.results/mmnist_mnist_transformer_lr1e-5_sl1_018.out
+#SBATCH -o ../../../../../.results/mmnist_mnist_transformer_lr3e-6_sl1_017.out
 cd ../../../../..
 source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 python test_tasks.py \
     --task mnist \
     --dataset_path data/moving_mnist/1_2_3 \
-    --model_path .results/TODO.ckpt\
+    --model_path .results/mmnist_transformer_lr3e-6_sl1_017-epoch=29-valid_loss=13.88.ckpt\
     --linear_probes \
     --encoder_freeze \
-    --jobname mmnist_mnist_transformer_lr1e-5_sl1_018 \
+    --jobname mmnist_mnist_transformer_lr3e-6_sl1_017 \
     --dataset simulations \
     --split_condition tv_ratio:8-1-1 \
     --bsz 64 \
