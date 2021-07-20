@@ -14,7 +14,7 @@ export PYTHONBREAKPOINT=ipdb.set_trace
 python test_tasks.py \
     --task pendulum-regress \
     --dataset_path data/myphysicslab/Pendulum_10000 \
-    --model_path .results/TODO.ckpt\
+    --model_path .results/pendulum_transformer_lr1e-5_ssim_018-epoch=73.ckpt\
     --linear_probes \
     --encoder_freeze \
     --jobname pendulum_pendulum-regress_transformer_lr1e-5_ssim_018 \

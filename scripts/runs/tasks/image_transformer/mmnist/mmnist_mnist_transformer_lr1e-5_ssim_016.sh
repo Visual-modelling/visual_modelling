@@ -14,7 +14,7 @@ export PYTHONBREAKPOINT=ipdb.set_trace
 python test_tasks.py \
     --task mnist \
     --dataset_path data/moving_mnist/1_2_3 \
-    --model_path .results/TODO.ckpt\
+    --model_path .results/mmnist_transformer_lr1e-5_ssim_016-epoch=70-valid_loss=0.15.ckpt\
     --linear_probes \
     --encoder_freeze \
     --jobname mmnist_mnist_transformer_lr1e-5_ssim_016 \
