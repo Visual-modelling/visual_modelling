@@ -35,7 +35,7 @@ from tools.ball_distance_metric import calculate_metric
 from models.UpDown2D import FCUpDown2D
 from models.transformer import ImageTransformer
 from models.deans_transformer import VMDecoder as DeansTransformer
-from models.patch_transformer import VM_MixSeg  # moved this to the body of the code where it's used
+# from models.patch_transformer import VM_MixSeg  # moved this to the body of the code where it's used
 
 ################################################################################
 #### UTILITY FUNCTIONS
@@ -271,6 +271,7 @@ class ModellingSystem(pl.LightningModule):
         elif args.model == "deans_transformer":
             self.model = DeansTransformer(in_dim=args.d_model, layers=args.n_layers, heads=args.nhead)
         elif args.model == "PatchTrans":
+            from models.patch_transformer import VM_MixSeg
             self.model = VM_MixSeg(img_size=64, in_chans=args.in_no, out_chans=args.out_no)
         else:
             raise ValueError(f"Unknown model: {args.model}")
