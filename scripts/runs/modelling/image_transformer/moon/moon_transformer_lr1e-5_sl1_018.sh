@@ -5,16 +5,16 @@
 #SBATCH -t 2-00:00
 #SBATCH --mem 28G
 #SBATCH -p res-gpu-small
-#SBATCH --job-name mutual_attract_transformer_lr1e-5_ssim_018 
+#SBATCH --job-name moon_transformer_lr1e-5_sl1_018 
 #SBATCH --gres gpu:1 
-#SBATCH -o ../../../../../.results/mutual_attract_transformer_lr1e-5_ssim_018.out
+#SBATCH -o ../../../../../.results/moon_transformer_lr1e-5_sl1_018.out
 cd ../../../../..
 source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 python VM_train.py \
     --dataset simulations \
-    --dataset_path data/myphysicslab/mutualAttract_10000 \
-    --jobname mutual_attract_transformer_lr1e-5_ssim_018 \
+    --dataset_path data/myphysicslab/Moon_10000 \
+    --jobname moon_transformer_lr1e-5_sl1_018 \
     --split_condition tv_ratio:8-1-1 \
     --bsz 64 \
     --val_bsz 64 \
@@ -45,5 +45,5 @@ python VM_train.py \
     --mask \
     --feedback_training_iters 10 \
     --sequence_loss_factor 0.2 \
-    --loss ssim \
+    --loss sl1 \
     --lr 1e-5 \
