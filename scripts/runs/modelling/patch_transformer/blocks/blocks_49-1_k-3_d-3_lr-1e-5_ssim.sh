@@ -5,31 +5,31 @@
 #SBATCH -t 2-00:00
 #SBATCH --mem 21G
 #SBATCH -p res-gpu-small
-#SBATCH --job-name pt_hdmb51_5-1_k-3_d-3_lr-1e-4_sl1-mean 
+#SBATCH --job-name pt_blocks_49-1_k-3_d-3_lr-1e-5_ssim 
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../../.results/pt_hdmb51_5-1_k-3_d-3_lr-1e-4_ssim.out
+#SBATCH -o ../../../../../.results/pt_blocks_49-1_k-3_d-3_lr-1e-5_ssim.out
 cd ../../../../..
 source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 # Pretrain
 python VM_train.py \
-    --dataset hdmb51 \
-    --dataset_path data/HDMB-51/grey_64x64_frames \
+    --dataset simulations \
+    --dataset_path data/myphysicslab/Blocks_10000 \
     --split_condition tv_ratio:8-1-1 \
     --bsz 64 \
     --val_bsz 100 \
-    --num_workers 0 \
-    --in_no 5 \
+    --num_workers 1 \
+    --in_no 49 \
     --out_no 1 \
     --depth 3 \
     --krnl_size 3 \
     --padding 1 \
-    --lr 1e-4 \
     --device 0 \
+    --lr 1e-5 \
     --epoch 150 \
     --n_gifs 20 \
-    --jobname pt_hdmb51_5-1_k-3_d-3_lr-1e-4_sl1-mean \
-    --loss sl1 \
+    --jobname pt_blocks_49-1_k-3_d-3_lr-1e-5_ssim \
+    --loss ssim \
     --reduction mean \
     --img_type greyscale \
     --model PatchTrans \
