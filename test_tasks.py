@@ -527,7 +527,7 @@ if __name__ == "__main__":
         raise NotImplementedError(f"Task: {args.task} is not handled")
 
     if args.early_stopping >= 0:
-        early_stopping_callback = pl.callbacks.early_stopping.EarlyStopping(monitor=monitoring, patience=args.early_stopping)
+        early_stopping_callback = pl.callbacks.early_stopping.EarlyStopping(monitor=monitoring, patience=args.early_stopping, mode=max_or_min)
         callbacks = [checkpoint_callback, early_stopping_callback]
     else:
         callbacks = [checkpoint_callback]
