@@ -28,6 +28,7 @@ class VM_MixSeg(nn.Module):
         super().__init__()
         self.out_chans = out_chans
         setup(0,1)  # Demanded due to the torch distributed requirements of this library
+        cleanup()
         self.encoder = MixVisionTransformer(in_chans=5, img_size=64)
         self.decode_head = SegFormerHead(feature_strides=[4,8,16,32], in_channels=[64,128,256,512], channels=128, num_classes=16*out_chans, in_index=[0, 1, 2, 3], decoder_params={"embed_dim":256}, dropout_ratio=0.1, align_corners=False)
 
