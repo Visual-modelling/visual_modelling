@@ -2,7 +2,7 @@
 #SBATCH --ntasks 6
 #SBATCH -p part0
 #SBATCH --job-name blocks_49-1_k-3_d-3_lr-1e-5_ssim 
-#SBATCH --gres gpu:1
+#SBATCH --gres gpu:2
 #SBATCH -o ../../../../../.results/blocks_49-1_k-3_d-3_lr-1e-5_ssim.out
 cd ../../../../..
 source python_venvs/vm/bin/activate

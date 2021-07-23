@@ -62,6 +62,23 @@ class FcUpDown2D2Scalars(pl.LightningModule):
                 for old_key in list(state_dict.keys()):
                     state_dict[old_key[6:]] = state_dict.pop(old_key)
                 self.model.load_state_dict(state_dict)
+        elif args.model == 'PatchTrans':
+            from models.patch_transformer import VM_MixSeg
+            self.model = VM_MixSeg(in_chans=args.in_no, out_chans=args.out_no, img_size=64)
+            # Checkpointing
+            if args.model_path != "":   # Empty string implies no loading
+                checkpoint = torch.load(args.model_path)
+                state_dict = checkpoint['state_dict']
+                state_dict = {".".join(mod_name.split(".")[1:]):mod for mod_name, mod in state_dict.items()}
+                # handle differences in inputs by repeating or removing input layers
+                if args.in_no != state_dict['encoder.patch_embed1.proj.weight'].shape[1]:
+                    increase_ratio = math.ceil(args.in_no / state_dict['encoder.patch_embed1.proj.weight'].shape[1])
+                    state_dict['encoder.patch_embed1.proj.weight'] = state_dict['encoder.patch_embed1.proj.weight'].repeat(1,increase_ratio,1,1)[:,:args.in_no]
+                    increase_ratio = math.ceil(args.out_no / (state_dict["decode_head.linear_pred.weight"].shape[0]))
+                    state_dict["decode_head.linear_pred.weight"] = state_dict["decode_head.linear_pred.weight"].repeat(increase_ratio,1,1,1)[:16*args.out_no]
+                    state_dict["decode_head.linear_pred.bias"] = state_dict["decode_head.linear_pred.bias"].repeat(increase_ratio)[:16*args.out_no]
+                # need to change the names of the state_dict keys from preloaded model
+                self.model.load_state_dict(state_dict)
         else:
             raise ValueError(f"Unknown model: {args.model}")
 
@@ -105,6 +122,13 @@ class FcUpDown2D2Scalars(pl.LightningModule):
             _, hidden_xs = self.model(dummy_input)
             probe_len = sum(torch.numel(hidden_x) for hidden_x in hidden_xs)
             del dummy_input, hidden_xs
+        elif args.model == 'PatchTrans':
+            probe_len = 64*16*16
+            probe_len += 128*8*8
+            probe_len += 256*4*4
+            probe_len += 512*2*2
+            probe_len += 64*64
+            
         else:
             raise ValueError(f"Unknown model: {args.model}")
 
@@ -304,7 +328,7 @@ if __name__ == "__main__":
     parser.add_argument("--shuffle", action="store_true", help="shuffle dataset")
 
     parser.add_argument_group("Shared Model arguments")
-    parser.add_argument("--model", type=str, default="UpDown2D", choices=["UpDown2D", "UpDown3D", "image_transformer"], help="Type of model to run")
+    parser.add_argument("--model", type=str, default="UpDown2D", choices=["UpDown2D", "UpDown3D", "image_transformer", "PatchTrans"], help="Type of model to run")
     parser.add_argument("--model_path", type=str, default="", help="path of saved model")
     parser.add_argument("--linear_probes", action="store_true", help="Use linear probes as output instead")
     parser.add_argument("--img_type", type=str, default="binary", choices=["binary", "greyscale", "RGB"], help="Type of input image")

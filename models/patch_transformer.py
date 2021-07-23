@@ -13,6 +13,7 @@ from .UpDown2D import sigmoid_256
 
 def setup(rank, world_size):
     os.environ['MASTER_ADDR'] = 'localhost'
+    os.environ['MASTER_PORT'] = '0'
 
     # initialize the process group
     dist.init_process_group("gloo", rank=rank, world_size=world_size)
@@ -30,7 +31,7 @@ class VM_MixSeg(nn.Module):
         self.out_chans = out_chans
         setup(0,1)  # Demanded due to the torch distributed requirements of this library
         #cleanup()
-        self.encoder = MixVisionTransformer(in_chans=5, img_size=64)
+        self.encoder = MixVisionTransformer(in_chans=in_chans, img_size=img_size)
         self.decode_head = SegFormerHead(feature_strides=[4,8,16,32], in_channels=[64,128,256,512], channels=128, num_classes=16*out_chans, in_index=[0, 1, 2, 3], decoder_params={"embed_dim":256}, dropout_ratio=0.1, align_corners=False)
 
     def forward(self, x):
@@ -38,6 +39,7 @@ class VM_MixSeg(nn.Module):
         out = self.decode_head(probe_ret)   # (B, 16*out_chans, 16, 16)
         out = out.view(x.shape[0], 16*self.out_chans, -1)  # (B, out_chans, 256)
         out = F.fold(out, output_size=(64,64), kernel_size=(4,4), stride=(4,4)) # (B, out_chans, 64, 64) NOTE spatial dimensions of patches are preserved
+        probe_ret.append(out)
         return sigmoid_256(out), probe_ret
 
 if __name__ == "__main__":

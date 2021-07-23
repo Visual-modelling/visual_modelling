@@ -3,34 +3,34 @@
 #SBATCH -N 1
 #SBATCH -c 4
 #SBATCH -t 2-00:00
-#SBATCH --mem 21G
+#SBATCH --mem 20G
 #SBATCH -p res-gpu-small
-#SBATCH --job-name random_200_blocks-regress_49-1_k-3_d-3  
+#SBATCH --job-name TEST_pt_tasks  
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../../.results/random_200_blocks-regress_49-1_k-3_d-3.out
+#SBATCH -o ../../../../../.results/TEST_pt_tasks.out
 cd ../../../../..
 export PYTHONBREAKPOINT=ipdb.set_trace
 source python_venvs/vm/bin/activate
 
-# blocks-regress Task
+# bounces-regress_2d Task
 python test_tasks.py \
-    --task blocks-regress \
+    --task bounces-regress \
     --dataset simulations  \
-    --dataset_path data/myphysicslab/Block_10000 \
+    --dataset_path data/2dBouncing/2dMultiGrav-Y_regen/TEST \
     --bsz 64 \
     --val_bsz 100 \
     --num_workers 1 \
-    --in_no 49 \
+    --in_no 59 \
     --out_no 1 \
     --depth 3 \
     --device 0 \
     --lr 1e-4 \
     --epoch 200 \
-    --jobname random_200_blocks-regress_49-1_k-3_d-3 \
+    --jobname TEST_pt_tasks \
     --img_type greyscale \
-    --model UpDown2D \
-    --model_path '' \
+    --model PatchTrans \
+    --model_path '.results/pt_TEST-epoch=02.ckpt' \
     --encoder_freeze \
     --linear_probes \
     --shuffle \
-    --wandb 
+    #--wandb 
