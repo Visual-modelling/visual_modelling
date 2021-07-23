@@ -3,21 +3,21 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.parallel import DistributedDataParallel as DDP
-import torch.distributed as dist
+#import torch.distributed as dist
 
 from mmseg.models.backbones.mix_transformer import mit_b1, MixVisionTransformer
 from mmseg.models.decode_heads.segformer_head import SegFormerHead
 
 
-def setup(rank, world_size):
-    os.environ['MASTER_ADDR'] = 'localhost'
-    os.environ['MASTER_PORT'] = '12355'
+#def setup(rank, world_size):
+#    os.environ['MASTER_ADDR'] = 'localhost'
+#    os.environ['MASTER_PORT'] = '12355'
 
     # initialize the process group
-    dist.init_process_group("gloo", rank=rank, world_size=world_size)
+#    dist.init_process_group("gloo", rank=rank, world_size=world_size)
 
-def cleanup():
-    dist.destroy_process_group()
+#def cleanup():
+#    dist.destroy_process_group()
 
 
 """
@@ -27,8 +27,8 @@ class VM_MixSeg(nn.Module):
     def __init__(self, in_chans, out_chans, img_size=64):
         super().__init__()
         self.out_chans = out_chans
-        setup(0,1)  # Demanded due to the torch distributed requirements of this library
-        cleanup()
+        #setup(0,1)  # Demanded due to the torch distributed requirements of this library
+        #cleanup()
         self.encoder = MixVisionTransformer(in_chans=5, img_size=64)
         self.decode_head = SegFormerHead(feature_strides=[4,8,16,32], in_channels=[64,128,256,512], channels=128, num_classes=16*out_chans, in_index=[0, 1, 2, 3], decoder_params={"embed_dim":256}, dropout_ratio=0.1, align_corners=False)
 
