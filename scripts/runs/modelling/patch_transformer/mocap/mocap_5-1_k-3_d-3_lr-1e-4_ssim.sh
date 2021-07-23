@@ -4,13 +4,11 @@
 #SBATCH -c 4
 #SBATCH -t 2-00:00
 #SBATCH --mem 21G
-#SBATCH --mem 21G
-#SBATCH -t 7-00:00
 #SBATCH -p res-gpu-small
 #SBATCH --job-name pt_mocap_5-1_k-3_d-3_lr-1e-4_ssim 
 #SBATCH --gres gpu:1
 cd ../../../../..
-export MASTER_PORT=10000
+export MASTER_PORT=10017
 cd $SCRIPT_DIR/../../../../..
 source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace

@@ -10,7 +10,7 @@
 #SBATCH -o ../../../../../.results/pt_pendulumSingleBigger_5-1_k-3_d-3_lr-1e-4_ssim.out
 cd ../../../../..
 source python_venvs/vm/bin/activate
-export MASTER_PORT=10000
+export MASTER_PORT=10021
 export PYTHONBREAKPOINT=ipdb.set_trace
 # Pretrain
 python VM_train.py \
