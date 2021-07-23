@@ -8,6 +8,8 @@ import torch.distributed as dist
 from mmseg.models.backbones.mix_transformer import mit_b1, MixVisionTransformer
 from mmseg.models.decode_heads.segformer_head import SegFormerHead
 
+# Local imports
+from UpDown2D import sigmoid_256
 
 def setup(rank, world_size):
     os.environ['MASTER_ADDR'] = 'localhost'
@@ -36,7 +38,7 @@ class VM_MixSeg(nn.Module):
         out = self.decode_head(probe_ret)   # (B, 16*out_chans, 16, 16)
         out = out.view(x.shape[0], 16*self.out_chans, -1)  # (B, out_chans, 256)
         out = F.fold(out, output_size=(64,64), kernel_size=(4,4), stride=(4,4)) # (B, out_chans, 64, 64) NOTE spatial dimensions of patches are preserved
-        return out, probe_ret
+        return sigmoid_256(out), probe_ret
 
 if __name__ == "__main__":
     imgs = torch.ones(32,5,64,64)
