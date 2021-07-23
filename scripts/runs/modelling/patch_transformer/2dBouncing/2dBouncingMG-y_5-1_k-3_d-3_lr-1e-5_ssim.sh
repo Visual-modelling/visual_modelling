@@ -10,7 +10,7 @@
 #SBATCH -o ../../../../../.results/pt_2dBouncingMG-y_5-1_k-3_d-3_lr-1e-5_ssim.out
 cd ../../../../..
 source python_venvs/vm/bin/activate
-export MASTER_PORT=10001
+export MASTER_PORT=10101
 export PYTHONBREAKPOINT=ipdb.set_trace
 # Pretrain
 python VM_train.py \
