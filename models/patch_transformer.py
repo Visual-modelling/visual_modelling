@@ -9,7 +9,7 @@ from mmseg.models.backbones.mix_transformer import mit_b1, MixVisionTransformer
 from mmseg.models.decode_heads.segformer_head import SegFormerHead
 
 # Local imports
-from UpDown2D import sigmoid_256
+from .UpDown2D import sigmoid_256
 
 def setup(rank, world_size):
     os.environ['MASTER_ADDR'] = 'localhost'
