@@ -23,7 +23,7 @@ python test_tasks.py \
     --bsz 64 \
     --val_bsz 64 \
     --num_workers 1 \
-    --in_no 5 \
+    --in_no 59 \
     --out_no 1 \
     --device 0 \
     --epoch 500 \

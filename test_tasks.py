@@ -61,6 +61,7 @@ class FcUpDown2D2Scalars(pl.LightningModule):
                 state_dict = checkpoint['state_dict']
                 for old_key in list(state_dict.keys()):
                     state_dict[old_key[6:]] = state_dict.pop(old_key)
+                state_dict['pos_encoder.pos_encoding'] = self.model.state_dict()['pos_encoder.pos_encoding']
                 self.model.load_state_dict(state_dict)
         elif args.model == 'PatchTrans':
             from models.patch_transformer import VM_MixSeg
