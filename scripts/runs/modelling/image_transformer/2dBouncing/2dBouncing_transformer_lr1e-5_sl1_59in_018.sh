@@ -5,20 +5,16 @@
 #SBATCH -t 2-00:00
 #SBATCH --mem 28G
 #SBATCH -p res-gpu-small
-#SBATCH --job-name 2dBouncing_grav-regress_transformer_59in_lr1e-5_sl1_016.sh
-#SBATCH --gres gpu:1
-#SBATCH -o ../../../../../.results/2dBouncing_grav-regress_transformer_59in_lr1e-5_sl1_016.out
+#SBATCH --job-name 2dBouncing_transformer_lr1e-5_sl1_59in_018 
+#SBATCH --gres gpu:1 
+#SBATCH -o ../../../../../.results/2dBouncing_transformer_lr1e-5_sl1_59in_018.out
 cd ../../../../..
 source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
-python test_tasks.py \
-    --task grav-regress \
-    --dataset_path data/2dBouncing/2dMultiGrav-Y_regen/raw \
-    --model_path .results/2dBouncing_transformer_lr1e-5_sl1_016-epoch=62-valid_loss=5.82.ckpt \
-    --linear_probes \
-    --encoder_freeze \
-    --jobname 2dBouncing_grav-regress_transformer_59in_lr1e-5_sl1_016 \
+python VM_train.py \
     --dataset simulations \
+    --dataset_path data/2dBouncing/2dMultiGrav-Y_regen/raw \
+    --jobname 2dBouncing_transformer_lr1e-5_sl1_59in_018 \
     --split_condition tv_ratio:8-1-1 \
     --bsz 64 \
     --val_bsz 64 \
@@ -28,10 +24,14 @@ python test_tasks.py \
     --device 0 \
     --epoch 500 \
     --early_stopping 10 \
+    --min_epochs 40 \
+    --n_gifs 20 \
+    --reduction mean \
     --img_type greyscale \
     --shuffle \
     --wandb \
     --model image_transformer \
+    --dataset_mode consecutive \
     --d_model 4096 \
     --n_layers 2 \
     --nhead 4 \
@@ -39,7 +39,11 @@ python test_tasks.py \
     --dropout 0.0 \
     --pixel_regression_layers 1 \
     --norm_layer layer_norm \
+    --optimiser adam \
     --output_activation hardsigmoid-256 \
-    --pos_encoder add_runtime \
+    --pos_encoder add \
     --mask \
+    --feedback_training_iters 10 \
+    --sequence_loss_factor 0.2 \
+    --loss sl1 \
     --lr 1e-5 \
