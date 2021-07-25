@@ -124,10 +124,20 @@ class FcUpDown2D2Scalars(pl.LightningModule):
             probe_len = sum(torch.numel(hidden_x) for hidden_x in hidden_xs)
             del dummy_input, hidden_xs
         elif args.model == 'PatchTrans':
+            # From encoder
             probe_len = 64*16*16
             probe_len += 128*8*8
             probe_len += 256*4*4
             probe_len += 512*2*2
+            # From decoder
+            probe_len += 256*16*16
+            probe_len += 256*16*16
+            probe_len += 256*16*16
+            probe_len += 256*16*16
+            probe_len += 16*16*16
+
+
+            # Outputs
             probe_len += 64*64
             
         else:
@@ -173,7 +183,7 @@ class FcUpDown2D2Scalars(pl.LightningModule):
         # Through the encoder
         if self.args.linear_probes:
             _, probe_ret = self.model(x)
-            probe_ret = torch.cat([ tens.view(x.shape[0], -1) for tens in probe_ret], dim=1)
+            probe_ret = torch.cat([ tens.contiguous().view(x.shape[0], -1) for tens in probe_ret], dim=1)
         else:
             probe_ret, _ = self.model(x)
             probe_ret = probe_ret.view(probe_ret.shape[0], -1)

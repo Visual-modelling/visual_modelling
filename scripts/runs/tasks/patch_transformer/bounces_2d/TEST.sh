@@ -14,8 +14,8 @@ python test_tasks.py \
     --task bounces-regress \
     --dataset simulations  \
     --dataset_path data/2dBouncing/2dMultiGrav-Y_regen/TEST \
-    --bsz 64 \
-    --val_bsz 100 \
+    --bsz 2 \
+    --val_bsz 2 \
     --num_workers 1 \
     --in_no 59 \
     --out_no 1 \
@@ -26,7 +26,7 @@ python test_tasks.py \
     --jobname TEST_pt_tasks \
     --img_type greyscale \
     --model PatchTrans \
-    --model_path '.results/pt_TEST-epoch=02.ckpt' \
+    --model_path '' \
     --encoder_freeze \
     --linear_probes \
     --shuffle \
