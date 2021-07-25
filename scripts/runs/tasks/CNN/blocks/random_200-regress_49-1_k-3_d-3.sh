@@ -16,7 +16,7 @@ source python_venvs/vm/bin/activate
 python test_tasks.py \
     --task blocks-regress \
     --dataset simulations  \
-    --dataset_path data/myphysicslab/Block_10000 \
+    --dataset_path data/myphysicslab/Blocks_10000 \
     --bsz 64 \
     --val_bsz 100 \
     --num_workers 1 \
