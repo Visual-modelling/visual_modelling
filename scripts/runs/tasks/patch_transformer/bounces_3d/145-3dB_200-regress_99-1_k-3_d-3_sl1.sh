@@ -1,31 +1,31 @@
 #!/bin/bash
 #SBATCH --ntasks 6
 #SBATCH -p part0
-#SBATCH --job-name XX-2dB_200_grav_2d-regress_5-1_k-3_d-3_ssim  
+#SBATCH --job-name 145-3dB_200_bounces-regress_3d_99-1_k-3_d-3_sl1  
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../../.results/XX-2dB_200_grav_2d-regress_5-1_k-3_d-3_ssim.out
+#SBATCH -o ../../../../../.results/145-3dB_200_bounces-regress_3d_99-1_k-3_d-3_sl1.out
 cd ../../../../..
 export PYTHONBREAKPOINT=ipdb.set_trace
 source python_venvs/vm/bin/activate
 
-# grav_2d-regress Task
+# bounces-regress_3d Task
 python test_tasks.py \
-    --task grav-regress \
+    --task bounces-regress \
     --dataset simulations  \
-    --dataset_path data/2dBouncing/2dMultiGrav-Y_regen/raw \
+    --dataset_path data/3dBouncing/3dRegen \
     --bsz 64 \
     --val_bsz 100 \
     --num_workers 1 \
-    --in_no 5 \
+    --in_no 99 \
     --out_no 1 \
     --depth 3 \
     --device 0 \
     --lr 1e-4 \
     --epoch 200 \
-    --jobname XX-2dB_200_grav_2d-regress_5-1_k-3_d-3_ssim \
+    --jobname 145-3dB_200_bounces-regress_3d_99-1_k-3_d-3_sl1 \
     --img_type greyscale \
     --model PatchTrans \
-    --model_path '.results/' \
+    --model_path '.results/pt_3dBouncing_99-1_k-3_d-3_lr-1e-4_sl1-mean-epoch=145.ckpt' \
     --encoder_freeze \
     --linear_probes \
     --shuffle \

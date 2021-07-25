@@ -1,12 +1,9 @@
 #!/bin/bash
-#SBATCH --qos short
-#SBATCH -N 1
-#SBATCH -c 4
-#SBATCH -t 2-00:00
+#SBATCH --ntasks 6
 #SBATCH --mem 20G
-#SBATCH -p res-gpu-small
+#SBATCH -p part0
 #SBATCH --job-name TEST_pt_tasks  
-#SBATCH --gres gpu:1
+#SBATCH --gres gpu:2
 #SBATCH -o ../../../../../.results/TEST_pt_tasks.out
 cd ../../../../..
 export PYTHONBREAKPOINT=ipdb.set_trace

@@ -1,19 +1,18 @@
 #!/bin/bash
 #SBATCH --ntasks 6
-#SBATCH --mem 21G
 #SBATCH -p part0
-#SBATCH --job-name XX-mixed_200_pendulum-regress_5-1_k-3_d-3_sl1  
+#SBATCH --job-name 145-2dB_200_grav_2d-regress_5-1_k-3_d-3_ssim  
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../../.results/XX-mixed_200_pendulum-regress_5-1_k-3_d-3_sl1.out
+#SBATCH -o ../../../../../.results/145-2dB_200_grav_2d-regress_5-1_k-3_d-3_ssim.out
 cd ../../../../..
 export PYTHONBREAKPOINT=ipdb.set_trace
 source python_venvs/vm/bin/activate
 
-# pendulum Task
+# grav_2d-regress Task
 python test_tasks.py \
-    --task pendulum-regress \
+    --task grav-regress \
     --dataset simulations  \
-    --dataset_path data/myphysicslab/Pendulum_10000 \
+    --dataset_path data/2dBouncing/2dMultiGrav-Y_regen/raw \
     --bsz 64 \
     --val_bsz 100 \
     --num_workers 1 \
@@ -23,10 +22,10 @@ python test_tasks.py \
     --device 0 \
     --lr 1e-4 \
     --epoch 200 \
-    --jobname XX-mixed_200_pendulum-regress_5-1_k-3_d-3_sl1 \
+    --jobname 145-2dB_200_grav_2d-regress_5-1_k-3_d-3_ssim \
     --img_type greyscale \
     --model PatchTrans \
-    --model_path '.results/' \
+    --model_path '.results/pt_2dBouncingMG-y_5-1_k-3_d-3_lr-1e-4_ssim-epoch=145.ckpt' \
     --encoder_freeze \
     --linear_probes \
     --shuffle \

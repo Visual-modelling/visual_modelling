@@ -1,12 +1,8 @@
 #!/bin/bash
-#SBATCH --qos short
-#SBATCH -N 1
-#SBATCH -c 4
-#SBATCH -t 2-00:00
-#SBATCH --mem 20G
-#SBATCH -p res-gpu-small
+#SBATCH --ntasks 6
+#SBATCH -p part0
 #SBATCH --job-name pt_random_200_bounces-regress_2d_5-1_k-3_d-3  
-#SBATCH --gres gpu:1
+#SBATCH --gres gpu:2
 #SBATCH -o ../../../../../.results/pt_random_200_bounces-regress_2d_5-1_k-3_d-3.out
 cd ../../../../..
 export PYTHONBREAKPOINT=ipdb.set_trace

@@ -2,7 +2,7 @@
 #SBATCH --ntasks 6
 #SBATCH -p part0
 #SBATCH --job-name pt_random_200_blocks-regress_49-1_k-3_d-3  
-#SBATCH --gres gpu:1
+#SBATCH --gres gpu:2
 #SBATCH -o ../../../../../.results/pt_random_200_blocks-regress_49-1_k-3_d-3.out
 cd ../../../../..
 export PYTHONBREAKPOINT=ipdb.set_trace
@@ -12,7 +12,7 @@ source python_venvs/vm/bin/activate
 python test_tasks.py \
     --task blocks-regress \
     --dataset simulations  \
-    --dataset_path data/myphysicslab/Block_10000 \
+    --dataset_path data/myphysicslab/Blocks_10000 \
     --bsz 64 \
     --val_bsz 100 \
     --num_workers 1 \
