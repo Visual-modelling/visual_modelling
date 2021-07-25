@@ -12,7 +12,7 @@ cd ../../../../..
 source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 python test_tasks.py \
-    --task pendulum-regress \
+    --task moon-regress \
     --dataset_path data/myphysicslab/Moon_10000 \
     --model_path '' \
     --jobname moon_moon-regress_transformer_untrained_018 \
