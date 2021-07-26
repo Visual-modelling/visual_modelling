@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --ntasks 6
-#SBATCH --mem 20G
+#SBATCH --mem 16G
 #SBATCH -p part0
 #SBATCH --job-name TEST_pt_tasks  
 #SBATCH --gres gpu:2

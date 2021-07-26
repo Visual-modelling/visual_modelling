@@ -1,10 +1,10 @@
 #!/bin/bash
 #SBATCH --ntasks 6
-#SBATCH --mem 21G
+#SBATCH --mem 16G
 #SBATCH -p part0
-#SBATCH --job-name XX-mixed_200_mnist_1-1_k-3_d-3_ssim  
+#SBATCH --job-name pt_XX-mixed_200_mnist_1-1_k-3_d-3_ssim  
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../../.results/XX-mixed_200_mnist_1-1_k-3_d-3_ssim.out
+#SBATCH -o ../../../../../.results/pt_XX-mixed_200_mnist_1-1_k-3_d-3_ssim.out
 cd ../../../../..
 export PYTHONBREAKPOINT=ipdb.set_trace
 source python_venvs/vm/bin/activate
@@ -20,7 +20,7 @@ python test_tasks.py \
     --depth 3 \
     --device 0 \
     --epoch 200 \
-    --jobname XX-mixed_200_mnist_1-1_k-3_d-3_ssim \
+    --jobname pt_XX-mixed_200_mnist_1-1_k-3_d-3_ssim \
     --lr 1e-4 \
     --img_type greyscale \
     --model PatchTrans \
