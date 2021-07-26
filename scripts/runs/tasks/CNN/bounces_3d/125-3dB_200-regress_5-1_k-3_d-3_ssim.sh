@@ -3,7 +3,7 @@
 #SBATCH -N 1
 #SBATCH -c 4
 #SBATCH -t 2-00:00
-#SBATCH --mem 12G
+#SBATCH --mem 21G
 #SBATCH -p res-gpu-small
 #SBATCH --job-name 125-3dB_200_bounces-regress_3d_5-1_k-3_d-3_ssim  
 #SBATCH --gres gpu:1
@@ -20,7 +20,7 @@ python test_tasks.py \
     --bsz 64 \
     --val_bsz 100 \
     --num_workers 1 \
-    --in_no 59 \
+    --in_no 99 \
     --out_no 1 \
     --depth 3 \
     --device 0 \

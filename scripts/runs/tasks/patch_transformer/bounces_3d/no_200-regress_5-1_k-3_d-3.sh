@@ -2,7 +2,7 @@
 #SBATCH --ntasks 6
 #SBATCH -p part0
 #SBATCH --job-name pt_no_200_bounces-regress_3d_5-1_k-3_d-3  
-#SBATCH --gres gpu:2
+#SBATCH --gres gpu:1
 #SBATCH -o ../../../../../.results/pt_no_200_bounces-regress_3d_5-1_k-3_d-3.out
 cd ../../../../..
 export PYTHONBREAKPOINT=ipdb.set_trace
@@ -16,7 +16,7 @@ python test_tasks.py \
     --bsz 64 \
     --val_bsz 100 \
     --num_workers 1 \
-    --in_no 59 \
+    --in_no 99 \
     --out_no 1 \
     --depth 3 \
     --device 0 \

@@ -20,7 +20,7 @@ python test_tasks.py \
     --bsz 64 \
     --val_bsz 100 \
     --num_workers 1 \
-    --in_no 59 \
+    --in_no 99 \
     --out_no 1 \
     --depth 3 \
     --device 0 \
