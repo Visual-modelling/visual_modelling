@@ -5,27 +5,26 @@
 #SBATCH -t 2-00:00
 #SBATCH --mem 28G
 #SBATCH -p res-gpu-small
-#SBATCH --job-name 2dBouncing_bounces-regress_transformer_untrained_016.sh
+#SBATCH --job-name blocks_blocks-regress_transformer_untrained_018.sh
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../../.results/2dBouncing_bounces-regress_transformer_untrained_016.out
+#SBATCH -o ../../../../../.results/blocks_blocks-regress_transformer_untrained_018.out
 cd ../../../../..
 source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 python test_tasks.py \
-    --task bounces-regress \
-    --dataset_path data/2dBouncing/2dMultiGrav-Y_regen/raw \
+    --task blocks-regress \
+    --dataset_path data/myphysicslab/Moon_10000 \
     --model_path '' \
-    --jobname 2dBouncing_bounces-regress_transformer_untrained_016 \
+    --jobname blocks_blocks-regress_transformer_untrained_018 \
     --dataset simulations \
     --split_condition tv_ratio:8-1-1 \
     --bsz 64 \
     --val_bsz 64 \
     --num_workers 1 \
-    --in_no 59 \
+    --in_no 5 \
     --out_no 1 \
     --device 0 \
     --epoch 500 \
-    --min_epochs 30 \
     --early_stopping 10 \
     --img_type greyscale \
     --shuffle \
