@@ -320,6 +320,7 @@ if __name__ == "__main__":
     parser.add_argument_group("Run specific arguments")
     parser.add_argument("--task", type=str, choices=["mnist","mocap","hdmb51","pendulum-regress","roller-regress","roller-pred","segmentation","bounces-regress","bounces-pred","grav-regress","grav-pred","moon-regress","blocks-regress"], help="Which task, classification or otherwise, to apply")
     parser.add_argument("--epoch", type=int, default=10)
+    parser.add_argument("--min_epochs", type=int, default=1, help="minimum number of epochs to run.")
     parser.add_argument("--early_stopping", type=int, default=-1, help="number of epochs after no improvement before stopping, -1 to disable")
     parser.add_argument("--device", type=int, default=-1, help="-1 for CPU, 0, 1 for appropriate device")
     parser.add_argument("--bsz", type=int, default=32)
@@ -568,7 +569,7 @@ if __name__ == "__main__":
         callbacks = [checkpoint_callback]
 
     pl_system.testing = False
-    trainer = pl.Trainer(callbacks=callbacks, logger=wandb_logger, gpus=gpus, max_epochs=args.epoch)
+    trainer = pl.Trainer(callbacks=callbacks, logger=wandb_logger, gpus=gpus, max_epochs=args.epoch, min_epochs=args.min_epochs)
     trainer.fit(pl_system, train_loader, valid_loader)
     pl_system.testing = True
     trainer.test(test_dataloaders=test_loader, ckpt_path='best')

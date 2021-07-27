@@ -25,6 +25,7 @@ python test_tasks.py \
     --out_no 1 \
     --device 0 \
     --epoch 500 \
+    --min_epochs 30 \
     --early_stopping 10 \
     --img_type greyscale \
     --shuffle \
