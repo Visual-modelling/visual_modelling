@@ -13,7 +13,7 @@ source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 python test_tasks.py \
     --task blocks-regress \
-    --dataset_path data/myphysicslab/Moon_10000 \
+    --dataset_path data/myphysicslab/Blocks_10000 \
     --model_path .results/blocks_transformer_lr1e-5_ssim_018-epoch=29.ckpt \
     --linear_probes \
     --encoder_freeze \
