@@ -22,14 +22,14 @@ class FixedOutput(nn.Module):
 
     def forward(self, x):
         batch_size = x.shape[0]
-        out = torch.cat(batch_size * [self.constant], dim=0)
+        out = torch.stack(batch_size * [self.constant], dim=0)
         return out
 
 
 class ImageProbe(nn.Module):
-    def __init__(self, imshape, n_outputs):
+    def __init__(self, in_no, n_outputs):
         super().__init__()
-        self.layer = nn.Linear(imshape[0]*imshape[1]*imshape[2], n_outputs)
+        self.layer = nn.Linear(in_no*64*64, n_outputs)
 
     def forward(self, x):
         x = torch.flatten(x, 1, -1)
@@ -40,6 +40,7 @@ class ImageProbe(nn.Module):
 class PLSystem(pl.LightningModule):
     def __init__(self, in_no, n_outputs, mode, lr, task):
         super().__init__()
+        self.in_no = in_no
         self.lr = lr
         self.task = task
 
@@ -57,26 +58,41 @@ class PLSystem(pl.LightningModule):
         return self.net(x)
 
     def training_step(self, train_batch, batch_idx):
-        frame, gt_frame, vid_name, _ = train_batch
-        out = self.net(frame)
+        if self.task == 'mnist':
+            frame, label = train_batch
+            frames = frame.repeat(1, self.in_no, 1, 1)
+        else:
+            frames, _, _, label = train_batch
+        frames = frames.float()
+        out = self.net(frames)
 
         if self.task == 'mnist':
-            loss = F.cross_entropy(out, gt_frame)
+            loss = F.cross_entropy(out, label)
+        elif self.task == "bounces-regress":
+            label = label.sum(dim=1, keepdim=True)
+            label = label.clamp(0, 75)
+            loss = F.smooth_l1_loss(out, label)
         else:
-            loss = F.smooth_l1_loss(out, gt_frame)
+            loss = F.smooth_l1_loss(out, label)
 
         self.log('train_loss', loss, on_step=False, on_epoch=True)
         return loss
 
-    def val_test_step(self, valid_batch, name):
-        frame, gt_frame, vid_name, _ = valid_batch
-        out = self.net(frame)
+    def val_test_step(self, batch, name):
+        if self.task == 'mnist':
+            frame, label = batch
+            frames = frame.repeat(1, self.in_no, 1, 1)
+        else:
+            frames, _, _, label = batch
+        frames = frames.float()
+        out = self.net(frames)
 
         if self.task == 'mnist':
-            acc = self.valid_acc(out, gt_frame)
+            out = F.softmax(out)
+            acc = self.valid_acc(out, label)
             self.log(f'{name}_acc', acc, on_step=False, on_epoch=True)
         else:
-            loss = F.smooth_l1_loss(out, gt_frame)
+            loss = F.smooth_l1_loss(out, label)
             self.log(f'{name}_loss', loss, on_step=False, on_epoch=True)
 
     def validation_step(self, valid_batch, batch_idx):
@@ -92,19 +108,18 @@ class PLSystem(pl.LightningModule):
 
 if __name__ == '__main__':
     min_epochs = 1
-    max_epochs = 50
+    max_epochs = 4
     early_stopping_patience = 10
 
     batchsize = 64
 
     lr = 1e-4
 
-
     datasets = {
         '2dBouncing': (('bounces-regress', 'grav-regress'), 'data/2dBouncing/2dMultiGrav-Y_regen/raw'),
         '3dBouncing': (('bounces-regress',), 'data/3dBouncing/3dRegen'),
         'blocks': (('blocks-regress',), 'data/myphysicslab/Blocks_10000'),
-        'mmnist': (('mnist-regress',), ''),
+        'mmnist': (('mnist',), ''),
         'moon': (('moon-regress',), 'data/myphysicslab/Moon_10000'),
         'pendulum': (('pendulum-regress',), 'data/myphysicslab/Pendulum_10000'),
         'roller': (('roller-regress',), 'data/myphysicslab/RollerFlight_10000_bigger')
@@ -121,6 +136,8 @@ if __name__ == '__main__':
                 """
                 You don't need to set a dataset or dataset path for MNIST. Its all handled here since its so small and easy to load
                """
+                args.in_no = 5
+                args.out_no = 1
                 train_dset = MNIST(train=True, transform=transforms.Compose([transforms.Pad(18, 0), transforms.ToTensor()]),
                                    root=os.path.join(os.path.dirname(os.path.realpath(__file__)), "data"))
                 valid_test_dset = MNIST(train=False, transform=transforms.Compose([transforms.Pad(18, 0), transforms.ToTensor()]),
@@ -196,9 +213,9 @@ if __name__ == '__main__':
             else:
                 raise ValueError(f'Unknown task {task}')
 
-            train_loader = DataLoader(train_dset, batch_size=batchsize, num_workers=1, shuffle=True)
-            valid_loader = DataLoader(valid_dset, batch_size=batchsize, num_workers=1, shuffle=False)
-            test_loader = DataLoader(test_dset, batch_size=batchsize, num_workers=1, shuffle=False)
+            train_loader = DataLoader(train_dset, batch_size=batchsize, num_workers=1, pin_memory=True, shuffle=True)
+            valid_loader = DataLoader(valid_dset, batch_size=batchsize, num_workers=1, pin_memory=True, shuffle=False)
+            test_loader = DataLoader(test_dset, batch_size=batchsize, num_workers=1, pin_memory=True, shuffle=False)
 
             if task == 'mnist':
                 n_outputs = 10
@@ -231,7 +248,7 @@ if __name__ == '__main__':
 
             pl_system = PLSystem(in_no=args.in_no, n_outputs=n_outputs, mode='fixed_output', lr=lr, task=task)
 
-            trainer = pl.Trainer(callbacks=callbacks, logger=wandb_logger, gpus=0, max_epochs=max_epochs, min_epochs=min_epochs)
+            trainer = pl.Trainer(callbacks=callbacks, logger=wandb_logger, gpus=1, max_epochs=max_epochs, min_epochs=min_epochs)
             trainer.fit(pl_system, train_loader, valid_loader)
 
             trainer.test(test_dataloaders=test_loader, ckpt_path='best')
@@ -256,7 +273,7 @@ if __name__ == '__main__':
 
             pl_system = PLSystem(in_no=args.in_no, n_outputs=n_outputs, mode='image_probe', lr=lr, task=task)
 
-            trainer = pl.Trainer(callbacks=callbacks, logger=wandb_logger, gpus=0, max_epochs=max_epochs, min_epochs=min_epochs)
+            trainer = pl.Trainer(callbacks=callbacks, logger=wandb_logger, gpus=1, max_epochs=max_epochs, min_epochs=min_epochs)
             trainer.fit(pl_system, train_loader, valid_loader)
 
             trainer.test(test_dataloaders=test_loader, ckpt_path='best')
