@@ -13,7 +13,7 @@ source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 python test_tasks.py \
     --task blocks-regress \
-    --dataset_path data/myphysicslab/Moon_10000 \
+    --dataset_path data/myphysicslab/Blocks_10000 \
     --model_path '' \
     --jobname blocks_blocks-regress_transformer_untrained_018 \
     --dataset simulations \
