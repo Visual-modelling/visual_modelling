@@ -91,6 +91,11 @@ class PLSystem(pl.LightningModule):
             out = F.softmax(out)
             acc = self.valid_acc(out, label)
             self.log(f'{name}_acc', acc, on_step=False, on_epoch=True)
+        elif self.task == "bounces-regress":
+            label = label.sum(dim=1, keepdim=True)
+            label = label.clamp(0, 75)
+            loss = F.smooth_l1_loss(out, label)
+            self.log(f'{name}_loss', loss, on_step=False, on_epoch=True)
         else:
             loss = F.smooth_l1_loss(out, label)
             self.log(f'{name}_loss', loss, on_step=False, on_epoch=True)
@@ -108,8 +113,8 @@ class PLSystem(pl.LightningModule):
 
 if __name__ == '__main__':
     min_epochs = 1
-    max_epochs = 100
-    early_stopping_patience = 10
+    max_epochs = 1000
+    early_stopping_patience = 20
 
     batchsize = 64
 
