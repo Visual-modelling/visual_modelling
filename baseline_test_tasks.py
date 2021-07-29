@@ -70,8 +70,7 @@ class PLSystem(pl.LightningModule):
 
     def val_test_step(self, valid_batch, name):
         frame, gt_frame, vid_name, _ = valid_batch
-        batch_size = frame.shape[0]
-        out = torch.cat(batch_size * [self.constant], dim=0)
+        out = self.net(frame)
 
         if self.task == 'mnist':
             acc = self.valid_acc(out, gt_frame)
