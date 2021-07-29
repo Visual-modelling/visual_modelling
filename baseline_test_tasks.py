@@ -197,20 +197,20 @@ if __name__ == '__main__':
             else:
                 raise ValueError(f'Unknown task {task}')
 
-            train_loader = DataLoader(train_dset, batch_size=args.bsz, num_workers=args.num_workers, shuffle=args.shuffle)
-            valid_loader = DataLoader(valid_dset, batch_size=args.val_bsz, num_workers=args.num_workers, shuffle=False)
-            test_loader = DataLoader(test_dset, batch_size=args.val_bsz, num_workers=args.num_workers, shuffle=False)
+            train_loader = DataLoader(train_dset, batch_size=batchsize, num_workers=1, shuffle=True)
+            valid_loader = DataLoader(valid_dset, batch_size=batchsize, num_workers=1, shuffle=False)
+            test_loader = DataLoader(test_dset, batch_size=batchsize, num_workers=1, shuffle=False)
 
-            if args.task == 'mnist':
-                n_outputs = 1
+            if task == 'mnist':
+                n_outputs = 10
                 max_or_min = "max"
                 monitoring = "valid_acc"
-            elif args.task in ["segmentation", "pendulum-regress", "bounces-regress", "grav-regress", "roller-regress", "moon-regress", "blocks-regress"]:
+            elif task in ["segmentation", "pendulum-regress", "bounces-regress", "grav-regress", "roller-regress", "moon-regress", "blocks-regress"]:
                 n_outputs = 1
                 max_or_min = "min"
                 monitoring = "valid_loss"
             else:
-                raise NotImplementedError(f"Task: {args.task} is not handled")
+                raise NotImplementedError(f"Task: {task} is not handled")
 
             ###############
             # BASELINE
