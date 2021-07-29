@@ -18,7 +18,7 @@ import tools.radam as radam
 class FixedOutput(nn.Module):
     def __init__(self, n_outputs):
         super().__init__()
-        self.constant = nn.Parameter(torch.ones((n_outputs,), requires_grad=True))
+        self.constant = nn.Parameter(torch.ones((n_outputs,), dtype=torch.float32, requires_grad=True))
 
     def forward(self, x):
         batch_size = x.shape[0]
