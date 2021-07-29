@@ -113,8 +113,8 @@ class PLSystem(pl.LightningModule):
 
 if __name__ == '__main__':
     min_epochs = 1
-    max_epochs = 1000
-    early_stopping_patience = 20
+    max_epochs = 2000
+    early_stopping_patience = 50
 
     batchsize = 64
 
