@@ -1,6 +1,8 @@
 import os, sys, copy
 import argparse
 import shutil
+import math
+import cv2
 
 import torch
 from torchvision.datasets import MNIST
@@ -228,23 +230,68 @@ if __name__ == "__main__":
             start_frames = start_frames.float().to(args.device)
             outs, logits_ret = model(start_frames)
             # r b g y
-            small_box = logits_ret[0].mean(dim=1)[0].argmax().cpu().detach()
-            bigger_box = logits_ret[1].mean(dim=1)[0].argmax().cpu().detach()
-            bigga_box = logits_ret[2].mean(dim=1)[0].argmax().cpu().detach()
-            biggest_box = logits_ret[3].mean(dim=1)[0].argmax().cpu().detach()
+            small_n = int(logits_ret[0].shape[-1]**0.5)
+            small_w = int(64/small_n)
+            small_box = logits_ret[0].mean(dim=1).cpu().detach()
+
+            bigger_n = int(logits_ret[1].shape[-1]**0.5)
+            bigger_w = int(64/bigger_n)
+            bigger_box = logits_ret[1].mean(dim=1).cpu().detach()
+
+            bigga_n = int(logits_ret[2].shape[-1]**0.5)
+            bigga_w = int(64/bigga_n)
+            bigga_box = logits_ret[2].mean(dim=1).cpu().detach()
+
+            biggest_n = int(logits_ret[3].shape[-1]**0.5)
+            biggest_w = int(64/biggest_n)
+            biggest_box = logits_ret[3].mean(dim=1).cpu().detach()
+
             plot_frame = start_frames.mean(dim=1).permute(1,2,0).cpu().detach().numpy()
-            fig, ax = plt.subplots()
-            ax.imshow(plot_frame, cmap="gray", vmax=255, vmin=0)
-            corner = {
-                0:(0,0),
-                1:(32,0),
-                2:(0,32),
-                3:(32,32)
-            }
-            rect = patches.Rectangle(corner[int(small_box)], 32, 32, linewidth=1, edgecolor='r', facecolor='none')
-            rect = patches.Rectangle(corner[int(bigger_box)], 32, 32, linewidth=1, edgecolor='b', facecolor='none')
-            rect = patches.Rectangle(corner[int(bigga_box)], 32, 32, linewidth=1, edgecolor='g', facecolor='none')
-            rect = patches.Rectangle(corner[int(biggest_box)], 32, 32, linewidth=1, edgecolor='y', facecolor='none')
-            ax.add_patch(rect)
+
+            cv2.imwrite(f"{results_dir}/{nimg}.png", plot_frame)
+            plot_frame = cv2.imread(f"{results_dir}/{nimg}.png")
+            #plot_frame = cv2.cvtColor(plot_frame, cv2.COLOR_BGR2GRAY)
+
+            small_hm = np.zeros((64,64))
+            for box in range(small_box.shape[1]):
+                coords = (int((box%small_n)*small_w) , int((box//small_n)*small_w))
+                small_hm[coords[0]:coords[0]+small_w,coords[1]:coords[1]+small_w] = int(255*small_box[0][box])
+            bigger_hm = np.zeros((64,64))
+            for box in range(bigger_box.shape[1]):
+                coords = (int((box%bigger_n)*bigger_w) , int((box//bigger_n)*bigger_w))
+                bigger_hm[coords[0]:coords[0]+bigger_w,coords[1]:coords[1]+bigger_w] = int(255*bigger_box[0][box])
+            bigga_hm = np.zeros((64,64))
+            for box in range(bigga_box.shape[1]):
+                coords = (int((box%bigga_n)*bigga_w) , int((box//bigga_n)*bigga_w))
+                bigga_hm[coords[0]:coords[0]+bigga_w,coords[1]:coords[1]+bigga_w] = int(255*bigga_box[0][box])
+            biggest_hm = np.zeros((64,64))
+            for box in range(biggest_box.shape[1]):
+                coords = (int((box%biggest_n)*biggest_w) , int((box//biggest_n)*biggest_w))
+                biggest_hm[coords[0]:coords[0]+biggest_w,coords[1]:coords[1]+biggest_w] = int(255*biggest_box[0][box])
+            hm = small_hm + bigger_hm + bigga_hm + biggest_hm
+            hm /= 4
+            hm = hm.round().astype(np.uint8)
+            hm = cv2.applyColorMap(hm, cv2.COLORMAP_JET)
+            fin = cv2.addWeighted(hm, 0.5, plot_frame, 0.5, 0)
+            plt.imshow(fin)
             plt.show()
-            print("Here")
+            cv2.imwrite(f"{results_dir}/{nimg}_hm.png", fin)
+
+            #fig, ax = plt.subplots()
+            #ax.imshow(plot_frame, cmap="gray", vmax=255, vmin=0)
+
+            #small_coords = ((small_box%small_n)*small_w , (small_box//small_n)*small_w)
+            #bigger_coords = ((bigger_box%bigger_n)*bigger_w , (bigger_box//bigger_n)*bigger_w)
+            #bigga_coords = ((bigga_box%bigga_n)*bigga_w , (bigga_box//bigga_n)*bigga_w)
+            #biggest_coords = ((biggest_box%biggest_n)*biggest_w , (biggest_box//biggest_n)*biggest_w)
+
+            #rect = patches.Rectangle(small_coords, small_w, small_w, linewidth=1, edgecolor='r', facecolor='none')
+            #ax.add_patch(rect)
+            #rect = patches.Rectangle(bigger_coords, bigger_w, bigger_w, linewidth=1, edgecolor='b', facecolor='none')
+            #ax.add_patch(rect)
+            #rect = patches.Rectangle(bigga_coords, bigga_w, bigga_w, linewidth=1, edgecolor='g', facecolor='none')
+            #ax.add_patch(rect)
+            #rect = patches.Rectangle(biggest_coords, biggest_w, biggest_w, linewidth=1, edgecolor='y', facecolor='none')
+            #ax.add_patch(rect)
+            #plt.show()
+            #print("Here")

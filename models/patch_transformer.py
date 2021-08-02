@@ -338,7 +338,8 @@ class VM_MixSeg(nn.Module):
         self.return_attns = return_attns
         setup(0,1)  # Demanded due to the torch distributed requirements of this library
         #cleanup()
-        self.encoder = CUSTOM_MixVisionTransformer(in_chans=in_chans, img_size=img_size)
+        self.encoder = CUSTOM_MixVisionTransformer(in_chans=in_chans, img_size=img_size, sr_ratios=[1, 1, 1, 1])
+        print("HAVE CHANGED SR_RATIOS, CHANGE THEM BACK BY COMMENTING THEM OUT")
         self.decode_head = SegFormerHeadWithProbes(feature_strides=[4,8,16,32], in_channels=[64,128,256,512], channels=128, num_classes=16*out_chans, in_index=[0, 1, 2, 3], decoder_params={"embed_dim":256}, dropout_ratio=0.1, align_corners=False)
 
     def forward(self, x):
