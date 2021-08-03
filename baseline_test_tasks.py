@@ -68,17 +68,20 @@ class PLSystem(pl.LightningModule):
 
         if self.task == 'mnist':
             loss = F.cross_entropy(out, label)
-        elif self.task == "bounces-regress":
-            label = label.sum(dim=1, keepdim=True)
-            label = label.clamp(0, 75)
-            loss = F.smooth_l1_loss(out, label)
         else:
-            loss = F.smooth_l1_loss(out, label)
+            loss = F.smooth_l1_loss(out, label, beta=0.01)
 
         self.log('train_loss', loss, on_step=False, on_epoch=True)
         return loss
 
-    def val_test_step(self, batch, name):
+    def val_test_step(self, batch, is_valid=True):
+        if is_valid:
+            name = 'valid'
+            acc_function = self.valid_acc
+        else:
+            name = 'test'
+            acc_function = self.test_acc
+
         if self.task == 'mnist':
             frame, label = batch
             frames = frame.repeat(1, self.in_no, 1, 1)
@@ -89,16 +92,12 @@ class PLSystem(pl.LightningModule):
 
         if self.task == 'mnist':
             out = F.softmax(out)
-            acc = self.valid_acc(out, label)
+            acc = acc_function(out, label)
             self.log(f'{name}_acc', acc, on_step=False, on_epoch=True)
-        elif self.task == "bounces-regress":
-            label = label.sum(dim=1, keepdim=True)
-            label = label.clamp(0, 75)
-            loss = F.smooth_l1_loss(out, label)
-            self.log(f'{name}_loss', loss, on_step=False, on_epoch=True)
         else:
             loss = F.smooth_l1_loss(out, label)
             self.log(f'{name}_loss', loss, on_step=False, on_epoch=True)
+            self.log(f'{name}_l1', F.l1_loss(out, label))
 
     def validation_step(self, valid_batch, batch_idx):
         self.val_test_step(valid_batch, 'valid')
