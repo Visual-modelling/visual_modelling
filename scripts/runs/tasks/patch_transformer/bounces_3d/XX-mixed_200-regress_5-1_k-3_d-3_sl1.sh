@@ -11,7 +11,7 @@ source python_venvs/vm/bin/activate
 
 # bounces-regress_3d Task
 python test_tasks.py \
-    --task bounces-regress \
+    --task 3dbounces-regress \
     --dataset simulations  \
     --dataset_path data/3dBouncing/3dRegen \
     --bsz 64 \

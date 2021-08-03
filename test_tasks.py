@@ -103,7 +103,7 @@ class FcUpDown2D2Scalars(pl.LightningModule):
             n_outputs = 1
         elif args.task == "roller-pred":
             n_outputs = 201 # [0,0.5,1.0,....,99.5,100]
-        elif args.task == "bounces-regress":
+        elif args.task in ["3dbounces-regress","2dbounces-regress"]:
             n_outputs = 1
         elif args.task == "grav-regress":
             n_outputs = 1
@@ -169,8 +169,8 @@ class FcUpDown2D2Scalars(pl.LightningModule):
 
         if args.task in ["mnist","grav-pred","bounces-pred","roller-pred"]:
             self.criterion = nn.CrossEntropyLoss()
-        elif args.task in ["pendulum-regress","bounces-regress","grav-regress","roller-regress","moon-regress","blocks-regress"]:
-            self.criterion = nn.SmoothL1Loss()
+        elif args.task in ["pendulum-regress","3dbounces-regress","2dbounces-regress","grav-regress","roller-regress","moon-regress","blocks-regress"]:
+            self.criterion = nn.SmoothL1Loss(beta=0.01)
         else:
             raise NotImplementedError(f"Task: '{args.task}' has not got a specified criterion")
 
@@ -207,7 +207,7 @@ class FcUpDown2D2Scalars(pl.LightningModule):
         elif self.args.task == "grav-pred":
             out = F.softmax(out, dim=1)
             label = ((label*10000)+3).round().long().squeeze(1) # Rescale the output to be appropriate for softmax [-0.0003,-0.0002,...,0.0003]
-        elif self.args.task in ["bounces-regress"]:
+        elif self.args.task in ["3dbounces-regress","2dbounces-regress"]:
             label = label.sum(dim=1)
             label = label.clamp(0,75)   # Cap the sum of both bounce types at 75
         elif self.args.task == "roller-pred":
@@ -231,15 +231,6 @@ class FcUpDown2D2Scalars(pl.LightningModule):
         out = self(frames)
         if self.args.task == "mnist":
             out = F.softmax(out, dim=1)
-        elif self.args.task == "grav-pred":
-            out = F.softmax(out, dim=1)
-            label = ((label*10000)+3).round().long().squeeze(1) # Rescale the output to be appropriate for softmax [-0.0003,-0.0002,...,0.0003]
-        elif self.args.task in ["bounces-regress"]:
-            label = label.sum(dim=1)
-            label = label.clamp(0,75)   # Cap the sum of both bounce types at 75
-        elif self.args.task == "roller-pred":
-            out = F.softmax(out, dim=1)
-            label = (label*2).long().squeeze(1)
         valid_loss = self.criterion(out, label)
         if self.testing:    # TODO refine this. this is a quick workaround
             self.log("test_loss", valid_loss, on_step=False, on_epoch=True)
@@ -250,6 +241,12 @@ class FcUpDown2D2Scalars(pl.LightningModule):
                 self.log("test_acc", self.test_acc(out, label), prog_bar=True, on_step=False, on_epoch=True)
             else:
                 self.log("valid_acc", self.valid_acc(out, label), prog_bar=True, on_step=False, on_epoch=True)
+        else:
+            if self.testing:
+                self.log("test_l1", F.l1_loss(out, label), prog_bar=True, on_step=False, on_epoch=True)
+            else:
+                self.log("valid_l1", F.l1_loss(out, label), prog_bar=True, on_step=False, on_epoch=True)
+
 
     def test_step(self, test_batch, batch_idx):
         self.validation_step(test_batch, batch_idx)
@@ -318,7 +315,7 @@ if __name__ == "__main__":
     torch.manual_seed(2667)
     parser = argparse.ArgumentParser()
     parser.add_argument_group("Run specific arguments")
-    parser.add_argument("--task", type=str, choices=["mnist","mocap","hdmb51","pendulum-regress","roller-regress","roller-pred","segmentation","bounces-regress","bounces-pred","grav-regress","grav-pred","moon-regress","blocks-regress"], help="Which task, classification or otherwise, to apply")
+    parser.add_argument("--task", type=str, choices=["mnist","mocap","hdmb51","pendulum-regress","roller-regress","roller-pred","segmentation","3dbounces-regress","2dbounces-regress","bounces-pred","grav-regress","grav-pred","moon-regress","blocks-regress"], help="Which task, classification or otherwise, to apply")
     parser.add_argument("--epoch", type=int, default=10)
     parser.add_argument("--min_epochs", type=int, default=1, help="minimum number of epochs to run.")
     parser.add_argument("--early_stopping", type=int, default=-1, help="number of epochs after no improvement before stopping, -1 to disable")
@@ -480,8 +477,14 @@ if __name__ == "__main__":
     ################################
     # Ball bounces regression/prediction
     ################################   
-    elif args.task in ["bounces-regress","bounces-pred"]:
-        train_dset = SimulationsPreloaded(args.dataset_path[0], 'train', 'consecutive', args, yaml_return="bounces")
+    elif args.task in ["2dbounces-regress"]:
+        train_dset = SimulationsPreloaded(args.dataset_path[0], 'train', 'consecutive', args, yaml_return="2dbounces")
+        valid_dset = train_dset.clone('val', 'consecutive')
+        test_dset = train_dset.clone('test', 'consecutive')
+        pl_system = FcUpDown2D2Scalars(args)
+
+    elif args.task in ["3dbounces-regress"]:
+        train_dset = SimulationsPreloaded(args.dataset_path[0], 'train', 'consecutive', args, yaml_return="3dbounces")
         valid_dset = train_dset.clone('val', 'consecutive')
         test_dset = train_dset.clone('test', 'consecutive')
         pl_system = FcUpDown2D2Scalars(args)
@@ -549,7 +552,7 @@ if __name__ == "__main__":
             save_top_k=1,
             mode=max_or_min,
         )
-    elif args.task in ["segmentation","pendulum-regress","bounces-regress","grav-regress","roller-regress","moon-regress","blocks-regress"]:
+    elif args.task in ["segmentation","pendulum-regress","3dbounces-regress","2dbounces-regress","grav-regress","roller-regress","moon-regress","blocks-regress"]:
         max_or_min = "min"
         monitoring = "valid_loss"
         checkpoint_callback = pl.callbacks.ModelCheckpoint(

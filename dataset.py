@@ -122,22 +122,32 @@ class Simulations(Dataset):
         elif self.yaml_return == "pendulum":    # Assuming pendulum predicts gravity
             yaml_return = [data_params['config']['SIM.GRAVITY']]
             yaml_return = torch.tensor(yaml_return).float()
-        elif self.yaml_return == "bounces":
-            yaml_return = [data_params['config']['bounces']['ball-ball'], data_params['config']['bounces']['wall']]
-            yaml_return = torch.tensor(yaml_return).float()
+            yaml_return /= 5.864681662289948
+        elif self.yaml_return == "2dbounces":
+            yaml_return = [data_params['config']['bounces']['ball-ball'] + data_params['config']['bounces']['wall']]
+            yaml_return = torch.tensor(yaml_return).clamp(0,50).float()
+            yaml_return /= 8.164300812072028
+        elif self.yaml_return == "3dbounces":
+            yaml_return = [data_params['config']['bounces']['ball-ball'] + data_params['config']['bounces']['wall']]
+            yaml_return = torch.tensor(yaml_return).clamp(0,50).float()
+            yaml_return /= 12.782186402959393 
         elif self.yaml_return == "grav":
             yaml_return = [data_params['config']['gy']]
             yaml_return = torch.tensor(yaml_return).float()
+            yaml_return /= 0.0001993539502994682
+            # Scale so standard deviation is 1 
         elif self.yaml_return == "roller":
             yaml_return = [data_params['config']['SIM.GRAVITY']]
             yaml_return = torch.tensor(yaml_return).float()
+            yaml_return /= 28.8133073658683
         elif self.yaml_return == "moon":
             yaml_return = [data_params['config']['MOON_MASS']]
             yaml_return = torch.tensor(yaml_return).float()
+            yaml_return /= 37.40567698892775
         elif self.yaml_return == "blocks":
-            yaml_return = [data_params['config']['SIM.MASS_1'],data_params['config']['SIM.MASS_2']]
-            yaml_return = [yaml_return[0]/yaml_return[1]]# Return the ratio of mass 1 to 2 of blocks
+            yaml_return = [data_params['config']['SIM.MASS_1']-data_params['config']['SIM.MASS_2']]
             yaml_return = torch.tensor(yaml_return).float()
+            yaml_return /= 5.578098184865519
         else:
             raise NotImplementedError(f"No yaml elements for {self.yaml_return} prepared for")
 

@@ -14,7 +14,7 @@ source python_venvs/vm/bin/activate
 
 # bounces-regress_2d Task
 python test_tasks.py \
-    --task bounces-regress \
+    --task 2dbounces-regress \
     --dataset simulations  \
     --dataset_path data/2dBouncing/2dMultiGrav-Y_regen/raw \
     --bsz 64 \

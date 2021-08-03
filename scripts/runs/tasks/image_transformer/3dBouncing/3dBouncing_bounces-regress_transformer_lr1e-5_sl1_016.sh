@@ -12,7 +12,7 @@ cd ../../../../..
 source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 python test_tasks.py \
-    --task bounces-regress \
+    --task 3dbounces-regress \
     --dataset_path data/3dBouncing/3dRegen \
     --model_path .results/3dBouncing_transformer_lr1e-5_sl1_016-epoch=218-valid_loss=0.27.ckpt\
     --linear_probes \
