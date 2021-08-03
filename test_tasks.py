@@ -204,15 +204,6 @@ class FcUpDown2D2Scalars(pl.LightningModule):
         out = self(frames)
         if self.args.task == "mnist":
             out = F.softmax(out, dim=1)
-        elif self.args.task == "grav-pred":
-            out = F.softmax(out, dim=1)
-            label = ((label*10000)+3).round().long().squeeze(1) # Rescale the output to be appropriate for softmax [-0.0003,-0.0002,...,0.0003]
-        elif self.args.task in ["3dbounces-regress","2dbounces-regress"]:
-            label = label.sum(dim=1)
-            label = label.clamp(0,75)   # Cap the sum of both bounce types at 75
-        elif self.args.task == "roller-pred":
-            out = F.softmax(out, dim=1)
-            label = (label*2).long().squeeze(1)
         train_loss = self.criterion(out, label)
         self.manual_backward(train_loss)
         model_opt.step()
