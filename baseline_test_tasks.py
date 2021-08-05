@@ -202,20 +202,25 @@ if __name__ == '__main__':
             ################################
             # Ball bounces regression/prediction
             ################################   
-            elif task in ["bounces-regress", "bounces-pred"]:
-                if dataset == '2dBouncing':
-                    args.in_no = 59
-                    args.out_no = 1
-                else:
-                    args.in_no = 99
-                    args.out_no = 1
+            elif task in ["2dbounces-regress", "bounces-pred"]:
+                args.in_no = 59
+                args.out_no = 1
                     
+                train_dset = SimulationsPreloaded(dataset_path, 'train', 'consecutive', args, yaml_return="bounces")
+                valid_dset = train_dset.clone('val', 'consecutive')
+                test_dset = train_dset.clone('test', 'consecutive')
+
+            elif task in ["3dbounces-regress", "bounces-pred"]:
+                args.in_no = 99
+                args.out_no = 1
+
                 train_dset = SimulationsPreloaded(dataset_path, 'train', 'consecutive', args, yaml_return="bounces")
                 valid_dset = train_dset.clone('val', 'consecutive')
                 test_dset = train_dset.clone('test', 'consecutive')
 
             else:
                 raise ValueError(f'Unknown task {task}')
+
 
             train_loader = DataLoader(train_dset, batch_size=batchsize, num_workers=1, pin_memory=True, shuffle=True)
             valid_loader = DataLoader(valid_dset, batch_size=batchsize, num_workers=1, pin_memory=True, shuffle=False)
