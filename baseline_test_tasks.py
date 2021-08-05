@@ -206,7 +206,7 @@ if __name__ == '__main__':
                 args.in_no = 59
                 args.out_no = 1
                     
-                train_dset = SimulationsPreloaded(dataset_path, 'train', 'consecutive', args, yaml_return="bounces")
+                train_dset = SimulationsPreloaded(dataset_path, 'train', 'consecutive', args, yaml_return="2dbounces")
                 valid_dset = train_dset.clone('val', 'consecutive')
                 test_dset = train_dset.clone('test', 'consecutive')
 
@@ -214,7 +214,7 @@ if __name__ == '__main__':
                 args.in_no = 99
                 args.out_no = 1
 
-                train_dset = SimulationsPreloaded(dataset_path, 'train', 'consecutive', args, yaml_return="bounces")
+                train_dset = SimulationsPreloaded(dataset_path, 'train', 'consecutive', args, yaml_return="3dbounces")
                 valid_dset = train_dset.clone('val', 'consecutive')
                 test_dset = train_dset.clone('test', 'consecutive')
 
