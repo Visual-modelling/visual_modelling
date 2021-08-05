@@ -230,7 +230,7 @@ if __name__ == '__main__':
                 n_outputs = 10
                 max_or_min = "max"
                 monitoring = "valid_acc"
-            elif task in ["segmentation", "pendulum-regress", "bounces-regress", "grav-regress", "roller-regress", "moon-regress", "blocks-regress"]:
+            elif task in ["segmentation", "pendulum-regress", "2dbounces-regress", "3dbounces-regress", "grav-regress", "roller-regress", "moon-regress", "blocks-regress"]:
                 n_outputs = 1
                 max_or_min = "min"
                 monitoring = "valid_loss"
