@@ -120,8 +120,8 @@ if __name__ == '__main__':
     lr = 1e-4
 
     datasets = {
-        '2dBouncing': (('bounces-regress', 'grav-regress'), 'data/2dBouncing/2dMultiGrav-Y_regen/raw'),
-        '3dBouncing': (('bounces-regress',), 'data/3dBouncing/3dRegen'),
+        '2dBouncing': (('2dbounces-regress', 'grav-regress'), 'data/2dBouncing/2dMultiGrav-Y_regen/raw'),
+        '3dBouncing': (('3dbounces-regress',), 'data/3dBouncing/3dRegen'),
         'blocks': (('blocks-regress',), 'data/myphysicslab/Blocks_10000'),
         'mmnist': (('mnist',), ''),
         'moon': (('moon-regress',), 'data/myphysicslab/Moon_10000'),
