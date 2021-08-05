@@ -281,10 +281,12 @@ if __name__ == '__main__':
             callbacks = [checkpoint_callback, early_stopping_callback]
 
             pl_system = PLSystem(in_no=args.in_no, n_outputs=n_outputs, mode='image_probe', lr=lr, task=task)
+            pl_system.testing = False
 
             trainer = pl.Trainer(callbacks=callbacks, logger=wandb_logger, gpus=1, max_epochs=max_epochs, min_epochs=min_epochs)
             trainer.fit(pl_system, train_loader, valid_loader)
 
+            pl_system.testing = True
             trainer.test(test_dataloaders=test_loader, ckpt_path='best')
 
 
