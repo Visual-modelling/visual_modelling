@@ -3,7 +3,7 @@
 #SBATCH --mem 16G
 #SBATCH -p part0
 #SBATCH --job-name TEST_pt_tasks  
-#SBATCH --gres gpu:2
+#SBATCH --gres gpu:1
 #SBATCH -o ../../../../../.results/TEST_pt_tasks.out
 cd ../../../../..
 export PYTHONBREAKPOINT=ipdb.set_trace
