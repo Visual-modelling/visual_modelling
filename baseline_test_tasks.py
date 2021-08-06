@@ -68,17 +68,20 @@ class PLSystem(pl.LightningModule):
 
         if self.task == 'mnist':
             loss = F.cross_entropy(out, label)
-        elif self.task == "bounces-regress":
-            label = label.sum(dim=1, keepdim=True)
-            label = label.clamp(0, 75)
-            loss = F.smooth_l1_loss(out, label)
         else:
-            loss = F.smooth_l1_loss(out, label)
+            loss = F.smooth_l1_loss(out, label, beta=0.01)
 
         self.log('train_loss', loss, on_step=False, on_epoch=True)
         return loss
 
-    def val_test_step(self, batch, name):
+    def val_test_step(self, batch, is_valid=True):
+        if is_valid:
+            name = 'valid'
+            acc_function = self.valid_acc
+        else:
+            name = 'test'
+            acc_function = self.test_acc
+
         if self.task == 'mnist':
             frame, label = batch
             frames = frame.repeat(1, self.in_no, 1, 1)
@@ -89,16 +92,12 @@ class PLSystem(pl.LightningModule):
 
         if self.task == 'mnist':
             out = F.softmax(out)
-            acc = self.valid_acc(out, label)
+            acc = acc_function(out, label)
             self.log(f'{name}_acc', acc, on_step=False, on_epoch=True)
-        elif self.task == "bounces-regress":
-            label = label.sum(dim=1, keepdim=True)
-            label = label.clamp(0, 75)
-            loss = F.smooth_l1_loss(out, label)
-            self.log(f'{name}_loss', loss, on_step=False, on_epoch=True)
         else:
             loss = F.smooth_l1_loss(out, label)
             self.log(f'{name}_loss', loss, on_step=False, on_epoch=True)
+            self.log(f'{name}_l1', F.l1_loss(out, label))
 
     def validation_step(self, valid_batch, batch_idx):
         self.val_test_step(valid_batch, 'valid')
@@ -121,8 +120,8 @@ if __name__ == '__main__':
     lr = 1e-4
 
     datasets = {
-        '2dBouncing': (('bounces-regress', 'grav-regress'), 'data/2dBouncing/2dMultiGrav-Y_regen/raw'),
-        '3dBouncing': (('bounces-regress',), 'data/3dBouncing/3dRegen'),
+        '2dBouncing': (('2dbounces-regress', 'grav-regress'), 'data/2dBouncing/2dMultiGrav-Y_regen/raw'),
+        '3dBouncing': (('3dbounces-regress',), 'data/3dBouncing/3dRegen'),
         'blocks': (('blocks-regress',), 'data/myphysicslab/Blocks_10000'),
         'mmnist': (('mnist',), ''),
         'moon': (('moon-regress',), 'data/myphysicslab/Moon_10000'),
@@ -203,20 +202,25 @@ if __name__ == '__main__':
             ################################
             # Ball bounces regression/prediction
             ################################   
-            elif task in ["bounces-regress", "bounces-pred"]:
-                if dataset == '2dBouncing':
-                    args.in_no = 59
-                    args.out_no = 1
-                else:
-                    args.in_no = 99
-                    args.out_no = 1
+            elif task in ["2dbounces-regress", "bounces-pred"]:
+                args.in_no = 59
+                args.out_no = 1
                     
-                train_dset = SimulationsPreloaded(dataset_path, 'train', 'consecutive', args, yaml_return="bounces")
+                train_dset = SimulationsPreloaded(dataset_path, 'train', 'consecutive', args, yaml_return="2dbounces")
+                valid_dset = train_dset.clone('val', 'consecutive')
+                test_dset = train_dset.clone('test', 'consecutive')
+
+            elif task in ["3dbounces-regress", "bounces-pred"]:
+                args.in_no = 99
+                args.out_no = 1
+
+                train_dset = SimulationsPreloaded(dataset_path, 'train', 'consecutive', args, yaml_return="3dbounces")
                 valid_dset = train_dset.clone('val', 'consecutive')
                 test_dset = train_dset.clone('test', 'consecutive')
 
             else:
                 raise ValueError(f'Unknown task {task}')
+
 
             train_loader = DataLoader(train_dset, batch_size=batchsize, num_workers=1, pin_memory=True, shuffle=True)
             valid_loader = DataLoader(valid_dset, batch_size=batchsize, num_workers=1, pin_memory=True, shuffle=False)
@@ -226,7 +230,7 @@ if __name__ == '__main__':
                 n_outputs = 10
                 max_or_min = "max"
                 monitoring = "valid_acc"
-            elif task in ["segmentation", "pendulum-regress", "bounces-regress", "grav-regress", "roller-regress", "moon-regress", "blocks-regress"]:
+            elif task in ["segmentation", "pendulum-regress", "2dbounces-regress", "3dbounces-regress", "grav-regress", "roller-regress", "moon-regress", "blocks-regress"]:
                 n_outputs = 1
                 max_or_min = "min"
                 monitoring = "valid_loss"
@@ -277,10 +281,12 @@ if __name__ == '__main__':
             callbacks = [checkpoint_callback, early_stopping_callback]
 
             pl_system = PLSystem(in_no=args.in_no, n_outputs=n_outputs, mode='image_probe', lr=lr, task=task)
+            pl_system.testing = False
 
             trainer = pl.Trainer(callbacks=callbacks, logger=wandb_logger, gpus=1, max_epochs=max_epochs, min_epochs=min_epochs)
             trainer.fit(pl_system, train_loader, valid_loader)
 
+            pl_system.testing = True
             trainer.test(test_dataloaders=test_loader, ckpt_path='best')
 
 
