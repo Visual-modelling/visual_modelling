@@ -25,7 +25,7 @@ python test_tasks.py \
     --jobname 149-2dB_200_bounces-regress_2d_59-1_k-3_d-3_lr-1e-6_sl1 \
     --img_type greyscale \
     --model UpDown2D \
-    --model_path '.results/2dBouncingMG-y_59-1_k-3_d-3_lr-1e-4_sl1-mean-epoch=149.ckpt' \
+    --model_path '.results/2dBouncingMG-y_59-1_k-3_d-3_lr-5e-5_sl1-mean-epoch=149.ckpt' \
     --encoder_freeze \
     --linear_probes \
     --shuffle \
