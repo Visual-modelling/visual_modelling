@@ -100,10 +100,10 @@ class PLSystem(pl.LightningModule):
             self.log(f'{name}_l1', F.l1_loss(out, label))
 
     def validation_step(self, valid_batch, batch_idx):
-        self.val_test_step(valid_batch, 'valid')
+        self.val_test_step(valid_batch, is_valid=True)
 
     def test_step(self, test_batch, batch_idx):
-        self.val_test_step(test_batch, 'test')
+        self.val_test_step(test_batch, is_valid=False)
 
     def configure_optimizers(self):
         optimizer = radam.RAdam([p for p in self.parameters() if p.requires_grad], lr=self.lr)#, weight_decay=1e-5)
@@ -281,12 +281,10 @@ if __name__ == '__main__':
             callbacks = [checkpoint_callback, early_stopping_callback]
 
             pl_system = PLSystem(in_no=args.in_no, n_outputs=n_outputs, mode='image_probe', lr=lr, task=task)
-            pl_system.testing = False
 
             trainer = pl.Trainer(callbacks=callbacks, logger=wandb_logger, gpus=1, max_epochs=max_epochs, min_epochs=min_epochs)
             trainer.fit(pl_system, train_loader, valid_loader)
 
-            pl_system.testing = True
             trainer.test(test_dataloaders=test_loader, ckpt_path='best')
 
 
