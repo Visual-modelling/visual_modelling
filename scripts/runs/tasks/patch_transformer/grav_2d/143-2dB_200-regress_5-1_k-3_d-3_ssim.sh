@@ -5,9 +5,9 @@
 #SBATCH -t 2-00:00
 #SBATCH --mem 16G
 #SBATCH -p res-gpu-small
-#SBATCH --job-name pt_117-2dB_200_grav_2d-regress_5-1_k-3_d-3_sl1  
+#SBATCH --job-name pt_143-2dB_200_grav_2d-regress_5-1_k-3_d-3_ssim  
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../../.results/pt_117-2dB_200_grav_2d-regress_5-1_k-3_d-3_sl1.out
+#SBATCH -o ../../../../../.results/pt_143-2dB_200_grav_2d-regress_5-1_k-3_d-3_ssim.out
 cd ../../../../..
 export PYTHONBREAKPOINT=ipdb.set_trace
 source python_venvs/vm/bin/activate
@@ -26,10 +26,10 @@ python test_tasks.py \
     --device 0 \
     --lr 1e-4 \
     --epoch 200 \
-    --jobname pt_117-2dB_200_grav_2d-regress_5-1_k-3_d-3_sl1 \
+    --jobname pt_143-2dB_200_grav_2d-regress_5-1_k-3_d-3_ssim \
     --img_type greyscale \
     --model PatchTrans \
-    --model_path '.results/pt_2dBouncingMG-y_5-1_k-3_d-3_lr-1e-4_sl1-mean-epoch=117.ckpt' \
+    --model_path '.results/pt_2dBouncingMG-y_5-1_k-3_d-3_lr-1e-4_ssim-epoch=143.ckpt' \
     --encoder_freeze \
     --linear_probes \
     --shuffle \
