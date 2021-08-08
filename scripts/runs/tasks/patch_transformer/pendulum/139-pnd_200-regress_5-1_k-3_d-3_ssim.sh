@@ -5,18 +5,18 @@
 #SBATCH -t 2-00:00
 #SBATCH --mem 16G
 #SBATCH -p res-gpu-small
-#SBATCH --job-name pt_142-roll_200_roller-regress_5-1_k-3_d-3_sl1  
+#SBATCH --job-name pt_139-pnd_200_pendulum-regress_5-1_k-3_d-3_ssim  
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../../.results/pt_142-roll_200_roller-regress_5-1_k-3_d-3_sl1.out
+#SBATCH -o ../../../../../.results/pt_139-pnd_200_pendulum-regress_5-1_k-3_d-3_ssim.out
 cd ../../../../..
 export PYTHONBREAKPOINT=ipdb.set_trace
 source python_venvs/vm/bin/activate
 
-# roller-regress Task
+# pendulum Task
 python test_tasks.py \
-    --task roller-regress \
+    --task pendulum-regress \
     --dataset simulations  \
-    --dataset_path data/myphysicslab/RollerFlight_10000_bigger \
+    --dataset_path data/myphysicslab/Pendulum_10000 \
     --bsz 64 \
     --val_bsz 100 \
     --num_workers 1 \
@@ -26,10 +26,10 @@ python test_tasks.py \
     --device 0 \
     --lr 1e-4 \
     --epoch 200 \
-    --jobname pt_142-roll_200_roller-regress_5-1_k-3_d-3_sl1 \
+    --jobname pt_139-pnd_200_pendulum-regress_5-1_k-3_d-3_ssim \
     --img_type greyscale \
     --model PatchTrans \
-    --model_path '.results/pt_rollerFlightBigger_5-1_k-3_d-3_lr-1e-4_sl1-mean-epoch=142.ckpt' \
+    --model_path '.results/pt_pendulumSingleBigger_5-1_k-3_d-3_lr-1e-4_ssim-epoch=139.ckpt' \
     --encoder_freeze \
     --linear_probes \
     --shuffle \

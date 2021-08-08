@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH --ntasks 6
 #SBATCH -p part0
-#SBATCH --job-name pt_2dBouncingMG-y_59-1_k-3_d-3_lr-1e-5_sl1-mean 
+#SBATCH --job-name pt_2dBouncingMG-y_59-1_k-3_d-3_lr-1e-4_sl1-mean 
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../../.results/pt_2dBouncingMG-y_59-1_k-3_d-3_lr-1e-5_sl1-mean.out
+#SBATCH -o ../../../../../.results/pt_2dBouncingMG-y_59-1_k-3_d-3_lr-1e-4_sl1-mean.out
 cd ../../../../..
 source python_venvs/vm/bin/activate
 export MASTER_PORT=10002
@@ -22,10 +22,10 @@ python VM_train.py \
     --krnl_size 3 \
     --padding 1 \
     --device 0 \
-    --lr 1e-5 \
+    --lr 1e-4 \
     --epoch 150 \
     --n_gifs 12 \
-    --jobname pt_2dBouncingMG-y_59-1_k-3_d-3_lr-1e-5_sl1-mean \
+    --jobname pt_2dBouncingMG-y_59-1_k-3_d-3_lr-1e-4_sl1-mean \
     --loss sl1 \
     --reduction mean \
     --img_type greyscale \
