@@ -1,7 +1,11 @@
 #!/bin/bash
-#SBATCH --ntasks 6
+#SBATCH --qos short
+#SBATCH -N 1
+#SBATCH -c 4
+#SBATCH -t 2-00:00
+#SBATCH --mem 12G
 #SBATCH --mem 16G
-#SBATCH -p part0
+#SBATCH -p res-gpu-small
 #SBATCH --job-name TEST_pt_tasks  
 #SBATCH --gres gpu:1
 #SBATCH -o ../../../../../.results/TEST_pt_tasks.out
