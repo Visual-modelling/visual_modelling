@@ -22,9 +22,9 @@ python test_tasks.py \
     --out_no 1 \
     --depth 3 \
     --device 0 \
-    --epoch 200 \
+    --epoch 400 \
     --jobname pt_148-mmn_200_mnist_1-1_k-3_d-3_ssim \
-    --lr 1e-4 \
+    --lr 3e-6 \
     --img_type greyscale \
     --model PatchTrans \
     --model_path '.results/pt_mmnist_5-1_k-3_d-3_lr-5e-4_ssim-epoch=148.ckpt' \

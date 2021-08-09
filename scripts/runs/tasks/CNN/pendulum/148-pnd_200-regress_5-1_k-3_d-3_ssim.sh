@@ -24,8 +24,8 @@ python test_tasks.py \
     --out_no 1 \
     --depth 3 \
     --device 0 \
-    --lr 1e-4 \
-    --epoch 200 \
+    --lr 3e-6 \
+    --epoch 400 \
     --jobname 148-pnd_200_pendulum-regress_5-1_k-3_d-3_ssim \
     --img_type greyscale \
     --model UpDown2D \
