@@ -144,7 +144,16 @@ class FcUpDown2D2Scalars(pl.LightningModule):
             raise ValueError(f"Unknown model: {args.model}")
 
         if self.args.linear_probes:
-            self.probe_fc = nn.Linear(int(probe_len), n_outputs)
+            #self.probe_fc = nn.Linear(int(probe_len), n_outputs)
+            print("CHANGE THIS BACK")
+            self.probe_fc = nn.Sequential(
+                nn.Dropout(0.2),
+                nn.Linear(int(probe_len), 100),#n_outputs),
+                nn.BatchNorm1d(100),
+                nn.GELU(),
+                nn.Dropout(0.2),
+                nn.Linear(100, n_outputs)
+            )
         else:
             self.probe_fc = nn.Sequential(
                 nn.Dropout(0.2),
