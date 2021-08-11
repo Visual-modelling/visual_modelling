@@ -95,7 +95,7 @@ class PLSystem(pl.LightningModule):
             acc = acc_function(out, label)
             self.log(f'{name}_acc', acc, on_step=False, on_epoch=True)
         else:
-            loss = F.smooth_l1_loss(out, label)
+            loss = F.smooth_l1_loss(out, label, beta=0.01)
             self.log(f'{name}_loss', loss, on_step=False, on_epoch=True)
             self.log(f'{name}_l1', F.l1_loss(out, label))
 
