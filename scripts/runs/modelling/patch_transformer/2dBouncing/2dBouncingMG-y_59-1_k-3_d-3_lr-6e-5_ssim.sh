@@ -3,11 +3,11 @@
 #SBATCH -N 1
 #SBATCH -c 4
 #SBATCH -t 2-00:00
-#SBATCH --mem 12G
+#SBATCH --mem 16G
 #SBATCH -p res-gpu-small
-#SBATCH --job-name pt_2dBouncingMG-y_59-1_k-3_d-3_lr-1e-5_ssim 
+#SBATCH --job-name pt_2dBouncingMG-y_59-1_k-3_d-3_lr-6e-5_ssim 
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../../.results/pt_2dBouncingMG-y_59-1_k-3_d-3_lr-1e-5_ssim.out
+#SBATCH -o ../../../../../.results/pt_2dBouncingMG-y_59-1_k-3_d-3_lr-6e-5_ssim.out
 cd ../../../../..
 source python_venvs/vm/bin/activate
 export MASTER_PORT=10003
@@ -26,10 +26,10 @@ python VM_train.py \
     --krnl_size 3 \
     --padding 1 \
     --device 0 \
-    --lr 1e-5 \
+    --lr 6e-5 \
     --epoch 150 \
     --n_gifs 12 \
-    --jobname pt_2dBouncingMG-y_59-1_k-3_d-3_lr-1e-5_ssim \
+    --jobname pt_2dBouncingMG-y_59-1_k-3_d-3_lr-6e-5_ssim \
     --loss ssim \
     --reduction mean \
     --img_type greyscale \
