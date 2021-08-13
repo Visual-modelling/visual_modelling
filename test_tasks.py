@@ -189,6 +189,7 @@ class FcUpDown2D2Scalars(pl.LightningModule):
         return probe_ret
 
     def training_step(self, train_batch, batch_idx):
+        self.model.eval()
         if self.args.task == "mnist":
             frame, label = train_batch
             frames = frame.repeat(1,self.args.in_no,1,1)
