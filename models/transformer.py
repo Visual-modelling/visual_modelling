@@ -102,7 +102,9 @@ class ImageTransformer(nn.Module):
             raise ValueError(f"Unknown norm_layer: {args.norm_layer}")
 
         # output_activation
-        if args.output_activation == 'linear-256':
+        if args.output_activation == 'hardsigmoid':
+            self.output_activation_function = nn.functional.hardsigmoid
+        elif args.output_activation == 'linear-256':
             self.output_activation_function = linear_256
         elif args.output_activation == 'hardsigmoid-256':
             self.output_activation_function = hardsigmoid_256

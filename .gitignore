@@ -11,6 +11,7 @@ tools/*.pyc
 tools/*.pyo
 
 .results/*
+.results_old/*
 .old
 
 data
