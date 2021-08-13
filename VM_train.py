@@ -66,8 +66,6 @@ def plot_self_out(pl_system):
             start_frames, gt_frames, vid_name, _ = next(self_out_loader)
             start_frames = start_frames.float().to(pl_system.device)
             og_frames = start_frames.clone().detach()
-            #start_frames = start_frames.cpu().detach().byte()
-            #out = out.cpu().detach().byte()
             gif_frames = []
             if args.self_output_n == -1:
                 self_output_n = gt_frames.shape[1]
@@ -79,17 +77,19 @@ def plot_self_out(pl_system):
                     start_frames = torch.cat([ start_frames[:,args.out_no:args.in_no] , out ], 1)
                     out = pl_system(start_frames)
                     for n in range(args.out_no):
-                        gif_frames.append(out[0][n].cpu().detach().byte())
+                        gif_frames.append(out[0][n].cpu().detach())
                     # Add the ground truth frame side by side to generated frame
             else:
                 out = pl_system(start_frames)[:, -1:, ...]
                 for itr in range(0, self_output_n):
                     start_frames = torch.cat([start_frames, out], 1)
                     out = pl_system(start_frames)[:, -1:, ...]
-                    gif_frames.append(out[0][0].cpu().detach().byte())
+                    gif_frames.append(out[0][0].cpu().detach())
                     # Add the ground truth frame side by side to generated frame
             gif_frames = gif_frames[:gt_frames.shape[1]]
             gif_metrics = get_gif_metrics(gif_frames, gt_frames, metrics)
+            gif_frames = (torch.stack(gif_frames)*255).to(torch.uint8)
+            gt_frames =  ((gt_frames)*255).to(torch.uint8)
             colour_gradients = [255,240,225,210,195,180,165,150,135,120,120,135,150,165,180,195,210,225,240,255]   # Make sure that white/grey backgrounds dont hinder the frame count
 
             # GT vs Predicted
@@ -97,7 +97,7 @@ def plot_self_out(pl_system):
             # Go up to 3 frames into og_frames
             past_n = int(og_frames[0][-3:].shape[0])
             for i in range(0,past_n):
-                start_gt = og_frames[0][-past_n:][i].cpu().detach().byte()
+                start_gt = og_frames[0][-past_n:][i].cpu().detach()
                 start_gt = torch.from_numpy(putText(np.array(start_gt), f"{i-past_n}", (0,start_gt.shape[1]), FONT_HERSHEY_SIMPLEX, fontScale = 0.55, color = (colour_gradients[i%len(colour_gradients)])))
                 gt_vs_pred_frm.append(torch.cat([start_gt, start_gt], dim=0))
 
@@ -109,9 +109,6 @@ def plot_self_out(pl_system):
                 gt_vs_pred_frm.append(torch.cat([gif_frames[i], temp_gt], dim=0))
             gt_vs_pred_frm = torch.cat(gt_vs_pred_frm, dim=1)
             gt_vs_pred.append(wandb.Image(gt_vs_pred_frm.numpy()))
-
-            # Number the frames to see which frame of the gif in output plut
-            gt_frames = [torch.from_numpy(putText(np.array(frame), f"{f_idx}", (0,frame.shape[1]), FONT_HERSHEY_SIMPLEX, fontScale = 0.55, color = (colour_gradients[f_idx%len(colour_gradients)]))) for f_idx, frame in enumerate(gt_frames[0])]
 
             # Ball distance plot
             img_h = start_frames.shape[2]
@@ -186,8 +183,12 @@ def plot_self_out(pl_system):
             sl1_image = torch.from_numpy(np.copy(sl1_image)).permute(2,0,1)#.unsqueeze(0)
             sl1_image = sl1_image.float().mean(0).byte()
 
+            # Number the frames to see which frame of the gif in output plut
+            gt_frames = [torch.from_numpy(putText(np.array(frame), f"{f_idx}", (0,frame.shape[1]), FONT_HERSHEY_SIMPLEX, fontScale = 0.55, color = (colour_gradients[f_idx%len(colour_gradients)]))) for f_idx, frame in enumerate(gt_frames[0])]
+
+
             # Gif
-            gif_frames = [ torch.cat( [torch.cat( [torch.stack(gif_frames)[n_frm], gt_frames[n_frm]], dim=0), ball_distance_image, psnr_image, ssim_image, sl1_image], dim=1)for n_frm in range(len(gif_frames)) ]
+            gif_frames = [ torch.cat( [torch.cat( [gif_frames[n_frm], gt_frames[n_frm]], dim=0), ball_distance_image, psnr_image, ssim_image, sl1_image], dim=1)for n_frm in range(len(gif_frames)) ]
             gif_save_path = os.path.join(args.results_dir, f"{ngif}-{vid_name[0]}.gif") 
             # TODO gifs from different datasets with the same name will overwrite eachother. this is niche and not worth the time right now
             imageio.mimsave(gif_save_path, gif_frames)
@@ -290,6 +291,7 @@ class ModellingSystem(pl.LightningModule):
 
         # Criterion and plotting loss
         if args.loss == "mse":
+            raise NotImplementedError("Not supported")
             self.valid_loss = torchmetrics.functional.mean_squared_error
             self.train_loss = torchmetrics.functional.mean_squared_error
             self.criterion =  torchmetrics.functional.mean_squared_error
@@ -298,9 +300,9 @@ class ModellingSystem(pl.LightningModule):
             self.valid_loss = None
             self.train_loss = None
         elif args.loss == "sl1":
-            self.valid_loss = nn.SmoothL1Loss(reduction=args.reduction)#.to(self.device)
-            self.train_loss = nn.SmoothL1Loss(reduction=args.reduction)#.to(self.device)
-            self.criterion = nn.SmoothL1Loss(reduction=args.reduction)#.to(self.device)
+            self.valid_loss = nn.SmoothL1Loss(reduction=args.reduction, beta=0.01)#.to(self.device)
+            self.train_loss = nn.SmoothL1Loss(reduction=args.reduction, beta=0.01)#.to(self.device)
+            self.criterion = nn.SmoothL1Loss(reduction=args.reduction, beta=0.01)#.to(self.device)
         elif args.loss == "ssim":
             self.valid_loss = torchmetrics.functional.ssim
             self.train_loss = torchmetrics.functional.ssim

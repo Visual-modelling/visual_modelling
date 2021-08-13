@@ -150,7 +150,7 @@ class Simulations(Dataset):
             yaml_return /= 5.578098184865519
         else:
             raise NotImplementedError(f"No yaml elements for {self.yaml_return} prepared for")
-
+        frames_in, frames_out = frames_in.float()/255, frames_out.float()/255
         return frames_in, frames_out, data_params['vid_name'], yaml_return
 
     @staticmethod

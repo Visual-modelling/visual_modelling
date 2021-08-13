@@ -153,9 +153,9 @@ class OutConv(nn.Module):
 
         self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=1)
         if args.img_type == "binary":
-            self.img_activation = F.sigmoid
+            self.img_activation = torch.sigmoid
         if args.img_type == "greyscale":
-            self.img_activation = sigmoid_256
+            self.img_activation = torch.sigmoid #sigmoid_256
         else:
             raise(Exception("Not yet implemented this image activation"))
 

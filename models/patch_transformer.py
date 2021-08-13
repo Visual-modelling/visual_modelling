@@ -440,6 +440,6 @@ class VM_MixSeg(nn.Module):
         out = F.fold(out, output_size=(64,64), kernel_size=(4,4), stride=(4,4)) # (B, out_chans, 64, 64) NOTE spatial dimensions of patches are preserved
         probe_ret.append(out)
         if self.return_attns:
-            return sigmoid_256(out), probe_ret, logits_ret
+            return torch.sigmoid(out), probe_ret, logits_ret
         else:
-            return sigmoid_256(out), probe_ret
+            return torch.sigmoid(out), probe_ret

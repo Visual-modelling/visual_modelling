@@ -12,6 +12,8 @@ def get_circle(image):
     param2 = 10  # smaller value-> more false circles
     minRadius = 4
     maxRadius = minRadius+1
+    # Input image is in range 0-1, scale back up to 255
+    image = (image*255).round().astype(np.uint8)
     circles = cv2.HoughCircles(image, cv2.HOUGH_GRADIENT, 1, minDist, param1=param1, param2=param2, minRadius=minRadius, maxRadius=maxRadius)
     cur_x = None
     cur_y = None
