@@ -1,7 +1,11 @@
 #!/bin/bash
-#SBATCH --ntasks 6
+#SBATCH --qos short
+#SBATCH -N 1
+#SBATCH -c 4
+#SBATCH -t 2-00:00
+#SBATCH --mem 12G
 #SBATCH --mem 21G
-#SBATCH -p part0
+#SBATCH -p res-gpu-small
 #SBATCH --job-name Comparison_bsz-4_3dBouncing_5-1_k-3_d-3_lr-1e-4_sl1-mean 
 #SBATCH --gres gpu:1
 #SBATCH -o ../../../../../.results/Comparison_bsz-4_3dBouncing_5-1_k-3_d-3_lr-1e-4_sl1-mean.out
