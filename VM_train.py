@@ -272,7 +272,7 @@ class ModellingSystem(pl.LightningModule):
             self.model = DeansTransformer(in_dim=args.d_model, layers=args.n_layers, heads=args.nhead)
         elif args.model == "PatchTrans":
             from models.patch_transformer import VM_MixSeg
-            self.model = VM_MixSeg(img_size=64, in_chans=args.in_no, out_chans=args.out_no)
+            self.model = VM_MixSeg(args=args, img_size=64, in_chans=args.in_no, out_chans=args.out_no)
         else:
             raise ValueError(f"Unknown model: {args.model}")
 

@@ -65,7 +65,7 @@ class FcUpDown2D2Scalars(pl.LightningModule):
                 self.model.load_state_dict(state_dict)
         elif args.model == 'PatchTrans':
             from models.patch_transformer import VM_MixSeg
-            self.model = VM_MixSeg(in_chans=args.in_no, out_chans=args.out_no, img_size=64)
+            self.model = VM_MixSeg(args=args, in_chans=args.in_no, out_chans=args.out_no, img_size=64)
             # Checkpointing
             if args.model_path != "":   # Empty string implies no loading
                 checkpoint = torch.load(args.model_path)
@@ -89,6 +89,7 @@ class FcUpDown2D2Scalars(pl.LightningModule):
         if args.encoder_freeze:
             for param in self.model.parameters():
                 param.requires_grad = False
+            self.model.eval()
 
         # Different tasks will be expecting different output numbers
         if args.task == "mnist":
@@ -155,9 +156,6 @@ class FcUpDown2D2Scalars(pl.LightningModule):
                 nn.Linear(100, n_outputs)
             )
 
-        # Manual optimisation to allow slower training for previous layers
-        self.automatic_optimization = False
-
         # Validation metrics
         self.valid_acc = torchmetrics.Accuracy()
 
@@ -175,9 +173,8 @@ class FcUpDown2D2Scalars(pl.LightningModule):
             raise NotImplementedError(f"Task: '{args.task}' has not got a specified criterion")
 
     def configure_optimizers(self):
-        model_opt = radam.RAdam([p for p in self.model.parameters()], lr=self.args.lr)#, weight_decay=1e-5)
-        probe_fc_opt = radam.RAdam([p for p in self.probe_fc.parameters()], lr=self.args.lr)#, weight_decay=1e-5)
-        return model_opt, probe_fc_opt
+        optimizer = radam.RAdam([p for p in self.model.parameters()], lr=self.args.lr)
+        return optimizer
 
     def forward(self, x):
         # Through the encoder
@@ -191,10 +188,7 @@ class FcUpDown2D2Scalars(pl.LightningModule):
         probe_ret = self.probe_fc(probe_ret)
         return probe_ret
 
-    def training_step(self, train_batch, batch_idx, optimizer_idx):
-        model_opt, probe_fc_opt = self.optimizers()
-        model_opt.zero_grad()
-        probe_fc_opt.zero_grad()
+    def training_step(self, train_batch, batch_idx):
         if self.args.task == "mnist":
             frame, label = train_batch
             frames = frame.repeat(1,self.args.in_no,1,1)
@@ -205,12 +199,10 @@ class FcUpDown2D2Scalars(pl.LightningModule):
         if self.args.task == "mnist":
             out = F.softmax(out, dim=1)
         train_loss = self.criterion(out, label)
-        self.manual_backward(train_loss)
-        model_opt.step()
-        probe_fc_opt.step()
         self.log("train_loss", train_loss, prog_bar=True, on_step=False, on_epoch=True)
         if self.args.task in ["mnist","mocap","hdmb51","grav-pred","bounces-pred","roller-pred"]:
             self.log("train_acc", self.train_acc(out, label), prog_bar=True, on_step=False, on_epoch=True)
+        return train_loss
 
     def validation_step(self, valid_batch, batch_idx):
         if self.args.task == "mnist":
@@ -243,63 +235,63 @@ class FcUpDown2D2Scalars(pl.LightningModule):
         self.validation_step(test_batch, batch_idx)
 
 
-class FCUpDown2D_2_Segmentation(pl.LightningModule):
-    def __init__(self, args):
-        super().__init__()
-
-        self.args = args
-        self.model = FCUpDown2D(args)
-
-        # Freeze the CNN weights
-        if args.encoder_freeze:
-            raise ValueError("encoder_freeze argument does not make sense in this segmentation model")
-            for param in self.model.parameters():
-                param.requires_grad = False
-
-        # Checkpointing
-        if args.model_path != "":   # Empty string implies no loading
-            checkpoint = torch.load(args.model_path)
-            state_dict = checkpoint['state_dict']
-            # need to change the names of the state_dict keys from preloaded model
-            state_dict = {".".join(mod_name.split(".")[1:]):mod for mod_name, mod in state_dict.items()}
-            # handle differences in inputs by repeating or removing input layers
-            if args.in_no != state_dict['UDChain.layers.0.maxpool_conv.1.double_conv.0.weight'].shape[1]:
-                increase_ratio = math.ceil(args.in_no / state_dict['UDChain.layers.0.maxpool_conv.1.double_conv.0.weight'].shape[1])
-                state_dict['UDChain.layers.0.maxpool_conv.1.double_conv.0.weight'] = state_dict['UDChain.layers.0.maxpool_conv.1.double_conv.0.weight'].repeat(1,increase_ratio,1,1)[:,:args.in_no]
-                # Figure out the position of the final layer with depth
-                final_layer = (2*args.depth)+2-1    # -1 for python indexing
-                increase_ratio = math.ceil(args.out_no / state_dict[f"UDChain.layers.{final_layer}.conv.weight"].shape[0])
-                state_dict[f"UDChain.layers.{final_layer}.conv.weight"] = state_dict[f"UDChain.layers.{final_layer}.conv.weight"].repeat(increase_ratio,1,1,1)[:args.out_no]
-                state_dict[f"UDChain.layers.{final_layer}.conv.bias"] = state_dict[f"UDChain.layers.{final_layer}.conv.bias"].repeat(increase_ratio)[:args.out_no]
-            self.model.load_state_dict(state_dict)
-        self.criterion = tools.loss.Smooth_L1_pl(reduction="mean")
-
-    def configure_optimizers(self):
-        optimizer = radam.RAdam([p for p in self.parameters() if p.requires_grad], lr=1e-6)#, weight_decay=1e-5)
-        return optimizer
-
-    def forward(self, x):
-        # Through the encoder
-        out, _ = self.model(x)
-        return out
-
-    def training_step(self, train_batch, batch_idx):
-        frame, gt_frame, vid_name, _ = train_batch
-        frame, gt_frame = frame.float(), gt_frame.float()
-        frames = frame.repeat(1,self.args.in_no,1,1)
-        out = self(frames)
-        train_loss = self.criterion(out, gt_frame)
-        self.log("train_loss", train_loss, prog_bar=True, on_step=False, on_epoch=True)
-        return train_loss
-
-    def validation_step(self, valid_batch, batch_idx):
-        frame, gt_frame, vid_name, _ = valid_batch
-        frame, gt_frame = frame.float(), gt_frame.float()
-        frames = frame.repeat(1,self.args.in_no,1,1)
-        out = self(frames)
-        valid_loss = self.criterion(out, gt_frame)
-        self.log("valid_loss", valid_loss, on_step=False, on_epoch=True)
-        return valid_loss
+#class FCUpDown2D_2_Segmentation(pl.LightningModule):
+#    def __init__(self, args):
+#        super().__init__()
+#
+#        self.args = args
+#        self.model = FCUpDown2D(args)
+#
+#        # Freeze the CNN weights
+#        if args.encoder_freeze:
+#            raise ValueError("encoder_freeze argument does not make sense in this segmentation model")
+#            for param in self.model.parameters():
+#                param.requires_grad = False
+#
+#        # Checkpointing
+#        if args.model_path != "":   # Empty string implies no loading
+#            checkpoint = torch.load(args.model_path)
+#            state_dict = checkpoint['state_dict']
+#            # need to change the names of the state_dict keys from preloaded model
+#            state_dict = {".".join(mod_name.split(".")[1:]):mod for mod_name, mod in state_dict.items()}
+#            # handle differences in inputs by repeating or removing input layers
+#            if args.in_no != state_dict['UDChain.layers.0.maxpool_conv.1.double_conv.0.weight'].shape[1]:
+#                increase_ratio = math.ceil(args.in_no / state_dict['UDChain.layers.0.maxpool_conv.1.double_conv.0.weight'].shape[1])
+#                state_dict['UDChain.layers.0.maxpool_conv.1.double_conv.0.weight'] = state_dict['UDChain.layers.0.maxpool_conv.1.double_conv.0.weight'].repeat(1,increase_ratio,1,1)[:,:args.in_no]
+#                # Figure out the position of the final layer with depth
+#                final_layer = (2*args.depth)+2-1    # -1 for python indexing
+#                increase_ratio = math.ceil(args.out_no / state_dict[f"UDChain.layers.{final_layer}.conv.weight"].shape[0])
+#                state_dict[f"UDChain.layers.{final_layer}.conv.weight"] = state_dict[f"UDChain.layers.{final_layer}.conv.weight"].repeat(increase_ratio,1,1,1)[:args.out_no]
+#                state_dict[f"UDChain.layers.{final_layer}.conv.bias"] = state_dict[f"UDChain.layers.{final_layer}.conv.bias"].repeat(increase_ratio)[:args.out_no]
+#            self.model.load_state_dict(state_dict)
+#        self.criterion = tools.loss.Smooth_L1_pl(reduction="mean")
+#
+#    def configure_optimizers(self):
+#        optimizer = radam.RAdam([p for p in self.parameters() if p.requires_grad], lr=1e-6)#, weight_decay=1e-5)
+#        return optimizer
+#
+#    def forward(self, x):
+#        # Through the encoder
+#        out, _ = self.model(x)
+#        return out
+#
+#    def training_step(self, train_batch, batch_idx):
+#        frame, gt_frame, vid_name, _ = train_batch
+#        frame, gt_frame = frame.float(), gt_frame.float()
+#        frames = frame.repeat(1,self.args.in_no,1,1)
+#        out = self(frames)
+#        train_loss = self.criterion(out, gt_frame)
+#        self.log("train_loss", train_loss, prog_bar=True, on_step=False, on_epoch=True)
+#        return train_loss
+#
+#    def validation_step(self, valid_batch, batch_idx):
+#        frame, gt_frame, vid_name, _ = valid_batch
+#        frame, gt_frame = frame.float(), gt_frame.float()
+#        frames = frame.repeat(1,self.args.in_no,1,1)
+#        out = self(frames)
+#        valid_loss = self.criterion(out, gt_frame)
+#        self.log("valid_loss", valid_loss, on_step=False, on_epoch=True)
+#        return valid_loss
 
 
 if __name__ == "__main__":
