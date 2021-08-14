@@ -5,21 +5,21 @@
 #SBATCH -t 2-00:00
 #SBATCH --mem 28G
 #SBATCH -p res-gpu-small
-#SBATCH --job-name 2dBouncing_transformer_lr1e-5_ssim_59in_020 
+#SBATCH --job-name 2dBouncing_transformer_lr1e-5_ssim_021 
 #SBATCH --gres gpu:1 
-#SBATCH -o ../../../../../.results/2dBouncing_transformer_lr1e-5_ssim_59in_020.out
+#SBATCH -o ../../../../../.results/2dBouncing_transformer_lr1e-5_ssim_021.out
 cd ../../../../..
 source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 python VM_train.py \
     --dataset simulations \
     --dataset_path data/2dBouncing/2dMultiGrav-Y_regen/raw \
-    --jobname 2dBouncing_transformer_lr1e-5_ssim_59in_020 \
+    --jobname 2dBouncing_transformer_lr1e-5_ssim_021 \
     --split_condition tv_ratio:8-1-1 \
     --bsz 64 \
     --val_bsz 64 \
     --num_workers 1 \
-    --in_no 59 \
+    --in_no 5 \
     --out_no 1 \
     --device 0 \
     --epoch 500 \
@@ -46,4 +46,4 @@ python VM_train.py \
     --feedback_training_iters 10 \
     --sequence_loss_factor 0.2 \
     --loss ssim \
-    --lr 1e-4 \
+    --lr 1e-5 \

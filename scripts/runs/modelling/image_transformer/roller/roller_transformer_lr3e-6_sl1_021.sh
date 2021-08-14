@@ -5,26 +5,25 @@
 #SBATCH -t 2-00:00
 #SBATCH --mem 28G
 #SBATCH -p res-gpu-small
-#SBATCH --job-name 2dBouncing_transformer_lr1e-5_ssim_59in_020 
+#SBATCH --job-name roller_transformer_lr3e-6_sl1_021 
 #SBATCH --gres gpu:1 
-#SBATCH -o ../../../../../.results/2dBouncing_transformer_lr1e-5_ssim_59in_020.out
+#SBATCH -o ../../../../../.results/roller_transformer_lr3e-6_sl1_021.out
 cd ../../../../..
 source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 python VM_train.py \
     --dataset simulations \
-    --dataset_path data/2dBouncing/2dMultiGrav-Y_regen/raw \
-    --jobname 2dBouncing_transformer_lr1e-5_ssim_59in_020 \
+    --dataset_path data/myphysicslab/RollerFlight_10000_bigger \
+    --jobname roller_transformer_lr3e-6_sl1_021 \
     --split_condition tv_ratio:8-1-1 \
     --bsz 64 \
     --val_bsz 64 \
     --num_workers 1 \
-    --in_no 59 \
+    --in_no 5 \
     --out_no 1 \
     --device 0 \
     --epoch 500 \
     --early_stopping 10 \
-    --min_epochs 40 \
     --n_gifs 20 \
     --reduction mean \
     --img_type greyscale \
@@ -45,5 +44,5 @@ python VM_train.py \
     --mask \
     --feedback_training_iters 10 \
     --sequence_loss_factor 0.2 \
-    --loss ssim \
-    --lr 1e-5 \
+    --loss sl1 \
+    --lr 3e-6 \

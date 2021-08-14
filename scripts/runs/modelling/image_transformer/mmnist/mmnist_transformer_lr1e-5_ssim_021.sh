@@ -5,16 +5,16 @@
 #SBATCH -t 2-00:00
 #SBATCH --mem 28G
 #SBATCH -p res-gpu-small
-#SBATCH --job-name blocks_transformer_lr1e-5_ssim_020 
+#SBATCH --job-name mmnist_transformer_lr1e-5_ssim_021 
 #SBATCH --gres gpu:1 
-#SBATCH -o ../../../../../.results/blocks_transformer_lr1e-5_ssim_020.out
+#SBATCH -o ../../../../../.results/mmnist_transformer_lr1e-5_ssim_021.out
 cd ../../../../..
 source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 python VM_train.py \
     --dataset simulations \
-    --dataset_path data/myphysicslab/Blocks_10000 \
-    --jobname blocks_transformer_lr1e-5_ssim_020 \
+    --dataset_path data/moving_mnist/1_2_3 \
+    --jobname mmnist_transformer_lr1e-5_ssim_021 \
     --split_condition tv_ratio:8-1-1 \
     --bsz 64 \
     --val_bsz 64 \
