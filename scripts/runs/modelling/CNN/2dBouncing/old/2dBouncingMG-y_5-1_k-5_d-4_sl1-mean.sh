@@ -3,8 +3,8 @@
 #SBATCH -N 1
 #SBATCH -c 4
 #SBATCH -t 2-00:00
-#SBATCH --mem 12G
-#SBATCH --mem 21G
+#SBATCH --mem 116G
+#SBATCH --mem 16G
 #SBATCH -p res-gpu-small
 #SBATCH --job-name 2dBouncingMG-y_5-1_k-5_d-4_sl1-mean 
 #SBATCH --gres gpu:1

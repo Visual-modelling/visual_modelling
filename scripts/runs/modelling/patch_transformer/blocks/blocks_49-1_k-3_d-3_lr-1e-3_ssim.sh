@@ -3,7 +3,7 @@
 #SBATCH -N 1
 #SBATCH -c 4
 #SBATCH -t 2-00:00
-#SBATCH --mem 17G
+#SBATCH --mem 16G
 #SBATCH -p res-gpu-small
 #SBATCH --job-name pt_blocks_49-1_k-3_d-3_lr-1e-3_ssim 
 #SBATCH --gres gpu:1
