@@ -5,16 +5,16 @@
 #SBATCH -t 2-00:00
 #SBATCH --mem 28G
 #SBATCH -p res-gpu-small
-#SBATCH --job-name pendulum_transformer_lr1e-5_sl1_020 
+#SBATCH --job-name pendulum_transformer_lr3e-6_sl1_021 
 #SBATCH --gres gpu:1 
-#SBATCH -o ../../../../../.results/pendulum_transformer_lr1e-5_sl1_020.out
+#SBATCH -o ../../../../../.results/pendulum_transformer_lr3e-6_sl1_021.out
 cd ../../../../..
 source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 python VM_train.py \
     --dataset simulations \
     --dataset_path data/myphysicslab/Pendulum_10000 \
-    --jobname pendulum_transformer_lr1e-5_sl1_020 \
+    --jobname pendulum_transformer_lr3e-6_sl1_021 \
     --split_condition tv_ratio:8-1-1 \
     --bsz 64 \
     --val_bsz 64 \
@@ -46,4 +46,4 @@ python VM_train.py \
     --feedback_training_iters 10 \
     --sequence_loss_factor 0.2 \
     --loss sl1 \
-    --lr 1e-5 \
+    --lr 3e-6 \
