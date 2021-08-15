@@ -30,4 +30,5 @@ python VM_train.py \
     --img_type greyscale \
     --model UpDown2D \
     --shuffle \
+    --disable_preload \
     --wandb

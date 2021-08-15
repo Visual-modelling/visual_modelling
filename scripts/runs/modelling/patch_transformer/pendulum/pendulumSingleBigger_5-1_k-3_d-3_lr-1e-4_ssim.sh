@@ -31,4 +31,5 @@ python VM_train.py \
     --img_type greyscale \
     --model PatchTrans \
     --shuffle \
+    --disable_preload \
     --wandb
