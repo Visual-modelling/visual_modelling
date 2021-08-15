@@ -256,6 +256,9 @@ class Simulations(Dataset):
                 if os.path.exists(config_path):
                     with open(config_path, 'r') as config_file:
                         config = yaml.load(config_file, Loader=yaml.Loader)
+                        config.pop('simulation_url', None)
+                        config.pop('date', None)
+                        config.pop('random_idx', None)
                 else:
                     print(f"CONFIG FILES DO NOT EXIST: {config_path}")
                     config = {}
