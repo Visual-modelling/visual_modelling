@@ -63,7 +63,6 @@ class PLSystem(pl.LightningModule):
             frames = frame.repeat(1, self.in_no, 1, 1)
         else:
             frames, _, _, label = train_batch
-        frames = frames.float()
         out = self.net(frames)
 
         if self.task == 'mnist':
@@ -117,7 +116,7 @@ if __name__ == '__main__':
 
     batchsize = 64
 
-    lr = 1e-4
+    lr = 1e-5
 
     datasets = {
         '2dBouncing': (('2dbounces-regress', 'grav-regress'), 'data/2dBouncing/2dMultiGrav-Y_regen/raw'),
@@ -286,5 +285,3 @@ if __name__ == '__main__':
             trainer.fit(pl_system, train_loader, valid_loader)
 
             trainer.test(test_dataloaders=test_loader, ckpt_path='best')
-
-
