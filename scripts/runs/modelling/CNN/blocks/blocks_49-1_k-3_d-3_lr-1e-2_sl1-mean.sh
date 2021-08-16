@@ -4,33 +4,31 @@
 #SBATCH -c 4
 #SBATCH -t 2-00:00
 #SBATCH --mem 21G
-#SBATCH --mem 21G
 #SBATCH -p res-gpu-small
-#SBATCH --job-name Comparison_bsz-1_2dBouncingMG-y_5-1_k-3_d-3_lr-1e-4_sl1-mean 
+#SBATCH --job-name blocks_49-1_k-3_d-3_lr-1e-2_sl1-mean 
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../../.results/Comparison_bsz-1_2dBouncingMG-y_5-1_k-3_d-3_lr-1e-4_sl1-mean.out
+#SBATCH -o ../../../../../.results/blocks_49-1_k-3_d-3_lr-1e-2_sl1-mean.out
 cd ../../../../..
 source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 # Pretrain
 python VM_train.py \
     --dataset simulations \
-    --dataset_path data/2dBouncing/2dMultiGrav-Y_regen/raw \
+    --dataset_path data/myphysicslab/Blocks_10000 \
     --split_condition tv_ratio:8-1-1 \
-    --bsz 1 \
-    --lr 1e-5 \
+    --bsz 64 \
     --val_bsz 100 \
-    --num_workers 0 \
-    --in_no 5 \
+    --num_workers 1 \
+    --in_no 49 \
     --out_no 1 \
     --depth 3 \
     --krnl_size 3 \
     --padding 1 \
-    --lr 1e-4 \
     --device 0 \
+    --lr 1e-2 \
     --epoch 150 \
-    --n_gifs 12 \
-    --jobname Comparison_bsz-1_2dBouncingMG-y_5-1_k-3_d-3_lr-1e-4_sl1-mean \
+    --n_gifs 20 \
+    --jobname blocks_49-1_k-3_d-3_lr-1e-2_sl1-mean \
     --loss sl1 \
     --reduction mean \
     --img_type greyscale \
