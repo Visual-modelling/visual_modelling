@@ -29,7 +29,7 @@ from tqdm import tqdm
 import tools.loss
 import tools.radam as radam
 import tools.utils as utils
-from dataset import SimulationsPreloaded
+from dataset import SimulationsPreloaded, Simulations
 from tools.utils import model_fwd
 from tools.ball_distance_metric import calculate_metric
 from models.UpDown2D import FCUpDown2D
@@ -459,6 +459,7 @@ if __name__ == "__main__":
     parser.add_argument_group("Shared Model argmuents")
     parser.add_argument("--model", type=str, default="UpDown2D", choices=["UpDown2D", "UpDown3D", "image_transformer", "image_sequence_transformer", "deans_transformer", "PatchTrans"], help="Type of model to run")
     parser.add_argument("--img_type", type=str, default="binary", choices=["binary", "greyscale", "RGB"], help="Type of input image")
+    parser.add_argument("--disable_preload", action="store_true", help="stop the preloading of the dataset object")
 
 
     parser.add_argument_group("2D and 3D CNN specific arguments")
@@ -510,12 +511,22 @@ if __name__ == "__main__":
     ########
 
     #### Make sure the dataset object is configured properly
-    dataset_switch = {
-        "simulations": SimulationsPreloaded,
-        "mmnist": SimulationsPreloaded,  # This may change one day, but this works just fine
-        "mocap": SimulationsPreloaded,
-        "hdmb51": SimulationsPreloaded,
-    }
+    if args.disable_preload:
+        if os.uname()[1] == "ncc1":
+            raise ValueError("Do not disable preloading on the NCC. It will be too slow")
+        dataset_switch = {
+            "simulations": Simulations,
+            "mmnist": Simulations,  # This may change one day, but this works just fine
+            "mocap": Simulations,
+            "hdmb51": Simulations,
+        }
+    else:
+        dataset_switch = {
+            "simulations": SimulationsPreloaded,
+            "mmnist": SimulationsPreloaded,  # This may change one day, but this works just fine
+            "mocap": SimulationsPreloaded,
+            "hdmb51": SimulationsPreloaded,
+        }
     dataset_list = args.dataset_path
     train_list = []
     valid_list = []
