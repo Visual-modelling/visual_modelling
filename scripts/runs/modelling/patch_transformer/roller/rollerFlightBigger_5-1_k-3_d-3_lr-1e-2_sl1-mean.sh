@@ -1,17 +1,17 @@
 #!/bin/bash
 #SBATCH --ntasks 6
 #SBATCH -p part0
-#SBATCH --job-name pt_pendulumSingleBigger_5-1_k-3_d-3_lr-1e-4_ssim 
+#SBATCH --job-name pt_rollerFlightBigger_5-1_k-3_d-3_lr-1e-2_sl1-mean 
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../../.results/pt_pendulumSingleBigger_5-1_k-3_d-3_lr-1e-4_ssim.out
+#SBATCH -o ../../../../../.results/pt_rollerFlightBigger_5-1_k-3_d-3_lr-1e-2_sl1-mean.out
 cd ../../../../..
 source python_venvs/vm/bin/activate
-export MASTER_PORT=10021
+export MASTER_PORT=10022
 export PYTHONBREAKPOINT=ipdb.set_trace
 # Pretrain
 python VM_train.py \
     --dataset simulations \
-    --dataset_path data/myphysicslab/Pendulum_10000 \
+    --dataset_path data/myphysicslab/RollerFlight_10000_bigger \
     --split_condition tv_ratio:8-1-1 \
     --bsz 64 \
     --val_bsz 100 \
@@ -22,11 +22,11 @@ python VM_train.py \
     --krnl_size 3 \
     --padding 1 \
     --device 0 \
-    --lr 1e-4 \
+    --lr 1e-2 \
     --epoch 150 \
     --n_gifs 20 \
-    --jobname pt_pendulumSingleBigger_5-1_k-3_d-3_lr-1e-4_ssim \
-    --loss ssim \
+    --jobname pt_rollerFlightBigger_5-1_k-3_d-3_lr-1e-2_sl1-mean \
+    --loss sl1 \
     --reduction mean \
     --img_type greyscale \
     --model PatchTrans \
