@@ -1,6 +1,10 @@
 #!/bin/bash
-#SBATCH --ntasks 6
-#SBATCH -p part0
+#SBATCH --qos short
+#SBATCH -N 1
+#SBATCH -c 4
+#SBATCH -t 2-00:00
+#SBATCH --mem 21G
+#SBATCH -p res-gpu-small
 #SBATCH --job-name random_200_bounces-regress_2d_5-1_k-3_d-3  
 #SBATCH --gres gpu:1
 #SBATCH -o ../../../../../.results/random_200_bounces-regress_2d_5-1_k-3_d-3.out
