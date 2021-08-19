@@ -90,7 +90,7 @@ class FcUpDown2D2Scalars(pl.LightningModule):
             for param in self.model.parameters():
                 param.requires_grad = False
             self.model.eval()
-            self.SANITY = self.model.UDChain.layers[-1].conv.weight.detach().clone().cuda() # MAKE SURE THAT FROZEN LAYERS ARE IN FACT FROZEN
+            #self.SANITY = self.model.UDChain.layers[-1].conv.weight.detach().clone().cuda() # MAKE SURE THAT FROZEN LAYERS ARE IN FACT FROZEN
 
         # Different tasks will be expecting different output numbers
         if args.task == "mnist":
@@ -194,7 +194,7 @@ class FcUpDown2D2Scalars(pl.LightningModule):
 
     def training_step(self, train_batch, batch_idx):
         if self.args.encoder_freeze:
-            assert torch.equal(self.SANITY, self.model.UDChain.layers[-1].conv.weight), "ENCODER FREEZE FAILED, WEIGHTS ARE CHANGING"
+            #assert torch.equal(self.SANITY, self.model.UDChain.layers[-1].conv.weight), "ENCODER FREEZE FAILED, WEIGHTS ARE CHANGING"
             self.model.eval()   # Make sure the eval flag is set for the encoder if it should be frozen
         if self.args.task == "mnist":
             frame, label = train_batch
