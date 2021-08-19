@@ -5,31 +5,31 @@
 #SBATCH -t 2-00:00
 #SBATCH --mem 21G
 #SBATCH -p res-gpu-small
-#SBATCH --job-name pt_148-2dB_200_bounces-regress_2d_59-1_k-3_d-3_ssim  
+#SBATCH --job-name pt_142-blocks_200_blocks-regress_49-1_k-3_d-3_sl1  
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../../.results/pt_148-2dB_200_bounces-regress_2d_59-1_k-3_d-3_ssim.out
+#SBATCH -o ../../../../../.results/pt_142-blocks_200_blocks-regress_49-1_k-3_d-3_sl1.out
 cd ../../../../..
 export PYTHONBREAKPOINT=ipdb.set_trace
 source python_venvs/vm/bin/activate
 
-# bounces-regress_2d Task
+# blocks-regress Task
 python test_tasks.py \
-    --task 2dbounces-regress \
+    --task blocks-regress \
     --dataset simulations  \
-    --dataset_path data/2dBouncing/2dMultiGrav-Y_regen/raw \
+    --dataset_path data/myphysicslab/Blocks_10000 \
     --bsz 64 \
     --val_bsz 100 \
     --num_workers 1 \
-    --in_no 59 \
+    --in_no 49 \
     --out_no 1 \
     --depth 3 \
     --device 0 \
     --lr 3e-6 \
     --epoch 400 \
-    --jobname pt_148-2dB_200_bounces-regress_2d_59-1_k-3_d-3_ssim \
+    --jobname pt_142-blocks_200_blocks-regress_49-1_k-3_d-3_sl1 \
     --img_type greyscale \
     --model PatchTrans \
-    --model_path '.results/pt_2dBouncingMG-y_59-1_k-3_d-3_lr-1e-4_ssim-epoch=148.ckpt' \
+    --model_path '.results/pt_blocks_49-1_k-3_d-3_lr-1e-3_sl1-mean-epoch=142.ckpt' \
     --encoder_freeze \
     --linear_probes \
     --shuffle \

@@ -12,7 +12,7 @@ import torch.nn as nn
 import pytorch_lightning as pl
 import torchmetrics
 
-from dataset import SimulationsPreloaded
+from dataset import SimulationsPreloaded, Simulations
 from models.UpDown2D import FCUpDown2D
 from models.transformer import ImageTransformer
 import tools.radam as radam
@@ -319,6 +319,7 @@ if __name__ == "__main__":
     parser.add_argument("--dataset", type=str, nargs="+", choices=["mmnist", "simulations", "mocap", "hdmb51"], help="Type of dataset")
     parser.add_argument("--dataset_path", type=str, nargs="+", default=os.path.expanduser("~/"), help="Dataset paths")
     parser.add_argument("--shuffle", action="store_true", help="shuffle dataset")
+    parser.add_argument("--disable_preload", action="store_true", help="stop the preloading of the dataset object")
 
     parser.add_argument_group("Shared Model arguments")
     parser.add_argument("--model", type=str, default="UpDown2D", choices=["UpDown2D", "UpDown3D", "image_transformer", "PatchTrans"], help="Type of model to run")
@@ -406,6 +407,7 @@ if __name__ == "__main__":
         """
         Point the dataset to the root directory
         """
+        raise NotImplementedError("Not implemented segmentation")
         copy_args = copy.deepcopy(args)
         copy_args.in_no = 1
         train_dset = SimulationsPreloaded(args.dataset_path[0], 'train', 'consecutive', copy_args, segmentation_flag=True)
@@ -417,7 +419,10 @@ if __name__ == "__main__":
     # Roller regression/prediction
     ################################   
     elif args.task in ["roller-regress","roller-pred"]:
-        train_dset = SimulationsPreloaded(args.dataset_path[0], 'train', 'consecutive', args, yaml_return="roller")
+        if args.disable_preload:
+            train_dset = Simulations(args.dataset_path[0], 'train', 'consecutive', args, yaml_return="roller")
+        else:
+            train_dset = SimulationsPreloaded(args.dataset_path[0], 'train', 'consecutive', args, yaml_return="roller")
         valid_dset = train_dset.clone('val', 'consecutive')
         test_dset = train_dset.clone('test', 'consecutive')
         pl_system = FcUpDown2D2Scalars(args)
@@ -426,7 +431,10 @@ if __name__ == "__main__":
     # Moon regression/prediction
     ################################   
     elif args.task in ["moon-regress"]:
-        train_dset = SimulationsPreloaded(args.dataset_path[0], 'train', 'consecutive', args, yaml_return="moon")
+        if args.disable_preload:
+            train_dset = Simulations(args.dataset_path[0], 'train', 'consecutive', args, yaml_return="moon")
+        else:
+            train_dset = SimulationsPreloaded(args.dataset_path[0], 'train', 'consecutive', args, yaml_return="moon")
         valid_dset = train_dset.clone('val', 'consecutive')
         test_dset = train_dset.clone('test', 'consecutive')
         pl_system = FcUpDown2D2Scalars(args)
@@ -435,7 +443,10 @@ if __name__ == "__main__":
     # Block mass ratio regression
     ################################   
     elif args.task in ["blocks-regress"]:
-        train_dset = SimulationsPreloaded(args.dataset_path[0], 'train', 'consecutive', args, yaml_return="blocks")
+        if args.disable_preload:
+            train_dset = Simulations(args.dataset_path[0], 'train', 'consecutive', args, yaml_return="blocks")
+        else:
+            train_dset = SimulationsPreloaded(args.dataset_path[0], 'train', 'consecutive', args, yaml_return="blocks")
         valid_dset = train_dset.clone('val', 'consecutive')
         test_dset = train_dset.clone('test', 'consecutive')
         pl_system = FcUpDown2D2Scalars(args)
@@ -444,7 +455,10 @@ if __name__ == "__main__":
     # Pendulum
     ################################   
     elif args.task == "pendulum-regress":
-        train_dset = SimulationsPreloaded(args.dataset_path[0], 'train', 'consecutive', args, yaml_return="pendulum")
+        if args.disable_preload:
+            train_dset = Simulations(args.dataset_path[0], 'train', 'consecutive', args, yaml_return="pendulum")
+        else:
+            train_dset = SimulationsPreloaded(args.dataset_path[0], 'train', 'consecutive', args, yaml_return="pendulum")
         valid_dset = train_dset.clone('val', 'consecutive')
         test_dset = train_dset.clone('test', 'consecutive')
         pl_system = FcUpDown2D2Scalars(args)
@@ -453,7 +467,10 @@ if __name__ == "__main__":
     # Gravity regression/prediction
     ################################   
     elif args.task in ["grav-regress","grav-pred"]:
-        train_dset = SimulationsPreloaded(args.dataset_path[0], 'train', 'consecutive', args, yaml_return="grav")
+        if args.disable_preload:
+            train_dset = Simulations(args.dataset_path[0], 'train', 'consecutive', args, yaml_return="grav")
+        else:
+            train_dset = SimulationsPreloaded(args.dataset_path[0], 'train', 'consecutive', args, yaml_return="grav")
         valid_dset = train_dset.clone('val', 'consecutive')
         test_dset = train_dset.clone('test', 'consecutive')
         pl_system = FcUpDown2D2Scalars(args)
@@ -462,13 +479,19 @@ if __name__ == "__main__":
     # Ball bounces regression/prediction
     ################################   
     elif args.task in ["2dbounces-regress"]:
-        train_dset = SimulationsPreloaded(args.dataset_path[0], 'train', 'consecutive', args, yaml_return="2dbounces")
+        if args.disable_preload:
+            train_dset = Simulations(args.dataset_path[0], 'train', 'consecutive', args, yaml_return="2dbounces")
+        else:
+            train_dset = SimulationsPreloaded(args.dataset_path[0], 'train', 'consecutive', args, yaml_return="2dbounces")
         valid_dset = train_dset.clone('val', 'consecutive')
         test_dset = train_dset.clone('test', 'consecutive')
         pl_system = FcUpDown2D2Scalars(args)
 
     elif args.task in ["3dbounces-regress"]:
-        train_dset = SimulationsPreloaded(args.dataset_path[0], 'train', 'consecutive', args, yaml_return="3dbounces")
+        if args.disable_preload:
+            train_dset = Simulations(args.dataset_path[0], 'train', 'consecutive', args, yaml_return="3dbounces")
+        else:
+            train_dset = SimulationsPreloaded(args.dataset_path[0], 'train', 'consecutive', args, yaml_return="3dbounces")
         valid_dset = train_dset.clone('val', 'consecutive')
         test_dset = train_dset.clone('test', 'consecutive')
         pl_system = FcUpDown2D2Scalars(args)
