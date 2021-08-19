@@ -31,5 +31,4 @@ python test_tasks.py \
     --linear_probes \
     --encoder_freeze \
     --shuffle \
-    --disable_preload \
     --wandb 
