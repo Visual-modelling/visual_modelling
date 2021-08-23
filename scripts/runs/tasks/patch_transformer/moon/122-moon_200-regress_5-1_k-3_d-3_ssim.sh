@@ -1,9 +1,13 @@
 #!/bin/bash
-#SBATCH --ntasks 6
-#SBATCH -p part0
-#SBATCH --job-name pt_122-moon_200_moon-regress_5-1_k-3_d-3_ssim  
+#SBATCH --qos short
+#SBATCH -N 1
+#SBATCH -c 4
+#SBATCH -t 2-00:00
+#SBATCH --mem 21G
+#SBATCH -p res-gpu-small
+#SBATCH --job-name pt_5e-5_122-moon_200_moon-regress_5-1_k-3_d-3_ssim  
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../../.results/pt_122-moon_200_moon-regress_5-1_k-3_d-3_ssim.out
+#SBATCH -o ../../../../../.results/pt_5e-5_122-moon_200_moon-regress_5-1_k-3_d-3_ssim.out
 cd ../../../../..
 export PYTHONBREAKPOINT=ipdb.set_trace
 source python_venvs/vm/bin/activate
@@ -22,12 +26,11 @@ python test_tasks.py \
     --device 0 \
     --lr 5e-5 \
     --epoch 400 \
-    --jobname pt_122-moon_200_moon-regress_5-1_k-3_d-3_ssim \
+    --jobname pt_5e-5_122-moon_200_moon-regress_5-1_k-3_d-3_ssim \
     --img_type greyscale \
     --model PatchTrans \
     --model_path '.results/pt_moon_5-1_k-3_d-3_lr-1e-3_ssim-epoch=122.ckpt' \
     --encoder_freeze \
     --linear_probes \
     --shuffle \
-    --disable_preload \
     --wandb 
