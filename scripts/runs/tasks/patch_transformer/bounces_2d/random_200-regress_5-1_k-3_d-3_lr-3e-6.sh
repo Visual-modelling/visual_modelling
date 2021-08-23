@@ -1,13 +1,9 @@
 #!/bin/bash
-#SBATCH --qos short
-#SBATCH -N 1
-#SBATCH -c 4
-#SBATCH -t 2-00:00
-#SBATCH --mem 21G
-#SBATCH -p res-gpu-small
-#SBATCH --job-name 5e-5_142-2dB_200_bounces-regress_2d_59-1_k-3_d-3_sl1  
+#SBATCH --ntasks 6
+#SBATCH -p part0
+#SBATCH --job-name pt_random_200_bounces-regress_2d_5-1_k-3_d-3_lr-3e-6  
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../../.results/5e-5_142-2dB_200_bounces-regress_2d_59-1_k-3_d-3_sl1.out
+#SBATCH -o ../../../../../.results/pt_random_200_bounces-regress_2d_5-1_k-3_d-3_lr-3e-6.out
 cd ../../../../..
 export PYTHONBREAKPOINT=ipdb.set_trace
 source python_venvs/vm/bin/activate
@@ -24,13 +20,14 @@ python test_tasks.py \
     --out_no 1 \
     --depth 3 \
     --device 0 \
-    --lr 5e-5 \
-    --epoch 400 \
-    --jobname 5e-5_142-2dB_200_bounces-regress_2d_59-1_k-3_d-3_sl1 \
+    --lr 3e-6 \
+    --epoch 200 \
+    --jobname pt_random_200_bounces-regress_2d_5-1_k-3_d-3_lr-3e-6 \
     --img_type greyscale \
-    --model UpDown2D \
-    --model_path '.results/2dBouncingMG-y_59-1_k-3_d-3_lr-1e-3_sl1-mean-epoch=142.ckpt' \
+    --model PatchTrans \
+    --model_path '' \
+    --shuffle \
+    --disable_preload \
     --encoder_freeze \
     --linear_probes \
-    --shuffle \
     --wandb 

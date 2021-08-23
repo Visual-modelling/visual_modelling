@@ -24,7 +24,7 @@ python test_tasks.py \
     --out_no 1 \
     --depth 3 \
     --device 0 \
-    --lr 3e-6 \
+    --lr 5e-5 \
     --epoch 400 \
     --jobname pt_142-blocks_200_blocks-regress_49-1_k-3_d-3_sl1 \
     --img_type greyscale \

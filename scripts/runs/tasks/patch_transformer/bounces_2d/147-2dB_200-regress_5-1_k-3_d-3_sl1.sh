@@ -3,7 +3,7 @@
 #SBATCH -N 1
 #SBATCH -c 4
 #SBATCH -t 2-00:00
-#SBATCH --mem 21G
+#SBATCH --mem 28G
 #SBATCH -p res-gpu-small
 #SBATCH --job-name pt_147-2dB_200_bounces-regress_2d_5-1_k-3_d-3_sl1  
 #SBATCH --gres gpu:1
@@ -24,7 +24,7 @@ python test_tasks.py \
     --out_no 1 \
     --depth 3 \
     --device 0 \
-    --lr 3e-6 \
+    --lr 5e-5 \
     --epoch 400 \
     --jobname pt_147-2dB_200_bounces-regress_2d_5-1_k-3_d-3_sl1 \
     --img_type greyscale \

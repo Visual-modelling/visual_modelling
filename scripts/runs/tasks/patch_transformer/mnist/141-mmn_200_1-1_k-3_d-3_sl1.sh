@@ -24,7 +24,7 @@ python test_tasks.py \
     --device 0 \
     --epoch 400 \
     --jobname pt_141-mmn_200_mnist_1-1_k-3_d-3_sl1 \
-    --lr 3e-6 \
+    --lr 5e-5 \
     --img_type greyscale \
     --model PatchTrans \
     --model_path '.results/pt_mmnist_5-1_k-3_d-3_lr-5e-4_sl1-mean-epoch=141.ckpt' \

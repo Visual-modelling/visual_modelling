@@ -5,9 +5,9 @@
 #SBATCH -t 2-00:00
 #SBATCH --mem 21G
 #SBATCH -p res-gpu-small
-#SBATCH --job-name 16-mmn_200_mnist_1-1_k-3_d-3_ssim  
+#SBATCH --job-name 5e-5_16-mmn_200_mnist_1-1_k-3_d-3_ssim  
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../../.results/16-mmn_200_mnist_1-1_k-3_d-3_ssim.out
+#SBATCH -o ../../../../../.results/5e-5_16-mmn_200_mnist_1-1_k-3_d-3_ssim.out
 cd ../../../../..
 export PYTHONBREAKPOINT=ipdb.set_trace
 source python_venvs/vm/bin/activate
@@ -23,8 +23,8 @@ python test_tasks.py \
     --depth 3 \
     --device 0 \
     --epoch 400 \
-    --jobname 16-mmn_200_mnist_1-1_k-3_d-3_ssim \
-    --lr 3e-6 \
+    --jobname 5e-5_16-mmn_200_mnist_1-1_k-3_d-3_ssim \
+    --lr 5e-5 \
     --img_type greyscale \
     --model UpDown2D \
     --model_path '.results/mmnist_5-1_k-3_d-3_lr-1e-2_ssim-epoch=16.ckpt' \

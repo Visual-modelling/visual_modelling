@@ -1,13 +1,9 @@
 #!/bin/bash
-#SBATCH --qos short
-#SBATCH -N 1
-#SBATCH -c 4
-#SBATCH -t 2-00:00
-#SBATCH --mem 21G
-#SBATCH -p res-gpu-small
-#SBATCH --job-name 5e-5_138-blocks_200_blocks-regress_49-1_k-3_d-3_ssim  
+#SBATCH --ntasks 6
+#SBATCH -p part0
+#SBATCH --job-name pt_random_200_blocks-regress_49-1_k-3_d-3_lr-3e-6  
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../../.results/5e-5_138-blocks_200_blocks-regress_49-1_k-3_d-3_ssim.out
+#SBATCH -o ../../../../../.results/pt_random_200_blocks-regress_49-1_k-3_d-3_lr-3e-6.out
 cd ../../../../..
 export PYTHONBREAKPOINT=ipdb.set_trace
 source python_venvs/vm/bin/activate
@@ -24,13 +20,14 @@ python test_tasks.py \
     --out_no 1 \
     --depth 3 \
     --device 0 \
-    --lr 5e-5 \
-    --epoch 400 \
-    --jobname 5e-5_138-blocks_200_blocks-regress_49-1_k-3_d-3_ssim \
+    --lr 3e-6 \
+    --epoch 200 \
+    --jobname pt_random_200_blocks-regress_49-1_k-3_d-3_lr-3e-6 \
     --img_type greyscale \
-    --model UpDown2D \
-    --model_path '.results/blocks_49-1_k-3_d-3_lr-1e-3_ssim-epoch=138.ckpt' \
+    --model PatchTrans \
+    --model_path '' \
     --encoder_freeze \
     --linear_probes \
     --shuffle \
+    --disable_preload \
     --wandb 
