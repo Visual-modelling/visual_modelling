@@ -10,8 +10,9 @@ tools/__pycache__
 tools/*.pyc
 tools/*.pyo
 
-.results/*
-.results_old/*
+.results/**
+.results_old/**
+.best_runs/**
 .old
 
 data
