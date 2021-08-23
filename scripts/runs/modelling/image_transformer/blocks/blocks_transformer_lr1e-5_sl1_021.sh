@@ -19,7 +19,7 @@ python VM_train.py \
     --bsz 64 \
     --val_bsz 64 \
     --num_workers 1 \
-    --in_no 5 \
+    --in_no 49 \
     --out_no 1 \
     --device 0 \
     --epoch 500 \
