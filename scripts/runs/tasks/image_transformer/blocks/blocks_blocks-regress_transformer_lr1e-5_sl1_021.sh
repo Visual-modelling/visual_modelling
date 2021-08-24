@@ -14,7 +14,7 @@ export PYTHONBREAKPOINT=ipdb.set_trace
 python test_tasks.py \
     --task blocks-regress \
     --dataset_path data/myphysicslab/Blocks_10000 \
-    --model_path .best_runs/.ckpt \
+    --model_path .best_runs/blocks_transformer_lr3e-6_sl1_021-epoch=244.ckpt \
     --linear_probes \
     --encoder_freeze \
     --jobname blocks_blocks-regress_transformer_lr1e-5_sl1_021 \
