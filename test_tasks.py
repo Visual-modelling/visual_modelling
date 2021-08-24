@@ -51,6 +51,8 @@ class FcUpDown2D2Scalars(pl.LightningModule):
                     final_layer = (2*args.depth)+2-1    # -1 for python indexing
                     increase_ratio = math.ceil(args.out_no / state_dict[f"UDChain.layers.{final_layer}.conv.weight"].shape[0])
                     state_dict[f"UDChain.layers.{final_layer}.conv.weight"] = state_dict[f"UDChain.layers.{final_layer}.conv.weight"].repeat(increase_ratio,1,1,1)[:args.out_no]
+                    # Compensating for the increase in layers, divide each weight by the increase ratio
+                    state_dict[f"UDChain.layers.{final_layer}.conv.weight"] /= increase_ratio   
                     state_dict[f"UDChain.layers.{final_layer}.conv.bias"] = state_dict[f"UDChain.layers.{final_layer}.conv.bias"].repeat(increase_ratio)[:args.out_no]
                 # need to change the names of the state_dict keys from preloaded model
                 self.model.load_state_dict(state_dict)
@@ -75,6 +77,8 @@ class FcUpDown2D2Scalars(pl.LightningModule):
                 if args.in_no != state_dict['encoder.patch_embed1.proj.weight'].shape[1]:
                     increase_ratio = math.ceil(args.in_no / state_dict['encoder.patch_embed1.proj.weight'].shape[1])
                     state_dict['encoder.patch_embed1.proj.weight'] = state_dict['encoder.patch_embed1.proj.weight'].repeat(1,increase_ratio,1,1)[:,:args.in_no]
+                    # Compensating for the increase in layers, divide each weight by the increase ratio
+                    state_dict['encoder.patch_embed1.proj.weight'] /= increase_ratio   
                     increase_ratio = math.ceil(args.out_no / (state_dict["decode_head.linear_pred.weight"].shape[0]))
                     state_dict["decode_head.linear_pred.weight"] = state_dict["decode_head.linear_pred.weight"].repeat(increase_ratio,1,1,1)[:16*args.out_no]
                     state_dict["decode_head.linear_pred.bias"] = state_dict["decode_head.linear_pred.bias"].repeat(increase_ratio)[:16*args.out_no]
