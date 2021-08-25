@@ -5,9 +5,9 @@
 #SBATCH -t 2-00:00
 #SBATCH --mem 28G
 #SBATCH -p res-gpu-small
-#SBATCH --job-name blocks_blocks-regress_transformer_random_021.sh
+#SBATCH --job-name blocks_blocks-regress_transformer_random_lr1e-5_021.sh
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../../.results/blocks_blocks-regress_transformer_random_021.out
+#SBATCH -o ../../../../../.results/blocks_blocks-regress_transformer_random_lr1e-5_021.out
 cd ../../../../..
 source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
@@ -17,7 +17,7 @@ python test_tasks.py \
     --model_path '' \
     --linear_probes \
     --encoder_freeze \
-    --jobname blocks_blocks-regress_transformer_random_021 \
+    --jobname blocks_blocks-regress_transformer_random_lr1e-5_021 \
     --dataset simulations \
     --split_condition tv_ratio:8-1-1 \
     --bsz 64 \

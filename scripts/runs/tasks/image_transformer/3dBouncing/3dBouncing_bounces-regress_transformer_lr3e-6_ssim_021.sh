@@ -14,7 +14,7 @@ export PYTHONBREAKPOINT=ipdb.set_trace
 python test_tasks.py \
     --task 3dbounces-regress \
     --dataset_path data/3dBouncing/3dRegen \
-    --model_path .best_runs/3dBouncing_transformer_lr3e-6_ssim_021-epoch=171.ckpt \
+    --model_path .best_runs/3dBouncing_transformer_lr1e-5_ssim_021-epoch=171.ckpt \
     --linear_probes \
     --encoder_freeze \
     --jobname 3dBouncing_bounces-regress_transformer_lr3e-6_ssim_021 \

@@ -5,9 +5,9 @@
 #SBATCH -t 2-00:00
 #SBATCH --mem 28G
 #SBATCH -p res-gpu-small
-#SBATCH --job-name moon_moon-regress_transformer_untrained_021.sh
+#SBATCH --job-name moon_moon-regress_transformer_untrained_lr3e-6_021.sh
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../../.results/moon_moon-regress_transformer_untrained_021.out
+#SBATCH -o ../../../../../.results/moon_moon-regress_transformer_untrained_lr3e-6_021.out
 cd ../../../../..
 source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
@@ -15,7 +15,7 @@ python test_tasks.py \
     --task moon-regress \
     --dataset_path data/myphysicslab/Moon_10000 \
     --model_path '' \
-    --jobname moon_moon-regress_transformer_untrained_021 \
+    --jobname moon_moon-regress_transformer_untrained_lr3e-6_021 \
     --dataset simulations \
     --split_condition tv_ratio:8-1-1 \
     --bsz 64 \

@@ -14,7 +14,7 @@ export PYTHONBREAKPOINT=ipdb.set_trace
 python test_tasks.py \
     --task roller-regress \
     --dataset_path data/myphysicslab/RollerFlight_10000_bigger \
-    --model_path .best_runs/roller_transformer_lr1e-6_sl1_021-epoch=138.ckpt \
+    --model_path .best_runs/roller_transformer_lr1e-5_sl1_021-epoch=138.ckpt \
     --linear_probes \
     --encoder_freeze \
     --jobname roller_roller-regress_transformer_lr1e-6_sl1_021 \
