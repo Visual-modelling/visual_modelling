@@ -5,9 +5,9 @@
 #SBATCH -t 2-00:00
 #SBATCH --mem 28G
 #SBATCH -p res-gpu-small
-#SBATCH --job-name roller_roller-regress_transformer_untrained_021.sh
+#SBATCH --job-name roller_roller-regress_transformer_untrained_lr1e-5_021.sh
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../../.results/roller_roller-regress_transformer_untrained_021.out
+#SBATCH -o ../../../../../.results/roller_roller-regress_transformer_untrained_lr1e-5_021.out
 cd ../../../../..
 source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
@@ -15,7 +15,7 @@ python test_tasks.py \
     --task roller-regress \
     --dataset_path data/myphysicslab/RollerFlight_10000_bigger \
     --model_path '' \
-    --jobname roller_roller-regress_transformer_untrained_021 \
+    --jobname roller_roller-regress_transformer_untrained_lr1e-5_021 \
     --dataset simulations \
     --split_condition tv_ratio:8-1-1 \
     --bsz 64 \

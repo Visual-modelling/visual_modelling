@@ -14,7 +14,7 @@ export PYTHONBREAKPOINT=ipdb.set_trace
 python test_tasks.py \
     --task 2dbounces-regress \
     --dataset_path data/2dBouncing/2dMultiGrav-Y_regen/raw \
-    --model_path .best_runs/2dBouncing_transformer_lr3e-6_ssim_021-epoch=169.ckpt \
+    --model_path .best_runs/2dBouncing_transformer_lr1e-5_ssim_021-epoch=169.ckpt \
     --linear_probes \
     --encoder_freeze \
     --jobname 2dBouncing_bounces-regress_transformer_lr3e-6_ssim_021 \

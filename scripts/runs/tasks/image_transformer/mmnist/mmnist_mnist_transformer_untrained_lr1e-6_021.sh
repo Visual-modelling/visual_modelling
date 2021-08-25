@@ -5,9 +5,9 @@
 #SBATCH -t 2-00:00
 #SBATCH --mem 28G
 #SBATCH -p res-gpu-small
-#SBATCH --job-name mmnist_mnist_transformer_untrained_021.sh
+#SBATCH --job-name mmnist_mnist_transformer_untrained_lr1e-6_021.sh
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../../.results/mmnist_mnist_transformer_untrained_021.out
+#SBATCH -o ../../../../../.results/mmnist_mnist_transformer_untrained_lr1e-6_021.out
 cd ../../../../..
 source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
@@ -15,7 +15,7 @@ python test_tasks.py \
     --task mnist \
     --dataset_path data/moving_mnist/1_2_3 \
     --model_path '' \
-    --jobname mmnist_mnist_transformer_untrained_021 \
+    --jobname mmnist_mnist_transformer_untrained_lr1e-6_021 \
     --dataset simulations \
     --split_condition tv_ratio:8-1-1 \
     --bsz 64 \

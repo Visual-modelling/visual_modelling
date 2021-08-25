@@ -14,7 +14,7 @@ export PYTHONBREAKPOINT=ipdb.set_trace
 python test_tasks.py \
     --task moon-regress \
     --dataset_path data/myphysicslab/Moon_10000 \
-    --model_path .best_runs/moon_transformer_lr1e-6_sl1_021-epoch=499.ckpt \
+    --model_path .best_runs/moon_transformer_lr1e-5_sl1_021-epoch=499.ckpt \
     --linear_probes \
     --encoder_freeze \
     --jobname moon_moon-regress_transformer_lr1e-6_sl1_021 \
