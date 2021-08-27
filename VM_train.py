@@ -483,6 +483,7 @@ if __name__ == "__main__":
     parser.add_argument("--n_gifs", type=int, default=10, help="Number of output gifs to visualise")
     parser.add_argument("--self_output_n", type=int, default=-1, help="Number of frames to run selfoutput plotting to. -1 = all available frames")
     parser.add_argument("--jobname", type=str, required=True, help="Jobname for wandb and saving things")
+    parser.add_argument("--test_only_model_path", type=str, default="", help="If this arg is specified, then load a model and run testing on it with no training")
 
     parser.add_argument_group("Dataset specific arguments")
     ############# To combine multiple datasets together, align the dataset and dataset path arguments
@@ -530,6 +531,8 @@ if __name__ == "__main__":
     ####
     # Sorting arguements
     args = parser.parse_args()
+    if args.test_only_model_path != "":
+        args.jobname = "TEST-ONLY_" + args.jobname
     print(args)
 
     ######## ERROR CONDITIONS To make sure erroneous runs aren't accidentally executed
@@ -621,14 +624,19 @@ if __name__ == "__main__":
         #pl_system = FCUp_Down3D(args)
     elif args.model == "UpDown2D":
         pl_system = ModellingSystem(args, self_out_loader, test_self_out_loader)
+        pls_type = ModellingSystem
     elif args.model == "image_transformer":
         pl_system = ModellingSystem(args, self_out_loader, test_self_out_loader)
+        pls_type = ModellingSystem
     elif args.model == "image_sequence_transformer":
         pl_system = SequenceModellingSystem(args, self_out_loader, test_self_out_loader)
+        pls_type = SequenceModellingSystem
     elif args.model == "PatchTrans":
         pl_system = ModellingSystem(args, self_out_loader, test_self_out_loader)
+        pls_type = ModellingSystem
     elif args.model == "deans_transformer":
         pl_system = ModellingSystem(args, self_out_loader, test_self_out_loader)
+        pls_type = ModellingSystem
     else:
         raise ValueError(f"Unknown model: {args.model}")
 
@@ -661,7 +669,19 @@ if __name__ == "__main__":
         callbacks = [checkpoint_callback]
 
     pl_system.testing = False
-    trainer = pl.Trainer(callbacks=callbacks, logger=wandb_logger, gpus=gpus, max_epochs=args.epoch, min_epochs=args.min_epochs)
-    trainer.fit(pl_system, train_loader, valid_loader)
-    pl_system.testing = True
-    trainer.test(test_dataloaders=test_loader, ckpt_path='best')
+    # If test_only_model_path is specified, skip training and run only testing on said model
+    if args.test_only_model_path == "":
+        trainer = pl.Trainer(callbacks=callbacks, logger=wandb_logger, gpus=gpus, max_epochs=args.epoch, min_epochs=args.min_epochs)
+        trainer.fit(pl_system, train_loader, valid_loader)
+        pl_system.testing = True
+        trainer.test(model=pl_system, test_dataloaders=test_loader, ckpt_path='best')
+    else:
+        trainer = pl.Trainer(logger=wandb_logger, gpus=gpus)
+        pl_system = pls_type.load_from_checkpoint(
+                os.path.join(os.path.dirname(os.path.realpath(__file__)), ".results", args.test_only_model_path),
+                args=args, 
+                self_out_loader=self_out_loader,
+                test_self_out_loader=test_self_out_loader
+        )
+        pl_system.testing = True
+        trainer.test(model=pl_system, test_dataloaders=test_loader)

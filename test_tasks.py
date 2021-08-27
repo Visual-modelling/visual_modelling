@@ -592,7 +592,7 @@ if __name__ == "__main__":
     trainer = pl.Trainer(callbacks=callbacks, logger=wandb_logger, gpus=gpus, max_epochs=args.epoch, min_epochs=args.min_epochs)
     trainer.fit(pl_system, train_loader, valid_loader)
     pl_system.testing = True
-    trainer.test(test_dataloaders=test_loader, ckpt_path='best')
+    trainer.test(model=pl_system, test_dataloaders=test_loader, ckpt_path='best')
 
 
 
