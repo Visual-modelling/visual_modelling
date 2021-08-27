@@ -13,6 +13,8 @@ source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 # Pretrain
 python VM_train.py \
+    --test_only_model_path 'mmnist_5-1_k-3_d-3_lr-1e-2_ssim-epoch=16.ckpt' \
+    --disable_preload \
     --dataset simulations \
     --dataset_path data/moving_mnist/1_2_3 \
     --split_condition tv_ratio:8-1-1 \

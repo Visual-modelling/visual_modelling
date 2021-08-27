@@ -10,6 +10,7 @@ export MASTER_PORT=10011
 export PYTHONBREAKPOINT=ipdb.set_trace
 # Pretrain
 python VM_train.py \
+    --test_only_model_path 'pt_hdmb51_5-1_k-3_d-3_lr-1e-4_sl1-mean-epoch=149.ckpt' \
     --dataset hdmb51 \
     --dataset_path data/HDMB-51/grey_64x64_frames \
     --split_condition tv_ratio:8-1-1 \

@@ -9,6 +9,7 @@ source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 # Pretrain
 python VM_train.py \
+    --test_only_model_path 'pendulumSingleBigger_5-1_k-3_d-3_lr-1e-3_sl1-mean-epoch=143.ckpt' \
     --dataset simulations \
     --dataset_path data/myphysicslab/Pendulum_10000 \
     --split_condition tv_ratio:8-1-1 \

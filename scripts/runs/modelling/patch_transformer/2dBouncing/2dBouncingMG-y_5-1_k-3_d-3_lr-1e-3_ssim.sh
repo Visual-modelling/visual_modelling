@@ -14,6 +14,8 @@ export MASTER_PORT=10001
 export PYTHONBREAKPOINT=ipdb.set_trace
 # Pretrain
 python VM_train.py \
+    --test_only_model_path 'pt_2dBouncingMG-y_5-1_k-3_d-3_lr-1e-3_ssim-epoch=147.ckpt' \
+    --disable_preload \
     --dataset simulations \
     --dataset_path data/2dBouncing/2dMultiGrav-Y_regen/raw \
     --split_condition tv_ratio:8-1-1 \

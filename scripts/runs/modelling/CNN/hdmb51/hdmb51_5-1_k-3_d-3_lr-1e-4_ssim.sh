@@ -9,6 +9,7 @@ source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 # Pretrain
 python VM_train.py \
+    --test_only_model_path 'hdmb51_5-1_k-3_d-3_lr-1e-4_ssim-epoch=38.ckpt' \
     --dataset simulations \
     --dataset_path data/HDMB-51/grey_64x64_frames \
     --split_condition tv_ratio:8-1-1 \

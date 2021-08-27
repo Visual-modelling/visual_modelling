@@ -9,6 +9,7 @@ source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 # Pretrain
 python VM_train.py \
+    --test_only_model_path 'rollerFlightBigger_5-1_k-3_d-3_lr-1e-3_ssim-epoch=147.ckpt' \
     --dataset simulations \
     --dataset_path data/myphysicslab/RollerFlight_10000_bigger \
     --split_condition tv_ratio:8-1-1 \

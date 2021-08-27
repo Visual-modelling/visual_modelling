@@ -13,6 +13,8 @@ source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 # Pretrain
 python VM_train.py \
+    --test_only_model_path 'blocks_49-1_k-3_d-3_lr-1e-3_sl1-mean-epoch=144.ckpt' \
+    --disable_preload \
     --dataset simulations \
     --dataset_path data/myphysicslab/Blocks_10000 \
     --split_condition tv_ratio:8-1-1 \

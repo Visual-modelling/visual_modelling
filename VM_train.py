@@ -671,6 +671,7 @@ if __name__ == "__main__":
     pl_system.testing = False
     # If test_only_model_path is specified, skip training and run only testing on said model
     if args.test_only_model_path == "":
+        raise Exception("Disabled training for help. Remove this afterwards")
         trainer = pl.Trainer(callbacks=callbacks, logger=wandb_logger, gpus=gpus, max_epochs=args.epoch, min_epochs=args.min_epochs)
         trainer.fit(pl_system, train_loader, valid_loader)
         pl_system.testing = True

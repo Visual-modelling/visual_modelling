@@ -10,6 +10,7 @@ export MASTER_PORT=10022
 export PYTHONBREAKPOINT=ipdb.set_trace
 # Pretrain
 python VM_train.py \
+    --test_only_model_path 'pt_rollerFlightBigger_5-1_k-3_d-3_lr-1e-3_sl1-mean-epoch=146.ckpt' \
     --dataset simulations \
     --dataset_path data/myphysicslab/RollerFlight_10000_bigger \
     --split_condition tv_ratio:8-1-1 \
