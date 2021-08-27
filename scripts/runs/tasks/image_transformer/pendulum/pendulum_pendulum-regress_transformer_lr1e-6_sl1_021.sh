@@ -27,7 +27,7 @@ python test_tasks.py \
     --out_no 1 \
     --device 0 \
     --epoch 500 \
-    --early_stopping 10 \
+    --early_stopping 50 \
     --img_type greyscale \
     --shuffle \
     --wandb \
