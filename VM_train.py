@@ -44,7 +44,10 @@ def plot_self_out(pl_system):
     args = pl_system.args
     # Remove all previous gifs
     [ os.remove(os.path.join(args.results_dir, file)) for file in os.listdir(args.results_dir) if file.endswith('.gif') ]
-    self_out_loader = pl_system.self_out_loader
+    if pl_system.testing:
+        self_out_loader = pl_system.test_self_out_loader
+    else:
+        self_out_loader = pl_system.self_out_loader
     self_out_loader = iter(self_out_loader)
     wandb_frames = []
     gt_vs_pred = []
@@ -189,7 +192,10 @@ def plot_self_out(pl_system):
 
             # Gif
             gif_frames = [ torch.cat( [torch.cat( [gif_frames[n_frm], gt_frames[n_frm]], dim=0), ball_distance_image, psnr_image, ssim_image, sl1_image], dim=1)for n_frm in range(len(gif_frames)) ]
-            gif_save_path = os.path.join(args.results_dir, f"{ngif}-{vid_name[0]}.gif") 
+            if pl_system.testing:
+                gif_save_path = os.path.join(args.results_dir, f"test_{ngif}-{vid_name[0]}.gif") 
+            else:
+                gif_save_path = os.path.join(args.results_dir, f"{ngif}-{vid_name[0]}.gif") 
             # TODO gifs from different datasets with the same name will overwrite eachother. this is niche and not worth the time right now
             imageio.mimsave(gif_save_path, gif_frames)
             wandb_frames.append(wandb.Video(gif_save_path))
@@ -197,9 +203,14 @@ def plot_self_out(pl_system):
             # TODO Deprecated?
             #wandb_metric_n_names.append(gif_metrics)
         pbar.close()
-    wandb.log({"pred-top_gt-bottom": gt_vs_pred}, commit=False)
-    wandb.log({"self_output_gifs": wandb_frames}, commit=False)
-    wandb.log({"metrics":wandb_metric_n_names}, commit=True)
+    if pl_system.testing:
+        wandb.log({"test_pred-top_gt-bottom": gt_vs_pred}, commit=False)
+        wandb.log({"test_self_output_gifs": wandb_frames}, commit=False)
+        wandb.log({"test_metrics":wandb_metric_n_names}, commit=True)
+    else:
+        wandb.log({"pred-top_gt-bottom": gt_vs_pred}, commit=False)
+        wandb.log({"self_output_gifs": wandb_frames}, commit=False)
+        wandb.log({"metrics":wandb_metric_n_names}, commit=True)
 
 
 def get_gif_metrics(gif_frames, gt_frames, metrics):
@@ -254,13 +265,14 @@ class FID_dset(torch.utils.data.Dataset):
 ################################################################################
 ################################################################################
 class ModellingSystem(pl.LightningModule):
-    def __init__(self, args: argparse.Namespace, self_out_loader):
+    def __init__(self, args: argparse.Namespace, self_out_loader, test_self_out_loader):
         """
         self_out_loader:    A pytorch dataloader specialised for the self-output generation
         """
         super().__init__()
         self.args = args
         self.self_out_loader = self_out_loader
+        self.test_self_out_loader = test_self_out_loader
 
         # Model selection
         if args.model == "UpDown2D":
@@ -284,7 +296,13 @@ class ModellingSystem(pl.LightningModule):
         # Validation metrics
         self.valid_PSNR = torchmetrics.functional.psnr
         self.valid_SSIM = torchmetrics.functional.ssim
-        self.valid_sl1 = nn.SmoothL1Loss(reduction=args.reduction)#.to(self.device)
+        self.valid_l1 = nn.L1Loss(reduction=args.reduction) #valid_sl1 = nn.SmoothL1Loss(reduction=args.reduction)#.to(self.device)
+
+        # Test metrics
+        self.test_PSNR = torchmetrics.functional.psnr
+        self.test_SSIM = torchmetrics.functional.ssim
+        self.test_l1 = nn.L1Loss(reduction=args.reduction) #valid_sl1 = nn.SmoothL1Loss(reduction=args.reduction)#.to(self.device)
+
         #self.valid_focal = tools.loss.FocalLoss().to(self.device)
         # TODO Remove this workaround when 'on_best_epoch' is implemented in lightning
         self.best_loss = float('inf')
@@ -348,12 +366,23 @@ class ModellingSystem(pl.LightningModule):
             valid_loss = valid_loss.mean(dim=(0,1,2,3))
         if self.args.loss == "ssim":
             valid_loss = 1-((1+valid_loss)/2)   # SSIM Range = (-1 -> 1) SSIM should be maximised => restructure as minimisation
-        self.log("valid_loss", valid_loss, prog_bar=True, on_step=False, on_epoch=True)
-        self.log("valid_PSNR", self.valid_PSNR(out, gt_frames), on_step=False, on_epoch=True)
-        self.log("valid_SSIM", self.valid_SSIM(out, gt_frames), on_step=False, on_epoch=True)
-        self.log("valid_sl1", self.valid_sl1(out, gt_frames), on_step=False, on_epoch=True)
-        #self.log("valid_focal", self.valid_focal(out, gt_frames), on_step=False, on_epoch=True)
+        if self.testing:
+            self.log("test_loss", valid_loss, prog_bar=True, on_step=False, on_epoch=True)
+            self.log("test_PSNR", self.valid_PSNR(out, gt_frames), on_step=False, on_epoch=True)
+            self.log("test_SSIM", self.valid_SSIM(out, gt_frames), on_step=False, on_epoch=True)
+            self.log("test_l1", self.valid_l1(out, gt_frames), on_step=False, on_epoch=True)
+        else:
+            self.log("valid_loss", valid_loss, prog_bar=True, on_step=False, on_epoch=True)
+            self.log("valid_PSNR", self.valid_PSNR(out, gt_frames), on_step=False, on_epoch=True)
+            self.log("valid_SSIM", self.valid_SSIM(out, gt_frames), on_step=False, on_epoch=True)
+            self.log("valid_l1", self.valid_l1(out, gt_frames), on_step=False, on_epoch=True)
         return valid_loss
+
+    def test_step(self, test_batch, batch_idx):
+        self.validation_step(test_batch, batch_idx)
+
+    def test_epoch_end(self, test_step_outputs):
+        plot_self_out(self)
 
     def validation_epoch_end(self, validation_step_outputs):
         # TODO update this with 'on_best_epoch' functionality when it is supported
@@ -367,8 +396,8 @@ class ModellingSystem(pl.LightningModule):
 
 
 class SequenceModellingSystem(ModellingSystem):
-    def __init__(self, args: argparse.Namespace, self_out_loader):
-        super().__init__(args, self_out_loader)
+    def __init__(self, args: argparse.Namespace, self_out_loader, test_self_out_loader):
+        super().__init__(args, self_out_loader, test_self_out_loader)
 
     def training_step(self, train_batch, batch_idx):
 
@@ -415,12 +444,20 @@ class SequenceModellingSystem(ModellingSystem):
             valid_loss = valid_loss.mean(dim=(0,1,2,3))
         if self.args.loss == "ssim":
             valid_loss = 1-((1+valid_loss)/2)   # SSIM Range = (-1 -> 1) SSIM should be maximised => restructure as minimisation
-        self.log("valid_loss", valid_loss, prog_bar=True, on_step=False, on_epoch=True)
-        self.log("valid_PSNR", self.valid_PSNR(out, gt_frames), on_step=False, on_epoch=True)
-        self.log("valid_SSIM", self.valid_SSIM(out, gt_frames), on_step=False, on_epoch=True)
-        self.log("valid_sl1", self.valid_sl1(out, gt_frames), on_step=False, on_epoch=True)
+        if self.testing:
+            self.log("test_loss", valid_loss, prog_bar=True, on_step=False, on_epoch=True)
+            self.log("test_PSNR", self.valid_PSNR(out, gt_frames), on_step=False, on_epoch=True)
+            self.log("test_SSIM", self.valid_SSIM(out, gt_frames), on_step=False, on_epoch=True)
+            self.log("test_l1", self.valid_l1(out, gt_frames), on_step=False, on_epoch=True)
+        else:
+            self.log("valid_loss", valid_loss, prog_bar=True, on_step=False, on_epoch=True)
+            self.log("valid_PSNR", self.valid_PSNR(out, gt_frames), on_step=False, on_epoch=True)
+            self.log("valid_SSIM", self.valid_SSIM(out, gt_frames), on_step=False, on_epoch=True)
+            self.log("valid_l1", self.valid_l1(out, gt_frames), on_step=False, on_epoch=True)
         #self.log("valid_focal", self.valid_focal(out, gt_frames), on_step=False, on_epoch=True)
         return valid_loss
+        
+    # Testing step inherits from superclass
 
 
 if __name__ == "__main__":
@@ -530,29 +567,42 @@ if __name__ == "__main__":
     dataset_list = args.dataset_path
     train_list = []
     valid_list = []
+    test_list = []
     self_out_list = []
+    test_self_out_list = []
     print(f"\nProcessing {args.dataset_path} datasets...")
     for i in tqdm(range(len(args.dataset))):
         train_dset = dataset_switch[args.dataset[i]](args.dataset_path[i], 'train', args.dataset_mode, args)
         train_list.append(train_dset)
         valid_dset = train_dset.clone('val', 'consecutive')
         valid_list.append(valid_dset)
+        test_dset = train_dset.clone('test', 'consecutive')
+        test_list.append(test_dset)
         self_out_dset = train_dset.clone('val', 'full_out')
         self_out_dset = torch.utils.data.Subset(self_out_dset, list(range(args.n_gifs)))  # Only have the number of gifs required
+        test_self_out_dset = train_dset.clone('test', 'full_out')
+        test_self_out_dset = torch.utils.data.Subset(test_self_out_dset, list(range(args.n_gifs)))  # Only have the number of gifs required
         self_out_list.append(self_out_dset)
+        test_self_out_list.append(test_self_out_dset)
 
     if len(args.dataset) > 1:
         train_dset = torch.utils.data.ConcatDataset(train_list)
         valid_dset = torch.utils.data.ConcatDataset(valid_list)
+        test_dset = torch.utils.data.ConcatDataset(test_list)
         self_out_dset = torch.utils.data.ConcatDataset(self_out_list)
+        test_self_out_dset = torch.utils.data.ConcatDataset(test_self_out_list)
     else:
         train_dset = train_list[0]
         valid_dset = valid_list[0]
+        test_dset = test_list[0]
         self_out_dset = self_out_list[0]
+        test_self_out_dset = test_self_out_list[0]
     pin_memory = (args.device >= 0) and (args.num_workers >= 1)
     train_loader = DataLoader(train_dset, batch_size=args.bsz, num_workers=args.num_workers, shuffle=args.shuffle, pin_memory=pin_memory)#, drop_last=True)
     valid_loader = DataLoader(valid_dset, batch_size=args.val_bsz, num_workers=args.num_workers, shuffle=False, pin_memory=pin_memory)#, drop_last=True)
+    test_loader = DataLoader(valid_dset, batch_size=args.val_bsz, num_workers=args.num_workers, shuffle=False, pin_memory=pin_memory)#, drop_last=True)
     self_out_loader = DataLoader(self_out_dset, batch_size=1, num_workers=args.num_workers, shuffle=False, drop_last=True, pin_memory=pin_memory)
+    test_self_out_loader = DataLoader(test_self_out_dset, batch_size=1, num_workers=args.num_workers, shuffle=False, drop_last=True, pin_memory=pin_memory)
 
     #### Logging and Saving: If we're saving this run, prepare the neccesary directory for saving things
     wandb.init(entity=args.wandb_entity, project="visual-modelling", name=args.jobname)
@@ -570,15 +620,15 @@ if __name__ == "__main__":
         raise NotImplementedError("Move 3D CNN to Pytorch lightning")
         #pl_system = FCUp_Down3D(args)
     elif args.model == "UpDown2D":
-        pl_system = ModellingSystem(args, self_out_loader)
+        pl_system = ModellingSystem(args, self_out_loader, test_self_out_loader)
     elif args.model == "image_transformer":
-        pl_system = ModellingSystem(args, self_out_loader)
+        pl_system = ModellingSystem(args, self_out_loader, test_self_out_loader)
     elif args.model == "image_sequence_transformer":
-        pl_system = SequenceModellingSystem(args, self_out_loader)
+        pl_system = SequenceModellingSystem(args, self_out_loader, test_self_out_loader)
     elif args.model == "PatchTrans":
-        pl_system = ModellingSystem(args, self_out_loader)
+        pl_system = ModellingSystem(args, self_out_loader, test_self_out_loader)
     elif args.model == "deans_transformer":
-        pl_system = ModellingSystem(args, self_out_loader)
+        pl_system = ModellingSystem(args, self_out_loader, test_self_out_loader)
     else:
         raise ValueError(f"Unknown model: {args.model}")
 
@@ -610,5 +660,8 @@ if __name__ == "__main__":
     else:
         callbacks = [checkpoint_callback]
 
+    pl_system.testing = False
     trainer = pl.Trainer(callbacks=callbacks, logger=wandb_logger, gpus=gpus, max_epochs=args.epoch, min_epochs=args.min_epochs)
     trainer.fit(pl_system, train_loader, valid_loader)
+    pl_system.testing = True
+    trainer.test(test_dataloaders=test_loader, ckpt_path='best')

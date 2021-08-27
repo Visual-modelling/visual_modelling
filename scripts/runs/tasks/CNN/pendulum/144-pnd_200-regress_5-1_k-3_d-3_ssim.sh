@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH --ntasks 6
 #SBATCH -p part0
-#SBATCH --job-name 1e-5_144-pnd_200_pendulum-regress_5-1_k-3_d-3_ssim  
+#SBATCH --job-name 1e-7_144-pnd_200_pendulum-regress_5-1_k-3_d-3_ssim  
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../../.results/1e-5_144-pnd_200_pendulum-regress_5-1_k-3_d-3_ssim.out
+#SBATCH -o ../../../../../.results/1e-7_144-pnd_200_pendulum-regress_5-1_k-3_d-3_ssim.out
 cd ../../../../..
 export PYTHONBREAKPOINT=ipdb.set_trace
 source python_venvs/vm/bin/activate
@@ -20,9 +20,9 @@ python test_tasks.py \
     --out_no 1 \
     --depth 3 \
     --device 0 \
-    --lr 1e-5 \
-    --epoch 400 \
-    --jobname 1e-5_144-pnd_200_pendulum-regress_5-1_k-3_d-3_ssim \
+    --lr 1e-7 \
+    --epoch 500 \
+    --jobname 1e-7_144-pnd_200_pendulum-regress_5-1_k-3_d-3_ssim \
     --img_type greyscale \
     --model UpDown2D \
     --model_path '.results/pendulumSingleBigger_5-1_k-3_d-3_lr-1e-4_ssim-epoch=144.ckpt' \

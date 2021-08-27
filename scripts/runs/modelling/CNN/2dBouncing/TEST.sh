@@ -17,7 +17,7 @@ python VM_train.py \
     --dataset_path data/2dBouncing/2dMultiGrav-Y_regen/TEST \
     --split_condition tv_ratio:8-1-1 \
     --bsz 2 \
-    --val_bsz 2 \
+    --val_bsz 10 \
     --num_workers 0 \
     --in_no 5 \
     --out_no 1 \
@@ -26,7 +26,7 @@ python VM_train.py \
     --padding 1 \
     --device 0 \
     --lr 1e-4 \
-    --epoch 150 \
+    --epoch 5 \
     --n_gifs 2 \
     --jobname TEST \
     --loss sl1 \
@@ -34,4 +34,5 @@ python VM_train.py \
     --img_type greyscale \
     --model UpDown2D \
     --shuffle \
+    --disable_preload \
     --wandb

@@ -25,7 +25,7 @@ python test_tasks.py \
     --depth 3 \
     --device 0 \
     --lr 5e-5 \
-    --epoch 400 \
+    --epoch 500 \
     --jobname pt_5e-5_140-3dB_200_bounces-regress_3d_5-1_k-3_d-3_ssim \
     --img_type greyscale \
     --model PatchTrans \
