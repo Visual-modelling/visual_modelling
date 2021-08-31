@@ -62,6 +62,8 @@ def plot_self_out(pl_system):
         #'FID':piq.FID(),
         #'FVD':tools.loss.FVD()
     }
+    if (args.n_gifs > len(self_out_loader)) or (args.n_gifs == -1):
+        args.n_gifs = len(self_out_loader)
     with tqdm(total=args.n_gifs) as pbar:
         for ngif in range(args.n_gifs):
             pbar.update(1)
@@ -532,7 +534,8 @@ if __name__ == "__main__":
     # Sorting arguements
     args = parser.parse_args()
     if args.test_only_model_path != "":
-        args.jobname = "TEST-ONLY_" + args.jobname
+        args.jobname = "ALLGIFS-TEST-ONLY_" + args.jobname
+        args.n_gifs = -1
     print(args)
 
     ######## ERROR CONDITIONS To make sure erroneous runs aren't accidentally executed
@@ -582,9 +585,11 @@ if __name__ == "__main__":
         test_dset = train_dset.clone('test', 'consecutive')
         test_list.append(test_dset)
         self_out_dset = train_dset.clone('val', 'full_out')
-        self_out_dset = torch.utils.data.Subset(self_out_dset, list(range(args.n_gifs)))  # Only have the number of gifs required
+        if args.n_gifs != -1:
+            self_out_dset = torch.utils.data.Subset(self_out_dset, list(range(args.n_gifs)))  # Only have the number of gifs required
         test_self_out_dset = train_dset.clone('test', 'full_out')
-        test_self_out_dset = torch.utils.data.Subset(test_self_out_dset, list(range(args.n_gifs)))  # Only have the number of gifs required
+        if args.n_gifs != -1:
+            test_self_out_dset = torch.utils.data.Subset(test_self_out_dset, list(range(args.n_gifs)))  # Only have the number of gifs required
         self_out_list.append(self_out_dset)
         test_self_out_list.append(test_self_out_dset)
 
@@ -632,7 +637,8 @@ if __name__ == "__main__":
         pl_system = SequenceModellingSystem(args, self_out_loader, test_self_out_loader)
         pls_type = SequenceModellingSystem
     elif args.model == "PatchTrans":
-        pl_system = ModellingSystem(args, self_out_loader, test_self_out_loader)
+        print("TURN ME BACK ON")
+        #pl_system = ModellingSystem(args, self_out_loader, test_self_out_loader)
         pls_type = ModellingSystem
     elif args.model == "deans_transformer":
         pl_system = ModellingSystem(args, self_out_loader, test_self_out_loader)
@@ -668,7 +674,6 @@ if __name__ == "__main__":
     else:
         callbacks = [checkpoint_callback]
 
-    pl_system.testing = False
     # If test_only_model_path is specified, skip training and run only testing on said model
     if args.test_only_model_path == "":
         raise Exception("Disabled training for help. Remove this afterwards")
@@ -677,6 +682,7 @@ if __name__ == "__main__":
         pl_system.testing = True
         trainer.test(model=pl_system, test_dataloaders=test_loader, ckpt_path='best')
     else:
+        #pl_system.testing = False
         trainer = pl.Trainer(logger=wandb_logger, gpus=gpus)
         pl_system = pls_type.load_from_checkpoint(
                 os.path.join(os.path.dirname(os.path.realpath(__file__)), ".results", args.test_only_model_path),
