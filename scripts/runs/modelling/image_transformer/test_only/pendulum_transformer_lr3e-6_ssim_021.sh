@@ -13,7 +13,7 @@ source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 python VM_train.py \
     --disable_preload \
-    --test_only_model_path 'pendulum_transformer_lr3e-6_ssim_021-epoch=138.ckpt' \
+    --test_only_model_path '.best_runs/pendulum_transformer_lr3e-6_ssim_021-epoch=138.ckpt' \
     --dataset simulations \
     --dataset_path data/myphysicslab/Pendulum_10000 \
     --jobname pendulum_transformer_lr3e-6_ssim_021 \

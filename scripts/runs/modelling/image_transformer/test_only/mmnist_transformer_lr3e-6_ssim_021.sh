@@ -13,7 +13,7 @@ source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 python VM_train.py \
     --disable_preload \
-    --test_only_model_path 'mmnist_transformer_lr3e-6_ssim_021-epoch=28.ckpt' \
+    --test_only_model_path '.best_runs/mmnist_transformer_lr3e-6_ssim_021-epoch=28.ckpt' \
     --dataset simulations \
     --dataset_path data/moving_mnist/1_2_3 \
     --jobname mmnist_transformer_lr3e-6_ssim_021 \

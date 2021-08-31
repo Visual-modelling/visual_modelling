@@ -13,7 +13,7 @@ source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 python VM_train.py \
     --disable_preload \
-    --test_only_model_path 'mocap_transformer_lr1e-5_ssim_021-epoch=205.ckpt' \
+    --test_only_model_path '.best_runs/mocap_transformer_lr1e-5_ssim_021-epoch=205.ckpt' \
     --dataset simulations \
     --dataset_path data/mocap/grey_64x64_frames \
     --jobname mocap_transformer_lr1e-5_ssim_021 \

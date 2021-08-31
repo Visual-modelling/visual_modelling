@@ -13,7 +13,7 @@ source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 python VM_train.py \
     --disable_preload \
-    --test_only_model_path 'moon_transformer_lr3e-6_ssim_021-epoch=208.ckpt' \
+    --test_only_model_path '.best_runs/moon_transformer_lr3e-6_ssim_021-epoch=208.ckpt' \
     --dataset simulations \
     --dataset_path data/myphysicslab/Moon_10000 \
     --jobname moon_transformer_lr3e-6_ssim_021 \

@@ -13,7 +13,7 @@ source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 python VM_train.py \
     --disable_preload \
-    --test_only_model_path 'roller_transformer_lr1e-5_sl1_021-epoch=138.ckpt' \
+    --test_only_model_path '.best_runs/roller_transformer_lr1e-5_sl1_021-epoch=138.ckpt' \
     --dataset simulations \
     --dataset_path data/myphysicslab/RollerFlight_10000_bigger \
     --jobname roller_transformer_lr1e-5_sl1_021 \

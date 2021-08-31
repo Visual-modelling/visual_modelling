@@ -13,7 +13,7 @@ source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 python VM_train.py \
     --disable_preload \
-    --test_only_model_path 'blocks_transformer_lr3e-6_sl1_021-epoch=244.ckpt' \
+    --test_only_model_path '.best_runs/blocks_transformer_lr3e-6_sl1_021-epoch=244.ckpt' \
     --dataset simulations \
     --dataset_path data/myphysicslab/Blocks_10000 \
     --jobname blocks_transformer_lr3e-6_sl1_021 \

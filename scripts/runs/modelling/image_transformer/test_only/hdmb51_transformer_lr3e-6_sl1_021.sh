@@ -13,7 +13,7 @@ source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 python VM_train.py \
     --disable_preload \
-    --test_only_model_path 'hdmb51_transformer_lr3e-6_sl1_021-epoch=318.ckpt' \
+    --test_only_model_path '.best_runs/hdmb51_transformer_lr3e-6_sl1_021-epoch=318.ckpt' \
     --dataset simulations \
     --dataset_path data/HDMB-51/grey_64x64_frames \
     --jobname hdmb51_transformer_lr3e-6_sl1_021 \
