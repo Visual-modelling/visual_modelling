@@ -534,8 +534,8 @@ if __name__ == "__main__":
     # Sorting arguements
     args = parser.parse_args()
     if args.test_only_model_path != "":
-        args.jobname = "ALLGIFS-TEST-ONLY_" + args.jobname
-        args.n_gifs = -1
+        args.jobname = "TEST-ONLY_" + args.jobname
+        args.n_gifs = 50
     print(args)
 
     ######## ERROR CONDITIONS To make sure erroneous runs aren't accidentally executed
