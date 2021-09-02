@@ -5,9 +5,9 @@
 #SBATCH -t 2-00:00
 #SBATCH --mem 28G
 #SBATCH -p res-gpu-small
-#SBATCH --job-name 1e-7_138-blocks_200_blocks-regress_49-1_k-3_d-3_ssim  
+#SBATCH --job-name 138-blocks_200_blocks-regress_49-1_k-3_d-3_ssim  
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../../.results/1e-7_138-blocks_200_blocks-regress_49-1_k-3_d-3_ssim.out
+#SBATCH -o ../../../../../.results/138-blocks_200_blocks-regress_49-1_k-3_d-3_ssim.out
 cd ../../../../..
 export PYTHONBREAKPOINT=ipdb.set_trace
 source python_venvs/vm/bin/activate
@@ -25,8 +25,8 @@ python test_tasks.py \
     --depth 3 \
     --device 0 \
     --lr 1e-7 \
-    --epoch 500 \
-    --jobname 1e-7_138-blocks_200_blocks-regress_49-1_k-3_d-3_ssim \
+    --epoch 400 \
+    --jobname 138-blocks_200_blocks-regress_49-1_k-3_d-3_ssim \
     --img_type greyscale \
     --model UpDown2D \
     --model_path '.results/blocks_49-1_k-3_d-3_lr-1e-3_ssim-epoch=138.ckpt' \
