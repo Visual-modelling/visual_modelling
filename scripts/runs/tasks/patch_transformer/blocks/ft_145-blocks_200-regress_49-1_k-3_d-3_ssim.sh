@@ -5,30 +5,30 @@
 #SBATCH -t 2-00:00
 #SBATCH --mem 28G
 #SBATCH -p res-gpu-small
-#SBATCH --job-name pt_ft_146-3dB_200_bounces-regress_3d_99-1_k-3_d-3_ssim  
+#SBATCH --job-name pt_ft_145-blocks_200_blocks-regress_49-1_k-3_d-3_ssim  
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../../.results/pt_ft_146-3dB_200_bounces-regress_3d_99-1_k-3_d-3_ssim.out
+#SBATCH -o ../../../../../.results/pt_ft_145-blocks_200_blocks-regress_49-1_k-3_d-3_ssim.out
 cd ../../../../..
 export PYTHONBREAKPOINT=ipdb.set_trace
 source python_venvs/vm/bin/activate
 
-# bounces-regress_3d Task
+# blocks-regress Task
 python test_tasks.py \
-    --task 3dbounces-regress \
+    --task blocks-regress \
     --dataset simulations  \
-    --dataset_path data/3dBouncing/3dRegen \
+    --dataset_path data/myphysicslab/Blocks_10000 \
     --bsz 64 \
     --val_bsz 100 \
     --num_workers 1 \
-    --in_no 99 \
+    --in_no 49 \
     --out_no 1 \
     --depth 3 \
     --device 0 \
-    --lr 1e-5 \
+    --lr 6e-6 \
     --epoch 400 \
-    --jobname pt_ft_146-3dB_200_bounces-regress_3d_99-1_k-3_d-3_ssim \
+    --jobname pt_ft_145-blocks_200_blocks-regress_49-1_k-3_d-3_ssim \
     --img_type greyscale \
     --model PatchTrans \
-    --model_path '.results/pt_3dBouncing_99-1_k-3_d-3_lr-1e-3_ssim-epoch=146.ckpt' \
+    --model_path '.results/pt_blocks_49-1_k-3_d-3_lr-1e-3_ssim-epoch=145.ckpt' \
     --shuffle \
     --wandb 
