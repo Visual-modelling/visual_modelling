@@ -24,7 +24,7 @@ python test_tasks.py \
     --device 0 \
     --epoch 400 \
     --jobname pt_ft_147-mmn_200_mnist_1-1_k-3_d-3_ssim \
-    --lr 1e-6 \
+    --lr 1e-4 \
     --img_type greyscale \
     --model PatchTrans \
     --model_path '.results/pt_mmnist_5-1_k-3_d-3_lr-5e-4_ssim-epoch=147.ckpt' \

@@ -24,7 +24,7 @@ python test_tasks.py \
     --out_no 1 \
     --depth 3 \
     --device 0 \
-    --lr 3e-6 \
+    --lr 1e-4 \
     --epoch 400 \
     --jobname pt_ft_147-pnd_200_pendulum-regress_5-1_k-3_d-3_ssim \
     --img_type greyscale \
