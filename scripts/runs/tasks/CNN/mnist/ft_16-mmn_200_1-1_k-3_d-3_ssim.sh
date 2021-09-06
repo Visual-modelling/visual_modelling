@@ -24,7 +24,7 @@ python test_tasks.py \
     --device 0 \
     --epoch 400 \
     --jobname ft_16-mmn_200_mnist_1-1_k-3_d-3_ssim \
-    --lr 1e-4 \
+    --lr 1e-3 \
     --img_type greyscale \
     --model UpDown2D \
     --model_path '.results/mmnist_5-1_k-3_d-3_lr-1e-2_ssim-epoch=16.ckpt' \
