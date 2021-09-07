@@ -5,17 +5,17 @@
 #SBATCH -t 2-00:00
 #SBATCH --mem 28G
 #SBATCH -p res-gpu-small
-#SBATCH --job-name 3dBouncing_bounces-regress_transformer_finetune_lr1e-6_sl1_021.sh
+#SBATCH --job-name 3dBouncing_bounces-regress_transformer_finetune_99in_lr3e-7_ssim_021.sh
 #SBATCH --gres gpu:1
-#SBATCH -o ../../../../../.results/3dBouncing_bounces-regress_transformer_finetune_lr1e-6_sl1_021.out
+#SBATCH -o ../../../../../.results/3dBouncing_bounces-regress_transformer_finetune_99in_lr3e-7_ssim_021.out
 cd ../../../../..
 source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 python test_tasks.py \
     --task 3dbounces-regress \
     --dataset_path data/3dBouncing/3dRegen \
-    --model_path .best_runs/3dBouncing_transformer_lr3e-6_sl1_021-epoch=498.ckpt \
-    --jobname 3dBouncing_bounces-regress_transformer_finetune_lr1e-6_sl1_021 \
+    --model_path .best_runs/3dBouncing_transformer_lr1e-5_ssim_99in_021-epoch=269.ckpt \
+    --jobname 3dBouncing_bounces-regress_transformer_finetune_99in_lr3e-7_ssim_021 \
     --dataset simulations \
     --split_condition tv_ratio:8-1-1 \
     --bsz 64 \
@@ -40,4 +40,4 @@ python test_tasks.py \
     --output_activation hardsigmoid-256 \
     --pos_encoder add_runtime \
     --mask \
-    --lr 1e-6 \
+    --lr 3e-7 \
