@@ -24,7 +24,7 @@ python test_tasks.py \
     --device 0 \
     --epoch 400 \
     --jobname ft_49-mmn_200_mnist_1-1_k-3_d-3_sl1 \
-    --lr 1e-3 \
+    --lr 5e-3 \
     --img_type greyscale \
     --model UpDown2D \
     --model_path '.results/mmnist_5-1_k-3_d-3_lr-1e-2_sl1-mean-epoch=49.ckpt' \

@@ -58,7 +58,7 @@ def plot_self_out(pl_system):
         #'LPIPS':piq.LPIPS(), # TODO Re-add this, it is very slow, maybe not worth it
         'ssim':torchmetrics.functional.ssim,
         'MS_SSIM':piq.multi_scale_ssim,
-        'ball_distance':calculate_metric,
+        #'ball_distance':calculate_metric,
         #'FID':piq.FID(),
         #'FVD':tools.loss.FVD()
     }
@@ -95,56 +95,62 @@ def plot_self_out(pl_system):
             gif_metrics = get_gif_metrics(gif_frames, gt_frames, metrics)
             gif_frames = (torch.stack(gif_frames)*255).to(torch.uint8)
             gt_frames =  ((gt_frames)*255).to(torch.uint8)
-            colour_gradients = [255,240,225,210,195,180,165,150,135,120,120,135,150,165,180,195,210,225,240,255]   # Make sure that white/grey backgrounds dont hinder the frame count
+            #colour_gradients = [255,240,225,210,195,180,165,150,135,120,120,135,150,165,180,195,210,225,240,255]   # Make sure that white/grey backgrounds dont hinder the frame count
+            colour_gradients = [255]*20
 
             # GT vs Predicted
             gt_vs_pred_frm = []
             # Go up to 3 frames into og_frames
-            past_n = int(og_frames[0][-3:].shape[0])
-            for i in range(0,past_n):
-                start_gt = og_frames[0][-past_n:][i].cpu().detach()
-                start_gt = torch.from_numpy(putText(np.array(start_gt), f"{i-past_n}", (0,start_gt.shape[1]), FONT_HERSHEY_SIMPLEX, fontScale = 0.55, color = (colour_gradients[i%len(colour_gradients)])))
-                gt_vs_pred_frm.append(torch.cat([start_gt, start_gt], dim=0))
+            #past_n = int(og_frames[0][-3:].shape[0])
+            #for i in range(0,past_n):
+            #    start_gt = og_frames[0][-past_n:][i].cpu().detach()
+            #    start_gt = torch.from_numpy(putText(np.array(start_gt), f"{i-past_n}", (0,start_gt.shape[1]), FONT_HERSHEY_SIMPLEX, fontScale = 0.55, color = (colour_gradients[i%len(colour_gradients)])))
+            #    gt_vs_pred_frm.append(torch.cat([start_gt, start_gt], dim=0))
 
             # Then the subsequent 25
+
             less_or_25 = min(25, gt_frames.shape[1])
             for i in range(less_or_25):
                 temp_gt = gt_frames[0][i]
-                temp_gt = torch.from_numpy(putText(np.array(temp_gt), f"{i}", (0,temp_gt.shape[1]), FONT_HERSHEY_SIMPLEX, fontScale = 0.55, color = (colour_gradients[i%len(colour_gradients)])))
-                gt_vs_pred_frm.append(torch.cat([gif_frames[i], temp_gt], dim=0))
+                padding = torch.ones(25,64)*60
+                padding = torch.from_numpy(putText(np.array(padding), f"{i}", (29,25-5), FONT_HERSHEY_SIMPLEX, fontScale = 0.55, color = (colour_gradients[i%len(colour_gradients)])))
+                #temp_gt = torch.from_numpy(putText(np.array(temp_gt), f"{i}", (0,temp_gt.shape[1]-5), FONT_HERSHEY_SIMPLEX, fontScale = 0.55, color = (colour_gradients[i%len(colour_gradients)])))
+                gt_vs_pred_frm.append(torch.cat([gif_frames[i], temp_gt, padding], dim=0))
             gt_vs_pred_frm = torch.cat(gt_vs_pred_frm, dim=1)
             gt_vs_pred.append(wandb.Image(gt_vs_pred_frm.numpy()))
-
+            
+            
             # Ball distance plot
             img_h = start_frames.shape[2]
-            # TODO Be sure that this dimension is height, not width
-            bdm = np.array(gif_metrics["ball_distance"]).astype(np.double)
-            bdm_mask = np.isfinite(bdm)
-            bdm = bdm[bdm_mask]
-            plt.plot(bdm)
-            canvas = plt.gcf()
-            dpi = plt.gcf().get_dpi()
-            canvas.set_size_inches(2*img_h/dpi, 2*img_h/dpi)
-            canvas.suptitle(f"Ball Distance", fontsize=6)
-            plt.xticks(fontsize=5)
-            plt.yticks(fontsize=5)
-            canvas.tight_layout()
-            canvas = plt.gca().figure.canvas
-            canvas.draw()
-            data = np.frombuffer(canvas.tostring_rgb(), dtype=np.uint8)
-            ball_distance_image = data.reshape(canvas.get_width_height()[::-1] + (3,))
-            plt.clf()
-            ball_distance_image = torch.from_numpy(np.copy(ball_distance_image)).permute(2,0,1)#.unsqueeze(0)
-            ball_distance_image = ball_distance_image.float().mean(0).byte()
+            img_h = 128
+            ## TODO Be sure that this dimension is height, not width
+            #bdm = np.array(gif_metrics["ball_distance"]).astype(np.double)
+            #bdm_mask = np.isfinite(bdm)
+            #bdm = bdm[bdm_mask]
+            #plt.plot(bdm)
+            #canvas = plt.gcf()
+            #dpi = plt.gcf().get_dpi()
+            #canvas.set_size_inches(2*img_h/dpi, 2*img_h/dpi)
+            #canvas.suptitle(f"Ball Distance", fontsize=7)
+            #plt.xticks(fontsize=7)
+            #plt.yticks(fontsize=7)
+            #canvas.tight_layout()
+            #canvas = plt.gca().figure.canvas
+            #canvas.draw()
+            #data = np.frombuffer(canvas.tostring_rgb(), dtype=np.uint8)
+            #ball_distance_image = data.reshape(canvas.get_width_height()[::-1] + (3,))
+            #plt.clf()
+            #ball_distance_image = torch.from_numpy(np.copy(ball_distance_image)).permute(2,0,1)#.unsqueeze(0)
+            #ball_distance_image = ball_distance_image.float().mean(0).byte()
 
             # PSNR plot
             plt.plot(gif_metrics['psnr'])
             canvas = plt.gcf()
             dpi = plt.gcf().get_dpi()
             canvas.set_size_inches(2*img_h/dpi, 2*img_h/dpi)
-            canvas.suptitle(f"PSNR", fontsize=6)
-            plt.xticks(fontsize=5)
-            plt.yticks(fontsize=5)
+            canvas.suptitle(f"PSNR", fontsize=7)
+            plt.xticks(fontsize=7)
+            plt.yticks(fontsize=7)
             canvas.tight_layout()
             canvas = plt.gca().figure.canvas
             canvas.draw()
@@ -159,9 +165,9 @@ def plot_self_out(pl_system):
             canvas = plt.gcf()
             dpi = plt.gcf().get_dpi()
             canvas.set_size_inches(2*img_h/dpi, 2*img_h/dpi)
-            canvas.suptitle(f"{vid_name[0]}:SSIM", fontsize=6)
-            plt.xticks(fontsize=5)
-            plt.yticks(fontsize=5)
+            canvas.suptitle(f"ID:{vid_name[0]}, SSIM", fontsize=7)
+            plt.xticks(fontsize=7)
+            plt.yticks(fontsize=7)
             canvas.tight_layout()
             canvas = plt.gca().figure.canvas
             canvas.draw()
@@ -176,9 +182,9 @@ def plot_self_out(pl_system):
             canvas = plt.gcf()
             dpi = plt.gcf().get_dpi()
             canvas.set_size_inches(2*img_h/dpi, 2*img_h/dpi)
-            canvas.suptitle("SL1", fontsize=6)
-            plt.xticks(fontsize=5)
-            plt.yticks(fontsize=5)
+            canvas.suptitle("SL1", fontsize=7)
+            plt.xticks(fontsize=7)
+            plt.yticks(fontsize=7)
             canvas.tight_layout()
             canvas = plt.gca().figure.canvas
             canvas.draw()
@@ -188,12 +194,15 @@ def plot_self_out(pl_system):
             sl1_image = torch.from_numpy(np.copy(sl1_image)).permute(2,0,1)#.unsqueeze(0)
             sl1_image = sl1_image.float().mean(0).byte()
 
-            # Number the frames to see which frame of the gif in output plut
-            gt_frames = [torch.from_numpy(putText(np.array(frame), f"{f_idx}", (0,frame.shape[1]), FONT_HERSHEY_SIMPLEX, fontScale = 0.55, color = (colour_gradients[f_idx%len(colour_gradients)]))) for f_idx, frame in enumerate(gt_frames[0])]
+            # Number the frames to see which frame of the gif in output plot
+            gif_frames = F.pad(gif_frames, (32,32,32,32), value=60)
+            gt_frames = F.pad(gt_frames, (32,32,32,32), value=60)
+            gt_frames = [torch.from_numpy(putText(np.array(frame), f"{f_idx}", (0,frame.shape[1]-10), FONT_HERSHEY_SIMPLEX, fontScale = 0.55, color = (colour_gradients[f_idx%len(colour_gradients)]))) for f_idx, frame in enumerate(gt_frames[0])]
 
 
             # Gif
-            gif_frames = [ torch.cat( [torch.cat( [gif_frames[n_frm], gt_frames[n_frm]], dim=0), ball_distance_image, psnr_image, ssim_image, sl1_image], dim=1)for n_frm in range(len(gif_frames)) ]
+            #gif_frames = [ torch.cat( [torch.cat( [gif_frames[n_frm], gt_frames[n_frm]], dim=0), ball_distance_image, psnr_image, ssim_image, sl1_image], dim=1)for n_frm in range(len(gif_frames)) ]
+            gif_frames = [ torch.cat( [torch.cat( [gif_frames[n_frm], gt_frames[n_frm]], dim=0), psnr_image, ssim_image, sl1_image], dim=1)for n_frm in range(len(gif_frames)) ]
             if pl_system.testing:
                 gif_save_path = os.path.join(args.results_dir, f"test_{ngif}-{vid_name[0]}.gif") 
             else:
@@ -229,17 +238,17 @@ def get_gif_metrics(gif_frames, gt_frames, metrics):
     #    #'FVD':metrics['FVD'](gif_frames, gt_frames)
     #}
     running_psnr = []
-    running_ball_distance = []
+    #running_ball_distance = []
     running_ssim = []
     running_sl1 = []
     for frame_idx in range(gif_frames.shape[0]):
         running_psnr.append( float(metrics['psnr']( gif_frames[frame_idx].float(), gt_frames[frame_idx].float())) )
-        running_ball_distance.append( metrics['ball_distance']( gif_frames[frame_idx], gt_frames[frame_idx]) )
+        #running_ball_distance.append( metrics['ball_distance']( gif_frames[frame_idx], gt_frames[frame_idx]) )
         running_ssim.append( float(metrics['ssim']( gif_frames[frame_idx].unsqueeze(0).float(), gt_frames[frame_idx].unsqueeze(0).float())) )
         running_sl1.append( float(metrics['sl1']( gif_frames[frame_idx].float(), gt_frames[frame_idx].float())) )
     metric_vals = {
         'psnr':running_psnr,
-        'ball_distance':running_ball_distance,
+        #'ball_distance':running_ball_distance,
         'ssim':running_ssim,
         'sl1':running_sl1
     }
@@ -534,8 +543,8 @@ if __name__ == "__main__":
     # Sorting arguements
     args = parser.parse_args()
     if args.test_only_model_path != "":
-        args.jobname = "TEST-ONLY_" + args.jobname
-        args.n_gifs = 50
+        args.jobname = "CAMERA-READY_" + args.jobname
+        args.n_gifs = 30
     print(args)
 
     ######## ERROR CONDITIONS To make sure erroneous runs aren't accidentally executed
