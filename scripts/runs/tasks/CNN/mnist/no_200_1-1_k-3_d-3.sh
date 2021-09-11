@@ -24,7 +24,7 @@ python test_tasks.py \
     --device 0 \
     --epoch 200 \
     --jobname no_200_mnist_1-1_k-3_d-3 \
-    --lr 1e-4 \
+    --lr 1e-3 \
     --img_type greyscale \
     --model UpDown2D \
     --model_path '' \

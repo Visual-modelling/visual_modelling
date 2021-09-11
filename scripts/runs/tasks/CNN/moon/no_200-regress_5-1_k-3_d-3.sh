@@ -24,7 +24,7 @@ python test_tasks.py \
     --out_no 1 \
     --depth 3 \
     --device 0 \
-    --lr 1e-4 \
+    --lr 1e-3 \
     --epoch 200 \
     --jobname no_200_moon-regress_5-1_k-3_d-3 \
     --img_type greyscale \
