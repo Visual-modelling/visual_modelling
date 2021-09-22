@@ -1,10 +1,6 @@
 #!/bin/bash
-#SBATCH --qos short
-#SBATCH -N 1
-#SBATCH -c 4
-#SBATCH -t 2-00:00
-#SBATCH --mem 28G
-#SBATCH -p res-gpu-small
+#SBATCH --ntasks 6
+#SBATCH -p part0
 #SBATCH --job-name pt_no_200_roller-regress_5-1_k-3_d-3  
 #SBATCH --gres gpu:1
 #SBATCH -o ../../../../../.results/pt_no_200_roller-regress_5-1_k-3_d-3.out
@@ -24,11 +20,12 @@ python test_tasks.py \
     --out_no 1 \
     --depth 3 \
     --device 0 \
-    --lr 1e-3 \
+    --lr 1e-4 \
     --epoch 400 \
     --jobname pt_no_200_roller-regress_5-1_k-3_d-3 \
     --img_type greyscale \
     --model PatchTrans \
     --model_path '' \
     --shuffle \
+    --disable_preload \
     --wandb 

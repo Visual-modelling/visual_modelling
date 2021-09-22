@@ -24,7 +24,7 @@ python test_tasks.py \
     --out_no 1 \
     --depth 3 \
     --device 0 \
-    --lr 2e-5 \
+    --lr 1e-4 \
     --epoch 400 \
     --jobname pt_no_200_bounces-regress_3d_5-1_k-3_d-3 \
     --img_type greyscale \
