@@ -25,7 +25,7 @@ python test_tasks.py \
     --depth 3 \
     --device 0 \
     --lr 1e-3 \
-    --epoch 200 \
+    --epoch 400 \
     --jobname no_200_segmentation_3d_bouncing_1-1_k-3_d-3 \
     --img_type greyscale \
     --model UpDown2D \

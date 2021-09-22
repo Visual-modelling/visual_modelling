@@ -24,8 +24,8 @@ python test_tasks.py \
     --out_no 1 \
     --depth 3 \
     --device 0 \
-    --lr 1e-3 \
-    --epoch 200 \
+    --lr 5e-3 \
+    --epoch 400 \
     --jobname no_200_roller-regress_5-1_k-3_d-3 \
     --img_type greyscale \
     --model UpDown2D \

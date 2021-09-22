@@ -25,7 +25,7 @@ python test_tasks.py \
     --depth 3 \
     --device 0 \
     --lr 1e-5 \
-    --epoch 200 \
+    --epoch 400 \
     --jobname no_200_bounces-regress_3d_5-1_k-3_d-3 \
     --img_type greyscale \
     --model UpDown2D \
