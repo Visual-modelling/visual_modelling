@@ -12,6 +12,9 @@
 8. `--jobname` will be the name wandb plots it as, please change it appropriately, or remove the `--visdom` flag to prevent logging.
 9. I'll add extra instructions for functionality like mixed dataset and running MNIST. For now, please ignore all running scripts outside of `transformer`. Some may not work but I'm keeping them around.
 
+## All Self Output GIFs
+We will host all our generated self outputs for anyone to inspect.
+
 ## Plan
 ...Recent history
 * ~~Collect and implement wanted metrics~~ - Late September - Early October

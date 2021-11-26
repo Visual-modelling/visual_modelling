@@ -71,7 +71,7 @@ def create_id3_embedding(videos):
     first call.
 
     Args:
-        videos: <float32>[batch_size, num_frames, height=224, width=224, depth=3].
+        videos: <float32>[batch_size, num_frames, height=24, width=224, depth=3].
             Expected range is [-1, 1].
 
     Returns:
