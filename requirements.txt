@@ -31,7 +31,7 @@ matplotlib==3.4.2
 matplotlib-inline==0.1.2
 mmcv==1.3.0
 mmcv-full==1.3.9
--e git+git@github.com:Visual-modelling/visual_modelling.git@3e4f0835d0b641f174a28162c61b0d0a8c328bbf#egg=mmsegmentation&subdirectory=../../../../projects/Visual-modelling/visual_modelling/models/SegFormer
+-e git+git@github.com:Visual-modelling/visual_modelling.git@22d6f04f2ad92a0980f18514cf380293d2138f20#egg=mmsegmentation&subdirectory=../../../../projects/Visual-modelling/visual_modelling/models/SegFormer
 multidict==5.1.0
 numpy==1.20.3
 oauthlib==3.1.1
