@@ -543,8 +543,8 @@ if __name__ == "__main__":
     # Sorting arguements
     args = parser.parse_args()
     if args.test_only_model_path != "":
-        args.jobname = "CAMERA-READY_" + args.jobname
-        args.n_gifs = 30
+        args.jobname = "IT_ALL_" + args.jobname
+        args.n_gifs = -1
     print(args)
 
     ######## ERROR CONDITIONS To make sure erroneous runs aren't accidentally executed
@@ -646,8 +646,9 @@ if __name__ == "__main__":
         pl_system = SequenceModellingSystem(args, self_out_loader, test_self_out_loader)
         pls_type = SequenceModellingSystem
     elif args.model == "PatchTrans":
-        print("TURN ME BACK ON")
-        #pl_system = ModellingSystem(args, self_out_loader, test_self_out_loader)
+        #print("TURN ME BACK ON")
+        # TODO There was a warning here
+        pl_system = ModellingSystem(args, self_out_loader, test_self_out_loader)
         pls_type = ModellingSystem
     elif args.model == "deans_transformer":
         pl_system = ModellingSystem(args, self_out_loader, test_self_out_loader)

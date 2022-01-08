@@ -13,7 +13,7 @@ source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 python VM_train.py \
     --disable_preload \
-    --test_only_model_path '.best_runs/2dBouncing_transformer_lr1e-5_ssim_021-epoch=169.ckpt' \
+    --test_only_model_path 'IT/2dBouncing_transformer_lr1e-5_ssim_021-epoch=169.ckpt' \
     --dataset simulations \
     --dataset_path data/2dBouncing/2dMultiGrav-Y_regen/raw \
     --jobname 2dBouncing_transformer_lr1e-5_ssim_021 \
@@ -27,11 +27,10 @@ python VM_train.py \
     --epoch 500 \
     --early_stopping 10 \
     --min_epochs 40 \
-    --n_gifs 20 \
+    --n_gifs -1 \
     --reduction mean \
     --img_type greyscale \
     --shuffle \
-    --wandb \
     --model image_transformer \
     --dataset_mode consecutive \
     --d_model 4096 \

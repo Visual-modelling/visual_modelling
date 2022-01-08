@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH -p part0
-#SBATCH --job-name IT1
+#SBATCH --job-name IT2 
 #SBATCH --ntasks 6
 #SBATCH --gres gpu:1
 ########
@@ -62,44 +62,44 @@
 #########
 # 2d Bouncing
 cd /home/jumperkables/kable_management/projects/Visual-modelling/visual_modelling/scripts/runs/modelling/image_transformer/test_only
-bash 2dBouncing_transformer_lr1e-5_sl1_021.sh
-bash 2dBouncing_transformer_lr1e-5_sl1_59in_021.sh
-bash 2dBouncing_transformer_lr1e-5_ssim_021.sh
-bash 2dBouncing_transformer_lr3e-6_ssim_59in_021.sh
-
-# 3d Bouncing
-bash 3dBouncing_transformer_lr3e-6_sl1_021.sh
-bash 3dBouncing_transformer_lr3e-6_sl1_99in_021.sh
-bash 3dBouncing_transformer_lr1e-5_ssim_021.sh
-bash 3dBouncing_transformer_lr1e-5_ssim_99in_021.sh
-
-# Blocks
-bash blocks_transformer_lr3e-6_sl1_021.sh
-bash blocks_transformer_lr3e-6_ssim_021.sh
-
-# HDMB-51 
-bash hdmb51_transformer_lr3e-6_sl1_021.sh
-bash hdmb51_transformer_lr3e-6_ssim_021.sh
-
-## MMNIST
-#bash mmnist_transformer_lr3e-6_sl1_021.sh
-#bash mmnist_transformer_lr3e-6_ssim_021.sh
+#bash 2dBouncing_transformer_lr1e-5_sl1_021.sh
+#bash 2dBouncing_transformer_lr1e-5_sl1_59in_021.sh
+#bash 2dBouncing_transformer_lr1e-5_ssim_021.sh
+#bash 2dBouncing_transformer_lr3e-6_ssim_59in_021.sh
 #
-## MOCAP
-#bash mocap_transformer_lr1e-5_sl1_021.sh
-#bash mocap_transformer_lr1e-5_ssim_021.sh
+## 3d Bouncing
+#bash 3dBouncing_transformer_lr3e-6_sl1_021.sh
+#bash 3dBouncing_transformer_lr3e-6_sl1_99in_021.sh
+#bash 3dBouncing_transformer_lr1e-5_ssim_021.sh
+#bash 3dBouncing_transformer_lr1e-5_ssim_99in_021.sh
 #
-## Moon
-#bash moon_transformer_lr1e-5_sl1_021.sh
-#bash moon_transformer_lr3e-6_ssim_021.sh
+## Blocks
+#bash blocks_transformer_lr3e-6_sl1_021.sh
+#bash blocks_transformer_lr3e-6_ssim_021.sh
 #
-## Pendulum
-#bash pendulum_transformer_lr3e-6_sl1_021.sh
-#bash pendulum_transformer_lr3e-6_ssim_021.sh
-#
-## Roller
-#bash roller_transformer_lr1e-5_sl1_021.sh
-#bash roller_transformer_lr3e-6_ssim_021.sh
+## HDMB-51 
+#bash hdmb51_transformer_lr3e-6_sl1_021.sh
+#bash hdmb51_transformer_lr3e-6_ssim_021.sh
+
+# MMNIST
+bash mmnist_transformer_lr3e-6_sl1_021.sh
+bash mmnist_transformer_lr3e-6_ssim_021.sh
+
+# MOCAP
+bash mocap_transformer_lr1e-5_sl1_021.sh
+bash mocap_transformer_lr1e-5_ssim_021.sh
+
+# Moon
+bash moon_transformer_lr1e-5_sl1_021.sh
+bash moon_transformer_lr3e-6_ssim_021.sh
+
+# Pendulum
+bash pendulum_transformer_lr3e-6_sl1_021.sh
+bash pendulum_transformer_lr3e-6_ssim_021.sh
+
+# Roller
+bash roller_transformer_lr1e-5_sl1_021.sh
+bash roller_transformer_lr3e-6_ssim_021.sh
 
 
 #########

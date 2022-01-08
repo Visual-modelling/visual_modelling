@@ -13,7 +13,7 @@ source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 python VM_train.py \
     --disable_preload \
-    --test_only_model_path '.best_runs/roller_transformer_lr3e-6_ssim_021-epoch=211.ckpt' \
+    --test_only_model_path 'IT/roller_transformer_lr3e-6_ssim_021-epoch=211.ckpt' \
     --dataset simulations \
     --dataset_path data/myphysicslab/RollerFlight_10000_bigger \
     --jobname roller_transformer_lr3e-6_ssim_021 \
@@ -26,11 +26,10 @@ python VM_train.py \
     --device 0 \
     --epoch 500 \
     --early_stopping 10 \
-    --n_gifs 20 \
+    --n_gifs -1 \
     --reduction mean \
     --img_type greyscale \
     --shuffle \
-    --wandb \
     --model image_transformer \
     --dataset_mode consecutive \
     --d_model 4096 \

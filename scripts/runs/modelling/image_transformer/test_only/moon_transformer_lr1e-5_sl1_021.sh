@@ -13,7 +13,7 @@ source python_venvs/vm/bin/activate
 export PYTHONBREAKPOINT=ipdb.set_trace
 python VM_train.py \
     --disable_preload \
-    --test_only_model_path '.best_runs/moon_transformer_lr1e-5_sl1_021-epoch=499.ckpt' \
+    --test_only_model_path 'IT/moon_transformer_lr1e-5_sl1_021-epoch=499.ckpt' \
     --dataset simulations \
     --dataset_path data/myphysicslab/Moon_10000 \
     --jobname moon_transformer_lr1e-5_sl1_021 \
@@ -27,11 +27,10 @@ python VM_train.py \
     --epoch 500 \
     --early_stopping 10 \
     --min_epochs 40 \
-    --n_gifs 20 \
+    --n_gifs -1 \
     --reduction mean \
     --img_type greyscale \
     --shuffle \
-    --wandb \
     --model image_transformer \
     --dataset_mode consecutive \
     --d_model 4096 \
