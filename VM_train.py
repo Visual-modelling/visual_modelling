@@ -542,9 +542,9 @@ if __name__ == "__main__":
     ####
     # Sorting arguements
     args = parser.parse_args()
-    if args.test_only_model_path != "":
-        args.jobname = "IT_ALL_" + args.jobname
-        args.n_gifs = -1
+    #if args.test_only_model_path != "":
+    #    args.jobname = "IT_ALL_" + args.jobname
+    #    args.n_gifs = -1
     print(args)
 
     ######## ERROR CONDITIONS To make sure erroneous runs aren't accidentally executed
@@ -686,7 +686,7 @@ if __name__ == "__main__":
 
     # If test_only_model_path is specified, skip training and run only testing on said model
     if args.test_only_model_path == "":
-        raise Exception("Disabled training for help. Remove this afterwards")
+        #raise Exception("Disabled training for help. Remove this afterwards")
         trainer = pl.Trainer(callbacks=callbacks, logger=wandb_logger, gpus=gpus, max_epochs=args.epoch, min_epochs=args.min_epochs)
         trainer.fit(pl_system, train_loader, valid_loader)
         pl_system.testing = True
