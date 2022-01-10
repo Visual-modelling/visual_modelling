@@ -43,5 +43,5 @@ For runs that use *pretrained* models. You will need to add the ".ckpt" object g
 - The finetuning experiments are the same as the above probing ones, but further preprended with "ft_"
 
 ## All Self Output GIFs
-We host our self-output gifs for anyone to insepct. Find them [here](www.kaggle.com/jumperkables/visual-modelling-self-output-gifs).
+We host our self-output gifs for anyone to insepct. Find them [here](https://www.kaggle.com/jumperkables/visual-modelling-self-output-gifs).
 
