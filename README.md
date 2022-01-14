@@ -1,8 +1,6 @@
 # Visual Modelling
 The official repository for Visual Modelling.
 
-# DATASET TO KAGGLE ARE DELAYED DUE TO SERVERSIDE ERRORS. THIS IS ONGOING AND THE LINK WILL BECOME ACTIVE AS SOON AS THIS PROBLEM IS RESOLVED
-
 ## Dataset Download
 Find the datasets used [here](https://www.kaggle.com/jumperkables/visual-modelling):
 
