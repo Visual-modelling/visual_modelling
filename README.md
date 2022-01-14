@@ -1,6 +1,8 @@
 # Visual Modelling
 The official repository for Visual Modelling.
 
+# DATASET AND GIF UPLOADS TO KAGGLE ARE DELAYED DUE TO SERVERSIDE ERRORS. THIS IS ONGOING AND THE LINKS WILL BECOME ACTIVE AS SOON AS THIS PROBLEM IS RESOLVED
+
 ## Dataset Download
 Find the datasets used [here](https://www.kaggle.com/jumperkables/visual-modelling):
 
@@ -43,5 +45,5 @@ For runs that use *pretrained* models. You will need to add the ".ckpt" object g
 - The finetuning experiments are the same as the above probing ones, but further preprended with "ft_"
 
 ## All Self Output GIFs
-We host our self-output gifs for anyone to insepct. Find them [here](https://www.kaggle.com/jumperkables/visual-modelling-self-output-gifs).
+We host our self-output gifs for anyone to insepct. Find them [here](https://www.kaggle.com/jumperkables/visual-modelling-self-output-visualisations).
 
