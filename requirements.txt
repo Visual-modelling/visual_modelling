@@ -46,7 +46,7 @@ Pillow==8.2.0
 piq==0.5.5
 promise==2.3
 prompt-toolkit==3.0.18
-protobuf==3.17.3
+protobuf==3.18.3
 psutil==5.8.0
 ptyprocess==0.7.0
 pyasn1==0.4.8
