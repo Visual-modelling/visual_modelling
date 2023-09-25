@@ -130,12 +130,12 @@ class Simulations(Dataset):
         elif self.yaml_return == "3dbounces":
             yaml_return = [data_params['config']['bounces']['ball-ball'] + data_params['config']['bounces']['wall']]
             yaml_return = torch.tensor(yaml_return).clamp(0,50).float()
-            yaml_return /= 12.782186402959393 
+            yaml_return /= 12.782186402959393
         elif self.yaml_return == "grav":
             yaml_return = [data_params['config']['gy']]
             yaml_return = torch.tensor(yaml_return).float()
             yaml_return /= 0.0001993539502994682
-            # Scale so standard deviation is 1 
+            # Scale so standard deviation is 1
         elif self.yaml_return == "roller":
             yaml_return = [data_params['config']['SIM.GRAVITY']]
             yaml_return = torch.tensor(yaml_return).float()
